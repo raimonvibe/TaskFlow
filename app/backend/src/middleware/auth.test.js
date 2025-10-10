@@ -1,19 +1,18 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { authenticate, generateToken, verifyToken } from './auth.js'
-import jwt from 'jsonwebtoken'
 
-// Get reference to mocked functions
-const { sign, verify } = jwt
-
-const mockJwt = {
-  sign: jest.fn(),
-  verify: jest.fn(),
-}
+const mockSign = jest.fn()
+const mockVerify = jest.fn()
 
 jest.mock('jsonwebtoken', () => ({
-  default: mockJwt,
-  ...mockJwt,
+  default: {
+    sign: mockSign,
+    verify: mockVerify,
+  },
+  sign: mockSign,
+  verify: mockVerify,
 }))
+
+import { authenticate, generateToken, verifyToken } from './auth.js'
 
 jest.mock('../config/index.js', () => ({
   default: {
@@ -30,11 +29,11 @@ describe('Auth Middleware', () => {
   describe('generateToken', () => {
     it('should generate a valid JWT token', () => {
       const payload = { id: 1, email: 'test@example.com' }
-      sign.mockReturnValue('mock-token')
+      mockSign.mockReturnValue('mock-token')
 
       const token = generateToken(payload)
 
-      expect(sign).toHaveBeenCalledWith(payload, 'test-secret', {
+      expect(mockSign).toHaveBeenCalledWith(payload, 'test-secret', {
         expiresIn: '1h',
       })
       expect(token).toBe('mock-token')
@@ -44,16 +43,16 @@ describe('Auth Middleware', () => {
   describe('verifyToken', () => {
     it('should verify and decode a valid token', () => {
       const mockDecoded = { id: 1, email: 'test@example.com' }
-      verify.mockReturnValue(mockDecoded)
+      mockVerify.mockReturnValue(mockDecoded)
 
       const decoded = verifyToken('valid-token')
 
-      expect(verify).toHaveBeenCalledWith('valid-token', 'test-secret')
+      expect(mockVerify).toHaveBeenCalledWith('valid-token', 'test-secret')
       expect(decoded).toEqual(mockDecoded)
     })
 
     it('should throw error for invalid token', () => {
-      verify.mockImplementation(() => {
+      mockVerify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 
@@ -79,7 +78,7 @@ describe('Auth Middleware', () => {
     it('should authenticate valid token', () => {
       mockReq.headers.authorization = 'Bearer valid-token'
       const mockDecoded = { id: 1, email: 'test@example.com' }
-      verify.mockReturnValue(mockDecoded)
+      mockVerify.mockReturnValue(mockDecoded)
 
       authenticate(mockReq, mockRes, mockNext)
 
@@ -100,7 +99,7 @@ describe('Auth Middleware', () => {
 
     it('should return 401 for invalid token', () => {
       mockReq.headers.authorization = 'Bearer invalid-token'
-      verify.mockImplementation(() => {
+      mockVerify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 

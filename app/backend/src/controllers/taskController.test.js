@@ -3,7 +3,16 @@ import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } 
 import { Task } from '../models/Task.js'
 
 // Mock dependencies
-jest.mock('../models/Task.js')
+jest.mock('../models/Task.js', () => ({
+  Task: {
+    create: jest.fn(),
+    findByUserId: jest.fn(),
+    findByIdAndUserId: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    getStatistics: jest.fn(),
+  },
+}))
 jest.mock('../utils/metrics.js', () => ({
   taskOperations: { inc: jest.fn() },
 }))
