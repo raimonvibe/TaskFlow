@@ -64,10 +64,11 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-${{ matrix.component }}.sarif'
           category: docker-${{ matrix.component }}
+        continue-on-error: true
 
   secret-scan:
     name: Secret Scanning
@@ -100,15 +101,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
   security-report:
     name: Generate Security Report
