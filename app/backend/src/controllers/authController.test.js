@@ -4,8 +4,17 @@ import { User } from '../models/User.js'
 import { generateToken } from '../middleware/auth.js'
 
 // Mock dependencies
-jest.mock('../models/User.js')
-jest.mock('../middleware/auth.js')
+jest.mock('../models/User.js', () => ({
+  User: {
+    findByEmail: jest.fn(),
+    create: jest.fn(),
+    findById: jest.fn(),
+    comparePassword: jest.fn(),
+  },
+}))
+jest.mock('../middleware/auth.js', () => ({
+  generateToken: jest.fn(),
+}))
 jest.mock('../utils/metrics.js', () => ({
   authAttempts: { inc: jest.fn() },
 }))

@@ -2,13 +2,17 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { authenticate, generateToken, verifyToken } from './auth.js'
 import jwt from 'jsonwebtoken'
 
-jest.mock('jsonwebtoken', () => ({
-  default: {
-    sign: jest.fn(),
-    verify: jest.fn(),
-  },
+// Get reference to mocked functions
+const { sign, verify } = jwt
+
+const mockJwt = {
   sign: jest.fn(),
   verify: jest.fn(),
+}
+
+jest.mock('jsonwebtoken', () => ({
+  default: mockJwt,
+  ...mockJwt,
 }))
 
 jest.mock('../config/index.js', () => ({
@@ -26,11 +30,11 @@ describe('Auth Middleware', () => {
   describe('generateToken', () => {
     it('should generate a valid JWT token', () => {
       const payload = { id: 1, email: 'test@example.com' }
-      jwt.sign.mockReturnValue('mock-token')
+      sign.mockReturnValue('mock-token')
 
       const token = generateToken(payload)
 
-      expect(jwt.sign).toHaveBeenCalledWith(payload, 'test-secret', {
+      expect(sign).toHaveBeenCalledWith(payload, 'test-secret', {
         expiresIn: '1h',
       })
       expect(token).toBe('mock-token')
@@ -40,16 +44,16 @@ describe('Auth Middleware', () => {
   describe('verifyToken', () => {
     it('should verify and decode a valid token', () => {
       const mockDecoded = { id: 1, email: 'test@example.com' }
-      jwt.verify.mockReturnValue(mockDecoded)
+      verify.mockReturnValue(mockDecoded)
 
       const decoded = verifyToken('valid-token')
 
-      expect(jwt.verify).toHaveBeenCalledWith('valid-token', 'test-secret')
+      expect(verify).toHaveBeenCalledWith('valid-token', 'test-secret')
       expect(decoded).toEqual(mockDecoded)
     })
 
     it('should throw error for invalid token', () => {
-      jwt.verify.mockImplementation(() => {
+      verify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 
@@ -75,7 +79,7 @@ describe('Auth Middleware', () => {
     it('should authenticate valid token', () => {
       mockReq.headers.authorization = 'Bearer valid-token'
       const mockDecoded = { id: 1, email: 'test@example.com' }
-      jwt.verify.mockReturnValue(mockDecoded)
+      verify.mockReturnValue(mockDecoded)
 
       authenticate(mockReq, mockRes, mockNext)
 
@@ -96,7 +100,7 @@ describe('Auth Middleware', () => {
 
     it('should return 401 for invalid token', () => {
       mockReq.headers.authorization = 'Bearer invalid-token'
-      jwt.verify.mockImplementation(() => {
+      verify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 

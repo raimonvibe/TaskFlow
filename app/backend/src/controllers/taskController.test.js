@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { createTask, getTasks, getTask, updateTask, deleteTask, getTaskStats } from './taskController.js'
+import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } from './taskController.js'
 import { Task } from '../models/Task.js'
 
 // Mock dependencies
@@ -221,7 +221,7 @@ describe('Task Controller', () => {
     })
   })
 
-  describe('getTaskStats', () => {
+  describe('getStatistics', () => {
     it('should get task statistics', async () => {
       const mockStats = {
         total: 10,
@@ -231,7 +231,7 @@ describe('Task Controller', () => {
 
       Task.getStatistics.mockResolvedValue(mockStats)
 
-      await getTaskStats(mockReq, mockRes, mockNext)
+      await getStatistics(mockReq, mockRes, mockNext)
 
       expect(Task.getStatistics).toHaveBeenCalledWith(1)
       expect(mockRes.json).toHaveBeenCalledWith({ statistics: mockStats })
@@ -241,7 +241,7 @@ describe('Task Controller', () => {
       const error = new Error('Database error')
       Task.getStatistics.mockRejectedValue(error)
 
-      await getTaskStats(mockReq, mockRes, mockNext)
+      await getStatistics(mockReq, mockRes, mockNext)
 
       expect(mockNext).toHaveBeenCalledWith(error)
     })
