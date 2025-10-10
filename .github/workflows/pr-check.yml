@@ -1,0 +1,249 @@
+# Pull Request Validation Workflow
+# Runs on every pull request to validate code quality and tests
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+# Optimize workflow to reduce GitHub Actions minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lint Frontend
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app/frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: app/frontend
+        run: npm run lint
+
+      - name: Check formatting
+        working-directory: app/frontend
+        run: npm run format -- --check
+
+  # Lint Backend
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app/backend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: app/backend
+        run: npm run lint
+
+      - name: Check formatting
+        working-directory: app/backend
+        run: npm run format -- --check
+
+  # Test Frontend
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: lint-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app/frontend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: app/frontend
+        run: npm test -- --run
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: app/frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+
+  # Test Backend
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: lint-backend
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: taskflow_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app/backend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: app/backend
+        env:
+          NODE_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: taskflow_test
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          JWT_SECRET: test_secret_key
+        run: npm test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: app/backend/coverage/coverage-final.json
+          flags: backend
+          name: backend-coverage
+
+  # Build Docker Images (test only, don't push)
+  build-docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [frontend, backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.component }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/${{ matrix.component }}
+          push: false
+          tags: taskflow-${{ matrix.component }}:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit (Frontend)
+        working-directory: app/frontend
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Run npm audit (Backend)
+        working-directory: app/backend
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  # PR Summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend, build-docker, security-scan]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.test-frontend.result }}" != "success" ] || \
+             [ "${{ needs.test-backend.result }}" != "success" ] || \
+             [ "${{ needs.build-docker.result }}" != "success" ]; then
+            echo "❌ Some checks failed"
+            exit 1
+          else
+            echo "✅ All checks passed"
+          fi
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const results = {
+              frontend: '${{ needs.test-frontend.result }}',
+              backend: '${{ needs.test-backend.result }}',
+              docker: '${{ needs.build-docker.result }}',
+              security: '${{ needs.security-scan.result }}'
+            };
+
+            const getEmoji = (result) => result === 'success' ? '✅' : '❌';
+
+            const comment = `## PR Checks Summary
+
+            ${getEmoji(results.frontend)} Frontend Tests
+            ${getEmoji(results.backend)} Backend Tests
+            ${getEmoji(results.docker)} Docker Build
+            ${getEmoji(results.security)} Security Scan
+
+            ${Object.values(results).every(r => r === 'success') ? '🎉 All checks passed!' : '⚠️ Some checks failed. Please review the logs.'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

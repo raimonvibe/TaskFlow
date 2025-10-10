@@ -1,0 +1,166 @@
+# TaskFlow - Security Role Tasks
+# Security hardening and configuration
+
+- name: Install security packages
+  apt:
+    name:
+      - fail2ban
+      - ufw
+      - lynis
+      - aide
+      - rkhunter
+      - chkrootkit
+    state: present
+
+- name: Configure fail2ban
+  copy:
+    content: |
+      [DEFAULT]
+      bantime = 3600
+      findtime = 600
+      maxretry = 3
+      
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 3
+      
+      [nginx-http-auth]
+      enabled = true
+      port = http,https
+      filter = nginx-http-auth
+      logpath = /var/log/nginx/error.log
+      maxretry = 3
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: Configure UFW firewall
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "22"    # SSH
+    - "80"    # HTTP
+    - "443"   # HTTPS
+    - "6443"  # Kubernetes API
+    - "10250" # Kubelet
+    - "30000:32767" # NodePort range
+
+- name: Configure SSL/TLS
+  copy:
+    content: |
+      ssl_protocols TLSv1.2 TLSv1.3;
+      ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+      ssl_prefer_server_ciphers off;
+      ssl_session_cache shared:SSL:10m;
+      ssl_session_timeout 10m;
+    dest: /etc/nginx/conf.d/ssl.conf
+    mode: '0644'
+
+- name: Configure automated backups
+  copy:
+    content: |
+      #!/bin/bash
+      BACKUP_DIR="/var/backups/taskflow"
+      DATE=$(date +%Y%m%d_%H%M%S)
+      
+      # Create backup directory
+      mkdir -p $BACKUP_DIR
+      
+      # Backup database
+      kubectl exec -n taskflow postgres-0 -- pg_dump -U taskflow_user taskflow > $BACKUP_DIR/database_$DATE.sql
+      
+      # Backup Kubernetes resources
+      kubectl get all -n taskflow -o yaml > $BACKUP_DIR/k8s_resources_$DATE.yaml
+      
+      # Cleanup old backups (keep 7 days)
+      find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
+      find $BACKUP_DIR -name "*.yaml" -mtime +7 -delete
+    dest: /usr/local/bin/backup-taskflow.sh
+    mode: '0755'
+
+- name: Schedule backups
+  cron:
+    name: "TaskFlow backup"
+    job: "0 2 * * * /usr/local/bin/backup-taskflow.sh"
+    user: root
+
+- name: Configure security scanning
+  copy:
+    content: |
+      #!/bin/bash
+      LOG_FILE="/var/log/security-scan.log"
+      DATE=$(date '+%Y-%m-%d %H:%M:%S')
+      
+      echo "[$DATE] Starting security scan" >> $LOG_FILE
+      
+      # Run Lynis scan
+      lynis audit system >> $LOG_FILE 2>&1
+      
+      # Run AIDE check
+      aide --check >> $LOG_FILE 2>&1
+      
+      # Run rkhunter scan
+      rkhunter --check >> $LOG_FILE 2>&1
+      
+      echo "[$DATE] Security scan completed" >> $LOG_FILE
+    dest: /usr/local/bin/security-scan.sh
+    mode: '0755'
+
+- name: Schedule security scans
+  cron:
+    name: "Security scan"
+    job: "0 3 * * 0 /usr/local/bin/security-scan.sh"
+    user: root
+
+- name: Configure log monitoring
+  copy:
+    content: |
+      #!/bin/bash
+      LOG_FILE="/var/log/security-events.log"
+      DATE=$(date '+%Y-%m-%d %H:%M:%S')
+      
+      # Monitor failed login attempts
+      FAILED_LOGINS=$(grep "Failed password" /var/log/auth.log | wc -l)
+      if [ $FAILED_LOGINS -gt 10 ]; then
+        echo "[$DATE] High number of failed login attempts: $FAILED_LOGINS" >> $LOG_FILE
+      fi
+      
+      # Monitor suspicious activity
+      SUSPICIOUS=$(grep -i "suspicious\|attack\|intrusion" /var/log/auth.log | wc -l)
+      if [ $SUSPICIOUS -gt 0 ]; then
+        echo "[$DATE] Suspicious activity detected: $SUSPICIOUS events" >> $LOG_FILE
+      fi
+    dest: /usr/local/bin/log-monitor.sh
+    mode: '0755'
+
+- name: Schedule log monitoring
+  cron:
+    name: "Log monitoring"
+    job: "*/15 * * * * /usr/local/bin/log-monitor.sh"
+    user: root
+
+- name: Enable security services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - fail2ban
+    - ufw
+
+- name: Verify security configuration
+  command: fail2ban-client status
+  register: fail2ban_status
+  changed_when: false
+
+- name: Display fail2ban status
+  debug:
+    msg: "{{ fail2ban_status.stdout_lines }}"

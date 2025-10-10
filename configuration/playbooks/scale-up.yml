@@ -1,0 +1,54 @@
+# TaskFlow - Scale Up Playbook
+# Scales up the application by adding more replicas
+
+- name: Scale up TaskFlow application
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Scale up backend
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: backend
+        namespace: taskflow
+        state: present
+        definition:
+          spec:
+            replicas: "{{ backend_replicas | default(3) }}"
+
+    - name: Scale up frontend
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: frontend
+        namespace: taskflow
+        state: present
+        definition:
+          spec:
+            replicas: "{{ frontend_replicas | default(3) }}"
+
+    - name: Wait for scaling
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: taskflow
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+      loop:
+        - backend
+        - frontend
+
+    - name: Display scaling status
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: taskflow
+      register: deployments
+
+    - name: Show deployments
+      debug:
+        msg: "{{ deployments.resources }}"
