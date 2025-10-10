@@ -18,7 +18,7 @@ describe('StatCard', () => {
   })
 
   it('should apply custom color class', () => {
-    const { container } = render(
+    render(
       <StatCard title="Completed" value={5} color="text-green-600" />
     )
 

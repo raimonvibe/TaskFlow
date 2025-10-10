@@ -87,7 +87,7 @@ describe('User Model', () => {
 
   describe('comparePassword', () => {
     it('should return true for correct password', async () => {
-      const createdUser = await User.create(testUser.name, testUser.email, testUser.password)
+      await User.create(testUser.name, testUser.email, testUser.password)
       const fullUser = await User.findByEmail(testUser.email)
       const isValid = await User.comparePassword(testUser.password, fullUser.password)
 

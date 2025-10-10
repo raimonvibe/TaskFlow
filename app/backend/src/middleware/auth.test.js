@@ -1,7 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { authenticate, generateToken, verifyToken } from './auth.js'
 import jwt from 'jsonwebtoken'
-import config from '../config/index.js'
 
 jest.mock('jsonwebtoken')
 jest.mock('../config/index.js', () => ({

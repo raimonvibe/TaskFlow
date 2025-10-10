@@ -70,11 +70,12 @@ instance.interceptors.response.use(
           console.error('Access denied - insufficient permissions')
           break
 
-        case 429:
+        case 429: {
           // Rate limited
           const retryAfter = error.response.headers['retry-after'] || 60
           console.warn(`Rate limited. Retry after ${retryAfter} seconds`)
           break
+        }
 
         case 500:
         case 502:
