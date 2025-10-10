@@ -18,12 +18,14 @@ describe('StatCard', () => {
   })
 
   it('should apply custom color class', () => {
-    render(
-      <StatCard title="Completed" value={5} color="text-green-600" />
+    const { container } = render(
+      <StatCard title="Completed" value={5} color="green" icon="✓" />
     )
 
-    const valueElement = screen.getByText('5')
-    expect(valueElement.className).toContain('text-green-600')
+    // Color is applied to the icon container, not the value
+    const iconContainer = container.querySelector('.rounded-full')
+    expect(iconContainer.className).toContain('bg-green-50')
+    expect(iconContainer.className).toContain('text-green-600')
   })
 
   it('should render zero value', () => {

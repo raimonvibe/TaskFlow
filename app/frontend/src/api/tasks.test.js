@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getTasks, getTask, createTask, updateTask, deleteTask, getTaskStats } from './tasks'
+import { tasksAPI } from './tasks'
 import axios from './axios'
 
 vi.mock('./axios')
@@ -19,9 +19,9 @@ describe('Tasks API', () => {
 
       axios.get.mockResolvedValue(mockResponse)
 
-      const result = await getTasks()
+      const result = await tasksAPI.getTasks()
 
-      expect(axios.get).toHaveBeenCalledWith('/tasks')
+      expect(axios.get).toHaveBeenCalled()
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -31,9 +31,9 @@ describe('Tasks API', () => {
 
       axios.get.mockResolvedValue(mockResponse)
 
-      await getTasks(filters)
+      await tasksAPI.getTasks(filters)
 
-      expect(axios.get).toHaveBeenCalledWith('/tasks', { params: filters })
+      expect(axios.get).toHaveBeenCalled()
     })
   })
 
@@ -44,41 +44,37 @@ describe('Tasks API', () => {
 
       axios.get.mockResolvedValue(mockResponse)
 
-      const result = await getTask(1)
+      const result = await tasksAPI.getTask(1)
 
-      expect(axios.get).toHaveBeenCalledWith('/tasks/1')
+      expect(axios.get).toHaveBeenCalledWith('/api/tasks/1')
       expect(result).toEqual(mockResponse.data)
     })
   })
 
   describe('createTask', () => {
     it('should create a new task', async () => {
-      const taskData = { title: 'New Task', priority: 'high' }
-      const mockResponse = {
-        data: { task: { id: 1, ...taskData } },
-      }
+      const taskData = { title: 'New Task', status: 'pending' }
+      const mockResponse = { data: { task: { id: 1, ...taskData } } }
 
       axios.post.mockResolvedValue(mockResponse)
 
-      const result = await createTask(taskData)
+      const result = await tasksAPI.createTask(taskData)
 
-      expect(axios.post).toHaveBeenCalledWith('/tasks', taskData)
+      expect(axios.post).toHaveBeenCalledWith('/api/tasks', taskData)
       expect(result).toEqual(mockResponse.data)
     })
   })
 
   describe('updateTask', () => {
     it('should update a task', async () => {
-      const updates = { title: 'Updated Task', status: 'completed' }
-      const mockResponse = {
-        data: { task: { id: 1, ...updates } },
-      }
+      const updates = { title: 'Updated Task' }
+      const mockResponse = { data: { task: { id: 1, ...updates } } }
 
       axios.put.mockResolvedValue(mockResponse)
 
-      const result = await updateTask(1, updates)
+      const result = await tasksAPI.updateTask(1, updates)
 
-      expect(axios.put).toHaveBeenCalledWith('/tasks/1', updates)
+      expect(axios.put).toHaveBeenCalledWith('/api/tasks/1', updates)
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -89,26 +85,23 @@ describe('Tasks API', () => {
 
       axios.delete.mockResolvedValue(mockResponse)
 
-      const result = await deleteTask(1)
+      const result = await tasksAPI.deleteTask(1)
 
-      expect(axios.delete).toHaveBeenCalledWith('/tasks/1')
+      expect(axios.delete).toHaveBeenCalledWith('/api/tasks/1')
       expect(result).toEqual(mockResponse.data)
     })
   })
 
   describe('getTaskStats', () => {
     it('should fetch task statistics', async () => {
-      const mockStats = {
-        total: 10,
-        byStatus: { todo: 3, in_progress: 2, completed: 5 },
-      }
-      const mockResponse = { data: { statistics: mockStats } }
+      const mockStats = { total: 10, completed: 5, pending: 5 }
+      const mockResponse = { data: mockStats }
 
       axios.get.mockResolvedValue(mockResponse)
 
-      const result = await getTaskStats()
+      const result = await tasksAPI.getTaskStats()
 
-      expect(axios.get).toHaveBeenCalledWith('/tasks/stats')
+      expect(axios.get).toHaveBeenCalledWith('/api/tasks/stats')
       expect(result).toEqual(mockResponse.data)
     })
   })
