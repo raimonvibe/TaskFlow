@@ -57,12 +57,22 @@ export const secureStorage = {
 export const sanitizeInput = input => {
   if (typeof input !== 'string') return input
 
-  // Remove potentially dangerous characters
-  return input
+  // Remove potentially dangerous characters and patterns
+  let sanitized = input
     .replace(/[<>]/g, '') // Remove < and >
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
     .trim()
+
+  // Remove all occurrences of dangerous protocols (not just first match)
+  while (sanitized.match(/javascript:/gi)) {
+    sanitized = sanitized.replace(/javascript:/gi, '')
+  }
+
+  // Remove all occurrences of event handlers (not just first match)
+  while (sanitized.match(/on\w+=/gi)) {
+    sanitized = sanitized.replace(/on\w+=/gi, '')
+  }
+
+  return sanitized
 }
 
 // Sanitize HTML to prevent XSS
