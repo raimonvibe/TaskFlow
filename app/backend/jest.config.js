@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.js'],
   transform: {},
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
@@ -13,6 +14,7 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  coveragePathIgnorePatterns: ['/node_modules/'],
   verbose: true,
   testTimeout: 10000,
 }
