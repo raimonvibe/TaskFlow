@@ -2,7 +2,15 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { authenticate, generateToken, verifyToken } from './auth.js'
 import jwt from 'jsonwebtoken'
 
-jest.mock('jsonwebtoken')
+jest.mock('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn(),
+    verify: jest.fn(),
+  },
+  sign: jest.fn(),
+  verify: jest.fn(),
+}))
+
 jest.mock('../config/index.js', () => ({
   default: {
     jwtSecret: 'test-secret',
@@ -11,6 +19,10 @@ jest.mock('../config/index.js', () => ({
 }))
 
 describe('Auth Middleware', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('generateToken', () => {
     it('should generate a valid JWT token', () => {
       const payload = { id: 1, email: 'test@example.com' }

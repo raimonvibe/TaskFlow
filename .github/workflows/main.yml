@@ -95,6 +95,18 @@ jobs:
         working-directory: app/${{ matrix.component }}
         run: npm ci
 
+      - name: Run database migrations
+        if: matrix.component == 'backend'
+        working-directory: app/backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: taskflow_test
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+        run: |
+          PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f ../database/schema.sql
+
       - name: Run tests
         working-directory: app/${{ matrix.component }}
         env:
