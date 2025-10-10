@@ -92,14 +92,14 @@ describe('Tasks API', () => {
     })
   })
 
-  describe('getTaskStats', () => {
+  describe('getStatistics', () => {
     it('should fetch task statistics', async () => {
       const mockStats = { total: 10, completed: 5, pending: 5 }
       const mockResponse = { data: mockStats }
 
       axios.get.mockResolvedValue(mockResponse)
 
-      const result = await tasksAPI.getTaskStats()
+      const result = await tasksAPI.getStatistics()
 
       expect(axios.get).toHaveBeenCalledWith('/api/tasks/stats')
       expect(result).toEqual(mockResponse.data)
