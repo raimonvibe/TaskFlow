@@ -99,15 +99,17 @@ describe('Auth Middleware', () => {
 
     it('should return 401 for invalid token', () => {
       mockReq.headers.authorization = 'Bearer invalid-token'
+      const error = new Error('Invalid token')
+      error.name = 'JsonWebTokenError'
       mockVerify.mockImplementation(() => {
-        throw new Error('Invalid token')
+        throw error
       })
 
       authenticate(mockReq, mockRes, mockNext)
 
       expect(mockRes.status).toHaveBeenCalledWith(401)
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid or expired token',
+        message: 'Invalid token',
       })
       expect(mockNext).not.toHaveBeenCalled()
     })
