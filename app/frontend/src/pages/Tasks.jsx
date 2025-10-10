@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Layout from '../components/Layout'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
@@ -12,11 +12,7 @@ const Tasks = () => {
   const [editingTask, setEditingTask] = useState(null)
   const [filters, setFilters] = useState({ status: '', priority: '' })
 
-  useEffect(() => {
-    fetchTasks()
-  }, [filters])
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
       const data = await tasksAPI.getTasks(filters)
@@ -27,7 +23,11 @@ const Tasks = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const handleCreateTask = () => {
     setEditingTask(null)

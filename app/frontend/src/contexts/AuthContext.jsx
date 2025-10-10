@@ -5,6 +5,7 @@ import { secureStorage } from '../utils/security'
 
 const AuthContext = createContext(null)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {

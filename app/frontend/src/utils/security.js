@@ -173,7 +173,7 @@ export const setupCSPReporting = () => {
     })
 
     // In production, send to logging service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       fetch('/api/csp-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
