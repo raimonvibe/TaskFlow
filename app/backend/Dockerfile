@@ -2,7 +2,7 @@
 # Optimized for size and security
 
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:22-alpine3.21 AS deps
 
 WORKDIR /app
 
@@ -13,9 +13,12 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Stage 2: Production
-FROM node:18-alpine AS runner
+FROM node:22-alpine3.21 AS runner
 
 WORKDIR /app
+
+# Update base image packages to fix OpenSSL vulnerabilities
+RUN apk update && apk upgrade --no-cache openssl
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init

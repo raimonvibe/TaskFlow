@@ -2,7 +2,7 @@
 # Optimized for size and security
 
 # Stage 1: Build
-FROM node:18-alpine AS builder
+FROM node:22-alpine3.21 AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,10 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stage 2: Production
-FROM nginx:alpine
+FROM nginx:alpine3.21
+
+# Update base image packages to fix OpenSSL vulnerabilities
+RUN apk update && apk upgrade --no-cache openssl
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf
