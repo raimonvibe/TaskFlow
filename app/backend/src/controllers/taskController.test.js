@@ -27,7 +27,6 @@ jest.mock('../utils/logger.js', () => ({
 }))
 
 import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } from './taskController.js'
-import { Task } from '../models/Task.js'
 
 describe('Task Controller', () => {
   let mockReq, mockRes, mockNext

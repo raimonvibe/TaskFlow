@@ -27,8 +27,6 @@ jest.mock('../utils/logger.js', () => ({
 }))
 
 import { register, login, getCurrentUser } from './authController.js'
-import { User } from '../models/User.js'
-import { generateToken } from '../middleware/auth.js'
 
 describe('Auth Controller', () => {
   let mockReq, mockRes, mockNext
