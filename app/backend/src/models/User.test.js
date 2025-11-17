@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { User } from './User.js'
 import { query } from '../config/database.js'
 import bcrypt from 'bcryptjs'

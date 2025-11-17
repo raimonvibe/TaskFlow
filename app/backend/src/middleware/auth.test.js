@@ -1,9 +1,9 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockSign = jest.fn()
-const mockVerify = jest.fn()
+const mockSign = vi.fn()
+const mockVerify = vi.fn()
 
-jest.mock('jsonwebtoken', () => ({
+vi.mock('jsonwebtoken', () => ({
   default: {
     sign: mockSign,
     verify: mockVerify,
@@ -14,7 +14,7 @@ jest.mock('jsonwebtoken', () => ({
 
 import { authenticate, generateToken, verifyToken } from './auth.js'
 
-jest.mock('../config/index.js', () => ({
+vi.mock('../config/index.js', () => ({
   default: {
     jwtSecret: 'test-secret',
     jwtExpiresIn: '1h',
@@ -23,7 +23,7 @@ jest.mock('../config/index.js', () => ({
 
 describe('Auth Middleware', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('generateToken', () => {
@@ -68,11 +68,11 @@ describe('Auth Middleware', () => {
         headers: {},
       }
       mockRes = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockReturnThis(),
       }
-      mockNext = jest.fn()
-      jest.clearAllMocks()
+      mockNext = vi.fn()
+      vi.clearAllMocks()
     })
 
     it('should authenticate valid token', () => {

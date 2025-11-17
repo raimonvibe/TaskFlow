@@ -80,8 +80,9 @@ The API will be available at `http://localhost:3000`
 
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
-- `npm test` - Run tests with coverage
+- `npm test` - Run tests with coverage (using Vitest)
 - `npm run test:watch` - Run tests in watch mode
+- `npm run test:ui` - Run tests with Vitest UI
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 - `npm run migrate:up` - Run database migrations
@@ -174,15 +175,25 @@ npm run migrate:down
 
 ## Testing
 
-Run tests:
+This project uses **Vitest** for testing with native ES module support.
+
+Run all tests with coverage:
 ```bash
 npm test
 ```
 
-Watch mode:
+Watch mode for development:
 ```bash
 npm run test:watch
 ```
+
+Interactive UI mode:
+```bash
+npm run test:ui
+```
+
+**Note:** Integration tests (User.test.js, Task.test.js) require a PostgreSQL database connection.
+Unit tests (controller tests) use mocks and run without database dependencies.
 
 ## Docker
 

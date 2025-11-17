@@ -1,39 +1,39 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies BEFORE any imports
-jest.mock('../config/index.js', () => ({
+vi.mock('../config/index.js', () => ({
   default: {
     database: {},
     jwt: { secret: 'test-secret', expiresIn: '1h' },
   },
 }))
 
-jest.mock('../config/database.js', () => ({
-  query: jest.fn(),
-  testConnection: jest.fn(),
-  transaction: jest.fn(),
-  getPoolStats: jest.fn(),
+vi.mock('../config/database.js', () => ({
+  query: vi.fn(),
+  testConnection: vi.fn(),
+  transaction: vi.fn(),
+  getPoolStats: vi.fn(),
 }))
 
-jest.mock('../models/User.js', () => ({
+vi.mock('../models/User.js', () => ({
   User: {
-    findByEmail: jest.fn(),
-    create: jest.fn(),
-    findById: jest.fn(),
-    comparePassword: jest.fn(),
+    findByEmail: vi.fn(),
+    create: vi.fn(),
+    findById: vi.fn(),
+    comparePassword: vi.fn(),
   },
 }))
 
-jest.mock('../middleware/auth.js', () => ({
-  generateToken: jest.fn(),
+vi.mock('../middleware/auth.js', () => ({
+  generateToken: vi.fn(),
 }))
 
-jest.mock('../utils/metrics.js', () => ({
-  authAttempts: { inc: jest.fn() },
+vi.mock('../utils/metrics.js', () => ({
+  authAttempts: { inc: vi.fn() },
 }))
 
-jest.mock('../utils/logger.js', () => ({
-  default: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
+vi.mock('../utils/logger.js', () => ({
+  default: { info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
 import { register, login, getCurrentUser } from './authController.js'
@@ -49,13 +49,13 @@ describe('Auth Controller', () => {
       user: {},
     }
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
     }
-    mockNext = jest.fn()
+    mockNext = vi.fn()
 
     // Clear all mocks
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('register', () => {

@@ -1,44 +1,41 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Create mock functions outside factory
-const mockTaskCreate = jest.fn()
-const mockTaskFindByUserId = jest.fn()
-const mockTaskFindByIdAndUserId = jest.fn()
-const mockTaskUpdate = jest.fn()
-const mockTaskDelete = jest.fn()
-const mockTaskGetStatistics = jest.fn()
-
-// Mock dependencies
-jest.mock('../config/index.js', () => ({
+// Mock dependencies BEFORE any imports
+vi.mock('../config/index.js', () => ({
   default: {
     database: {},
     jwt: { secret: 'test-secret', expiresIn: '1h' },
   },
 }))
-jest.mock('../config/database.js', () => ({
-  query: jest.fn(),
-  testConnection: jest.fn(),
-  transaction: jest.fn(),
-  getPoolStats: jest.fn(),
+
+vi.mock('../config/database.js', () => ({
+  query: vi.fn(),
+  testConnection: vi.fn(),
+  transaction: vi.fn(),
+  getPoolStats: vi.fn(),
 }))
-jest.mock('../models/Task.js', () => ({
+
+vi.mock('../models/Task.js', () => ({
   Task: {
-    create: mockTaskCreate,
-    findByUserId: mockTaskFindByUserId,
-    findByIdAndUserId: mockTaskFindByIdAndUserId,
-    update: mockTaskUpdate,
-    delete: mockTaskDelete,
-    getStatistics: mockTaskGetStatistics,
+    create: vi.fn(),
+    findByUserId: vi.fn(),
+    findByIdAndUserId: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    getStatistics: vi.fn(),
   },
 }))
-jest.mock('../utils/metrics.js', () => ({
-  taskOperations: { inc: jest.fn() },
+
+vi.mock('../utils/metrics.js', () => ({
+  taskOperations: { inc: vi.fn() },
 }))
-jest.mock('../utils/logger.js', () => ({
-  default: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
+
+vi.mock('../utils/logger.js', () => ({
+  default: { info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
 import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } from './taskController.js'
+import { Task } from '../models/Task.js'
 
 describe('Task Controller', () => {
   let mockReq, mockRes, mockNext
@@ -51,12 +48,12 @@ describe('Task Controller', () => {
       query: {},
     }
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
     }
-    mockNext = jest.fn()
+    mockNext = vi.fn()
 
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('createTask', () => {
@@ -77,11 +74,11 @@ describe('Task Controller', () => {
         created_at: new Date(),
       }
 
-      mockTaskCreate.mockResolvedValue(mockTask)
+      Task.create.mockResolvedValue(mockTask)
 
       await createTask(mockReq, mockRes, mockNext)
 
-      expect(mockTaskCreate).toHaveBeenCalledWith(1, mockReq.body)
+      expect(Task.create).toHaveBeenCalledWith(1, mockReq.body)
       expect(mockRes.status).toHaveBeenCalledWith(201)
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Task created successfully',
@@ -92,7 +89,7 @@ describe('Task Controller', () => {
     it('should handle errors', async () => {
       mockReq.body = { title: 'New Task' }
       const error = new Error('Database error')
-      mockTaskCreate.mockRejectedValue(error)
+      Task.create.mockRejectedValue(error)
 
       await createTask(mockReq, mockRes, mockNext)
 
@@ -107,21 +104,21 @@ describe('Task Controller', () => {
         { id: 2, title: 'Task 2', status: 'completed' },
       ]
 
-      mockTaskFindByUserId.mockResolvedValue(mockTasks)
+      Task.findByUserId.mockResolvedValue(mockTasks)
 
       await getTasks(mockReq, mockRes, mockNext)
 
-      expect(mockTaskFindByUserId).toHaveBeenCalledWith(1, {})
+      expect(Task.findByUserId).toHaveBeenCalledWith(1, {})
       expect(mockRes.json).toHaveBeenCalledWith({ tasks: mockTasks })
     })
 
     it('should apply filters from query params', async () => {
       mockReq.query = { status: 'todo', priority: 'high' }
-      mockTaskFindByUserId.mockResolvedValue([])
+      Task.findByUserId.mockResolvedValue([])
 
       await getTasks(mockReq, mockRes, mockNext)
 
-      expect(mockTaskFindByUserId).toHaveBeenCalledWith(1, {
+      expect(Task.findByUserId).toHaveBeenCalledWith(1, {
         status: 'todo',
         priority: 'high',
       })
@@ -129,7 +126,7 @@ describe('Task Controller', () => {
 
     it('should handle errors', async () => {
       const error = new Error('Database error')
-      mockTaskFindByUserId.mockRejectedValue(error)
+      Task.findByUserId.mockRejectedValue(error)
 
       await getTasks(mockReq, mockRes, mockNext)
 
@@ -142,17 +139,17 @@ describe('Task Controller', () => {
       mockReq.params = { id: '1' }
       const mockTask = { id: 1, title: 'Task 1', user_id: 1 }
 
-      mockTaskFindByIdAndUserId.mockResolvedValue(mockTask)
+      Task.findByIdAndUserId.mockResolvedValue(mockTask)
 
       await getTask(mockReq, mockRes, mockNext)
 
-      expect(mockTaskFindByIdAndUserId).toHaveBeenCalledWith(1, 1)
+      expect(Task.findByIdAndUserId).toHaveBeenCalledWith(1, 1)
       expect(mockRes.json).toHaveBeenCalledWith({ task: mockTask })
     })
 
     it('should return 404 if task not found', async () => {
       mockReq.params = { id: '999' }
-      mockTaskFindByIdAndUserId.mockResolvedValue(null)
+      Task.findByIdAndUserId.mockResolvedValue(null)
 
       await getTask(mockReq, mockRes, mockNext)
 
@@ -163,7 +160,7 @@ describe('Task Controller', () => {
     it('should handle errors', async () => {
       mockReq.params = { id: '1' }
       const error = new Error('Database error')
-      mockTaskFindByIdAndUserId.mockRejectedValue(error)
+      Task.findByIdAndUserId.mockRejectedValue(error)
 
       await getTask(mockReq, mockRes, mockNext)
 
@@ -183,11 +180,11 @@ describe('Task Controller', () => {
         user_id: 1,
       }
 
-      mockTaskUpdate.mockResolvedValue(mockTask)
+      Task.update.mockResolvedValue(mockTask)
 
       await updateTask(mockReq, mockRes, mockNext)
 
-      expect(mockTaskUpdate).toHaveBeenCalledWith(1, 1, mockReq.body)
+      expect(Task.update).toHaveBeenCalledWith(1, 1, mockReq.body)
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Task updated successfully',
         task: mockTask,
@@ -198,7 +195,7 @@ describe('Task Controller', () => {
       mockReq.params = { id: '999' }
       mockReq.body = { title: 'Updated' }
 
-      mockTaskUpdate.mockResolvedValue(null)
+      Task.update.mockResolvedValue(null)
 
       await updateTask(mockReq, mockRes, mockNext)
 
@@ -210,7 +207,7 @@ describe('Task Controller', () => {
       mockReq.params = { id: '1' }
       mockReq.body = { title: 'Updated' }
       const error = new Error('Database error')
-      mockTaskUpdate.mockRejectedValue(error)
+      Task.update.mockRejectedValue(error)
 
       await updateTask(mockReq, mockRes, mockNext)
 
@@ -221,17 +218,17 @@ describe('Task Controller', () => {
   describe('deleteTask', () => {
     it('should delete a task successfully', async () => {
       mockReq.params = { id: '1' }
-      mockTaskDelete.mockResolvedValue({ id: 1 })
+      Task.delete.mockResolvedValue({ id: 1 })
 
       await deleteTask(mockReq, mockRes, mockNext)
 
-      expect(mockTaskDelete).toHaveBeenCalledWith(1, 1)
+      expect(Task.delete).toHaveBeenCalledWith(1, 1)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Task deleted successfully' })
     })
 
     it('should return 404 if task not found', async () => {
       mockReq.params = { id: '999' }
-      mockTaskDelete.mockResolvedValue(null)
+      Task.delete.mockResolvedValue(null)
 
       await deleteTask(mockReq, mockRes, mockNext)
 
@@ -242,7 +239,7 @@ describe('Task Controller', () => {
     it('should handle errors', async () => {
       mockReq.params = { id: '1' }
       const error = new Error('Database error')
-      mockTaskDelete.mockRejectedValue(error)
+      Task.delete.mockRejectedValue(error)
 
       await deleteTask(mockReq, mockRes, mockNext)
 
@@ -258,17 +255,17 @@ describe('Task Controller', () => {
         byPriority: { low: 2, medium: 5, high: 3 },
       }
 
-      mockTaskGetStatistics.mockResolvedValue(mockStats)
+      Task.getStatistics.mockResolvedValue(mockStats)
 
       await getStatistics(mockReq, mockRes, mockNext)
 
-      expect(mockTaskGetStatistics).toHaveBeenCalledWith(1)
+      expect(Task.getStatistics).toHaveBeenCalledWith(1)
       expect(mockRes.json).toHaveBeenCalledWith({ statistics: mockStats })
     })
 
     it('should handle errors', async () => {
       const error = new Error('Database error')
-      mockTaskGetStatistics.mockRejectedValue(error)
+      Task.getStatistics.mockRejectedValue(error)
 
       await getStatistics(mockReq, mockRes, mockNext)
 
