@@ -17,8 +17,8 @@ FROM node:22-alpine3.21 AS runner
 
 WORKDIR /app
 
-# Update base image packages to fix OpenSSL vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl
+# Update base image packages to fix OpenSSL and libxml2 vulnerabilities
+RUN apk update && apk upgrade --no-cache openssl libxml2
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init

@@ -23,8 +23,8 @@ RUN npm run build
 # Stage 2: Production
 FROM nginx:alpine3.21
 
-# Update base image packages to fix OpenSSL vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl
+# Update base image packages to fix OpenSSL and libxml2 vulnerabilities
+RUN apk update && apk upgrade --no-cache openssl libxml2
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf
