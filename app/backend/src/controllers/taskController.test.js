@@ -9,6 +9,18 @@ const mockTaskDelete = jest.fn()
 const mockTaskGetStatistics = jest.fn()
 
 // Mock dependencies
+jest.mock('../config/index.js', () => ({
+  default: {
+    database: {},
+    jwt: { secret: 'test-secret', expiresIn: '1h' },
+  },
+}))
+jest.mock('../config/database.js', () => ({
+  query: jest.fn(),
+  testConnection: jest.fn(),
+  transaction: jest.fn(),
+  getPoolStats: jest.fn(),
+}))
 jest.mock('../models/Task.js', () => ({
   Task: {
     create: mockTaskCreate,
@@ -23,7 +35,7 @@ jest.mock('../utils/metrics.js', () => ({
   taskOperations: { inc: jest.fn() },
 }))
 jest.mock('../utils/logger.js', () => ({
-  default: { info: jest.fn(), error: jest.fn() },
+  default: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }))
 
 import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } from './taskController.js'

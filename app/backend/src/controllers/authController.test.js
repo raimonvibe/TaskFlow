@@ -1,32 +1,44 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 
-// Create mock functions outside factory
-const mockUserFindByEmail = jest.fn()
-const mockUserCreate = jest.fn()
-const mockUserFindById = jest.fn()
-const mockUserComparePassword = jest.fn()
-const mockGenerateToken = jest.fn()
-
-// Mock dependencies
-jest.mock('../models/User.js', () => ({
-  User: {
-    findByEmail: mockUserFindByEmail,
-    create: mockUserCreate,
-    findById: mockUserFindById,
-    comparePassword: mockUserComparePassword,
+// Mock dependencies BEFORE any imports
+jest.mock('../config/index.js', () => ({
+  default: {
+    database: {},
+    jwt: { secret: 'test-secret', expiresIn: '1h' },
   },
 }))
-jest.mock('../middleware/auth.js', () => ({
-  generateToken: mockGenerateToken,
+
+jest.mock('../config/database.js', () => ({
+  query: jest.fn(),
+  testConnection: jest.fn(),
+  transaction: jest.fn(),
+  getPoolStats: jest.fn(),
 }))
+
+jest.mock('../models/User.js', () => ({
+  User: {
+    findByEmail: jest.fn(),
+    create: jest.fn(),
+    findById: jest.fn(),
+    comparePassword: jest.fn(),
+  },
+}))
+
+jest.mock('../middleware/auth.js', () => ({
+  generateToken: jest.fn(),
+}))
+
 jest.mock('../utils/metrics.js', () => ({
   authAttempts: { inc: jest.fn() },
 }))
+
 jest.mock('../utils/logger.js', () => ({
-  default: { info: jest.fn(), error: jest.fn() },
+  default: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }))
 
 import { register, login, getCurrentUser } from './authController.js'
+import { User } from '../models/User.js'
+import { generateToken } from '../middleware/auth.js'
 
 describe('Auth Controller', () => {
   let mockReq, mockRes, mockNext
@@ -61,14 +73,14 @@ describe('Auth Controller', () => {
         created_at: new Date(),
       }
 
-      mockUserFindByEmail.mockResolvedValue(null)
-      mockUserCreate.mockResolvedValue(mockUser)
-      mockGenerateToken.mockReturnValue('mock-jwt-token')
+      User.findByEmail.mockResolvedValue(null)
+      User.create.mockResolvedValue(mockUser)
+      generateToken.mockReturnValue('mock-jwt-token')
 
       await register(mockReq, mockRes, mockNext)
 
-      expect(mockUserFindByEmail).toHaveBeenCalledWith('test@example.com')
-      expect(mockUserCreate).toHaveBeenCalledWith('Test User', 'test@example.com', 'password123')
+      expect(User.findByEmail).toHaveBeenCalledWith('test@example.com')
+      expect(User.create).toHaveBeenCalledWith('Test User', 'test@example.com', 'password123')
       expect(mockRes.status).toHaveBeenCalledWith(201)
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'User created successfully',
@@ -89,13 +101,13 @@ describe('Auth Controller', () => {
         password: 'password123',
       }
 
-      mockUserFindByEmail.mockResolvedValue({ id: 1, email: 'existing@example.com' })
+      User.findByEmail.mockResolvedValue({ id: 1, email: 'existing@example.com' })
 
       await register(mockReq, mockRes, mockNext)
 
       expect(mockRes.status).toHaveBeenCalledWith(409)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'User already exists' })
-      expect(mockUserCreate).not.toHaveBeenCalled()
+      expect(User.create).not.toHaveBeenCalled()
     })
 
     it('should handle errors and call next', async () => {
@@ -106,7 +118,7 @@ describe('Auth Controller', () => {
       }
 
       const error = new Error('Database error')
-      mockUserFindByEmail.mockRejectedValue(error)
+      User.findByEmail.mockRejectedValue(error)
 
       await register(mockReq, mockRes, mockNext)
 
@@ -128,14 +140,14 @@ describe('Auth Controller', () => {
         password: 'hashed-password',
       }
 
-      mockUserFindByEmail.mockResolvedValue(mockUser)
-      mockUserComparePassword.mockResolvedValue(true)
-      mockGenerateToken.mockReturnValue('mock-jwt-token')
+      User.findByEmail.mockResolvedValue(mockUser)
+      User.comparePassword.mockResolvedValue(true)
+      generateToken.mockReturnValue('mock-jwt-token')
 
       await login(mockReq, mockRes, mockNext)
 
-      expect(mockUserFindByEmail).toHaveBeenCalledWith('test@example.com')
-      expect(mockUserComparePassword).toHaveBeenCalledWith('password123', 'hashed-password')
+      expect(User.findByEmail).toHaveBeenCalledWith('test@example.com')
+      expect(User.comparePassword).toHaveBeenCalledWith('password123', 'hashed-password')
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Login successful',
         token: 'mock-jwt-token',
@@ -153,13 +165,13 @@ describe('Auth Controller', () => {
         password: 'password123',
       }
 
-      mockUserFindByEmail.mockResolvedValue(null)
+      User.findByEmail.mockResolvedValue(null)
 
       await login(mockReq, mockRes, mockNext)
 
       expect(mockRes.status).toHaveBeenCalledWith(401)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid credentials' })
-      expect(mockUserComparePassword).not.toHaveBeenCalled()
+      expect(User.comparePassword).not.toHaveBeenCalled()
     })
 
     it('should return 401 if password is invalid', async () => {
@@ -174,14 +186,14 @@ describe('Auth Controller', () => {
         password: 'hashed-password',
       }
 
-      mockUserFindByEmail.mockResolvedValue(mockUser)
-      mockUserComparePassword.mockResolvedValue(false)
+      User.findByEmail.mockResolvedValue(mockUser)
+      User.comparePassword.mockResolvedValue(false)
 
       await login(mockReq, mockRes, mockNext)
 
       expect(mockRes.status).toHaveBeenCalledWith(401)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid credentials' })
-      expect(mockGenerateToken).not.toHaveBeenCalled()
+      expect(generateToken).not.toHaveBeenCalled()
     })
 
     it('should handle errors and call next', async () => {
@@ -191,7 +203,7 @@ describe('Auth Controller', () => {
       }
 
       const error = new Error('Database error')
-      mockUserFindByEmail.mockRejectedValue(error)
+      User.findByEmail.mockRejectedValue(error)
 
       await login(mockReq, mockRes, mockNext)
 
@@ -210,18 +222,18 @@ describe('Auth Controller', () => {
         created_at: new Date(),
       }
 
-      mockUserFindById.mockResolvedValue(mockUser)
+      User.findById.mockResolvedValue(mockUser)
 
       await getCurrentUser(mockReq, mockRes, mockNext)
 
-      expect(mockUserFindById).toHaveBeenCalledWith(1)
+      expect(User.findById).toHaveBeenCalledWith(1)
       expect(mockRes.json).toHaveBeenCalledWith({ user: mockUser })
     })
 
     it('should return 404 if user not found', async () => {
       mockReq.user = { id: 999 }
 
-      mockUserFindById.mockResolvedValue(null)
+      User.findById.mockResolvedValue(null)
 
       await getCurrentUser(mockReq, mockRes, mockNext)
 
@@ -233,7 +245,7 @@ describe('Auth Controller', () => {
       mockReq.user = { id: 1 }
 
       const error = new Error('Database error')
-      mockUserFindById.mockRejectedValue(error)
+      User.findById.mockRejectedValue(error)
 
       await getCurrentUser(mockReq, mockRes, mockNext)
 
