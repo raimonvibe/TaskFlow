@@ -1,0 +1,32 @@
+---
+# Default variables for k3s-worker role
+
+# K3s version (should match master)
+k3s_version: "v1.28.4+k3s1"
+
+# K3s installation script
+k3s_install_script_url: "https://get.k3s.io"
+
+# K3s server URL (master node)
+k3s_server_url: "https://{{ hostvars[groups['k3s_master'][0]]['ansible_default_ipv4']['address'] }}:6443"
+
+# Cluster token (must match master)
+k3s_token: "{{ lookup('env', 'K3S_TOKEN') | default('changeme-insecure-token', true) }}"
+
+# Node labels
+k3s_node_labels:
+  - "node-role.kubernetes.io/worker=true"
+
+# Node taints
+k3s_node_taints: []
+
+# Data directory
+k3s_data_dir: "/var/lib/rancher/k3s"
+
+# Systemd service configuration
+k3s_agent_service_enabled: true
+k3s_agent_service_state: started
+
+# Kubelet configuration
+k3s_kubelet_args:
+  - "max-pods=110"

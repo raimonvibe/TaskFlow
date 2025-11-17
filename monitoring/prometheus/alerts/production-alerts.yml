@@ -1,0 +1,448 @@
+# Production-Ready Alert Rules for TaskFlow
+# Enhanced alerts for production environments
+
+groups:
+  # Critical Production Alerts
+  - name: production_critical
+    interval: 30s
+    rules:
+      - alert: ProductionServiceDown
+        expr: up{environment="production"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          priority: P1
+          category: availability
+          oncall: "true"
+        annotations:
+          summary: "🚨 CRITICAL: Production service {{ $labels.job }} is DOWN"
+          description: |
+            Service: {{ $labels.job }}
+            Instance: {{ $labels.instance }}
+            Environment: {{ $labels.environment }}
+            Duration: {{ $value }}
+            Action: Immediate investigation required
+          runbook_url: "https://docs.taskflow.com/runbooks/service-down"
+
+      - alert: HighCriticalErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5..", environment="production"}[5m])) by (job)
+            /
+            sum(rate(http_requests_total{environment="production"}[5m])) by (job)
+          ) > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          priority: P1
+          category: errors
+          oncall: "true"
+        annotations:
+          summary: "🚨 CRITICAL: High error rate {{ $value | humanizePercentage }} on {{ $labels.job }}"
+          description: |
+            Error rate has exceeded 10% threshold
+            Current rate: {{ $value | humanizePercentage }}
+            Service: {{ $labels.job }}
+            Action: Check logs and application health immediately
+
+      - alert: DataLossDetected
+        expr: increase(database_rows_deleted_total{table=~"users|tasks"}[5m]) > 1000
+        for: 1m
+        labels:
+          severity: critical
+          priority: P0
+          category: data_integrity
+          oncall: "true"
+        annotations:
+          summary: "🚨 CRITICAL: Potential data loss detected"
+          description: |
+            Unusual number of deletions detected
+            Table: {{ $labels.table }}
+            Deletions: {{ $value }}
+            Action: Stop writes and investigate immediately
+          runbook_url: "https://docs.taskflow.com/runbooks/data-loss"
+
+  # Performance Degradation
+  - name: production_performance
+    interval: 30s
+    rules:
+      - alert: SeverePerformanceDegradation
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{environment="production"}[5m])) by (le, job)
+          ) > 2
+        for: 5m
+        labels:
+          severity: critical
+          priority: P2
+          category: performance
+        annotations:
+          summary: "⚠️ Severe performance degradation on {{ $labels.job }}"
+          description: |
+            P95 response time: {{ $value }}s
+            Threshold: 2s
+            Service: {{ $labels.job }}
+            Action: Check resource usage and scaling
+
+      - alert: ResponseTimeIncreasing
+        expr: |
+          (
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{environment="production"}[5m])) by (le, job)
+            )
+            /
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{environment="production"}[1h])) by (le, job)
+            )
+          ) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          priority: P3
+          category: performance
+        annotations:
+          summary: "📈 Response time increasing on {{ $labels.job }}"
+          description: |
+            Response time is 50% higher than 1-hour average
+            Current P95: {{ $value }}s
+            Possible memory leak or resource exhaustion
+
+      - alert: DatabaseQueryPerformanceDegraded
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(database_query_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: database
+        annotations:
+          summary: "🗄️ Database query performance degraded"
+          description: |
+            P95 query time: {{ $value }}s
+            Threshold: 0.5s
+            Action: Check slow query logs and indexes
+
+  # Resource Exhaustion
+  - name: production_resources
+    interval: 30s
+    rules:
+      - alert: CriticalMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{environment="production"}
+            /
+            (node_memory_MemTotal_bytes or process_virtual_memory_max_bytes)
+          ) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          priority: P2
+          category: resources
+          oncall: "true"
+        annotations:
+          summary: "🔴 Critical memory usage on {{ $labels.job }}"
+          description: |
+            Memory usage: {{ $value | humanizePercentage }}
+            Service: {{ $labels.job }}
+            Instance: {{ $labels.instance }}
+            Action: Consider immediate restart or scaling
+
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/", environment="production"}
+            /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.05
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          category: resources
+          oncall: "true"
+        annotations:
+          summary: "🔴 CRITICAL: Disk space below 5% on {{ $labels.instance }}"
+          description: |
+            Available space: {{ $value | humanizePercentage }}
+            Action: Clean up logs or expand storage immediately
+
+      - alert: FileDescriptorsHigh
+        expr: |
+          process_open_fds{environment="production"}
+          /
+          process_max_fds
+          > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: resources
+        annotations:
+          summary: "📁 High file descriptor usage on {{ $labels.job }}"
+          description: |
+            Usage: {{ $value | humanizePercentage }}
+            Service: {{ $labels.job }}
+            Action: Check for file descriptor leaks
+
+  # Database Health
+  - name: production_database
+    interval: 30s
+    rules:
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          sum(database_connections{state="active", environment="production"}) by (instance)
+          /
+          sum(database_connections{state="total"}) by (instance)
+          > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          priority: P2
+          category: database
+          oncall: "true"
+        annotations:
+          summary: "🗄️ Database connection pool nearly exhausted"
+          description: |
+            Usage: {{ $value | humanizePercentage }}
+            Instance: {{ $labels.instance }}
+            Action: Check for connection leaks or scale pool
+
+      - alert: DatabaseReplicationLag
+        expr: pg_replication_lag_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: database
+        annotations:
+          summary: "🔄 Database replication lag detected"
+          description: |
+            Replication lag: {{ $value }}s
+            Action: Check replica health and network
+
+      - alert: DatabaseDeadlocks
+        expr: rate(postgres_deadlocks_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: database
+        annotations:
+          summary: "🔒 Database deadlocks detected"
+          description: |
+            Deadlock rate: {{ $value }}/s
+            Action: Review transaction patterns
+
+  # Security Alerts
+  - name: production_security
+    interval: 30s
+    rules:
+      - alert: SuspiciousAuthenticationActivity
+        expr: |
+          rate(auth_attempts_total{status="failure", environment="production"}[5m]) > 10
+        for: 3m
+        labels:
+          severity: critical
+          priority: P2
+          category: security
+          oncall: "true"
+        annotations:
+          summary: "🛡️ Suspicious authentication activity detected"
+          description: |
+            Failed auth rate: {{ $value }}/s
+            Possible brute force attack
+            Action: Review logs and consider IP blocking
+
+      - alert: RateLimitExceeded
+        expr: rate(rate_limit_exceeded_total{environment="production"}[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: security
+        annotations:
+          summary: "⚠️ High rate limit exceeded events"
+          description: |
+            Rate limit violations: {{ $value }}/s
+            Action: Review client behavior
+
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status_code="403", environment="production"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: security
+        annotations:
+          summary: "🚫 High number of unauthorized access attempts"
+          description: |
+            403 rate: {{ $value }}/s
+            Action: Check for security scan or misconfiguration
+
+  # Business Metrics
+  - name: production_business
+    interval: 1m
+    rules:
+      - alert: TaskCreationStopped
+        expr: rate(tasks_created_total{environment="production"}[10m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+          priority: P3
+          category: business
+        annotations:
+          summary: "📊 Task creation has stopped"
+          description: |
+            No tasks created in last 15 minutes
+            Action: Check application health and user activity
+
+      - alert: UnusualUserActivity
+        expr: |
+          abs(
+            rate(user_logins_total{environment="production"}[5m])
+            -
+            avg_over_time(rate(user_logins_total{environment="production"}[5m])[1h:5m])
+          ) >
+          3 * stddev_over_time(rate(user_logins_total{environment="production"}[5m])[1h:5m])
+        for: 10m
+        labels:
+          severity: info
+          priority: P4
+          category: business
+        annotations:
+          summary: "📈 Unusual user activity pattern detected"
+          description: |
+            Login rate deviates significantly from normal
+            Action: Monitor for anomalies
+
+  # Backup and Recovery
+  - name: production_backup
+    interval: 5m
+    rules:
+      - alert: BackupFailed
+        expr: time() - backup_last_success_timestamp_seconds > 86400
+        for: 30m
+        labels:
+          severity: critical
+          priority: P2
+          category: backup
+          oncall: "true"
+        annotations:
+          summary: "💾 Database backup failed or missing"
+          description: |
+            Last successful backup: {{ $value | humanizeDuration }} ago
+            Action: Check backup system immediately
+
+      - alert: BackupSizeAnomalous
+        expr: |
+          abs(
+            backup_size_bytes
+            -
+            avg_over_time(backup_size_bytes[7d])
+          ) / avg_over_time(backup_size_bytes[7d]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: backup
+        annotations:
+          summary: "💾 Backup size significantly different from normal"
+          description: |
+            Current backup: {{ $value | humanize1024 }}B
+            7-day average: {{ avg_over_time(backup_size_bytes[7d]) | humanize1024 }}B
+            Action: Verify backup integrity
+
+  # Certificate Management
+  - name: production_certificates
+    interval: 1h
+    rules:
+      - alert: SSLCertificateExpiring
+        expr: probe_ssl_earliest_cert_expiry{environment="production"} - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+          priority: P3
+          category: security
+        annotations:
+          summary: "🔒 SSL certificate expiring soon"
+          description: |
+            Certificate for {{ $labels.instance }}
+            Expires in: {{ $value | humanizeDuration }}
+            Action: Renew certificate
+
+      - alert: SSLCertificateExpiringCritical
+        expr: probe_ssl_earliest_cert_expiry{environment="production"} - time() < 86400 * 7
+        for: 1h
+        labels:
+          severity: critical
+          priority: P2
+          category: security
+          oncall: "true"
+        annotations:
+          summary: "🔒 CRITICAL: SSL certificate expiring in less than 7 days"
+          description: |
+            Certificate for {{ $labels.instance }}
+            Expires in: {{ $value | humanizeDuration }}
+            Action: Renew certificate immediately
+
+  # Kubernetes Production Alerts
+  - name: production_kubernetes
+    interval: 30s
+    rules:
+      - alert: PodCrashLoopingProduction
+        expr: |
+          rate(kube_pod_container_status_restarts_total{
+            namespace="taskflow",
+            environment="production"
+          }[15m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          priority: P2
+          category: kubernetes
+          oncall: "true"
+        annotations:
+          summary: "🔄 Pod {{ $labels.pod }} crash looping in production"
+          description: |
+            Pod: {{ $labels.pod }}
+            Namespace: {{ $labels.namespace }}
+            Restarts: {{ $value }}
+            Action: Check pod logs and events
+
+      - alert: HPAScalingIssue
+        expr: |
+          kube_horizontalpodautoscaler_status_current_replicas
+          ==
+          kube_horizontalpodautoscaler_spec_max_replicas
+        for: 15m
+        labels:
+          severity: warning
+          priority: P3
+          category: kubernetes
+        annotations:
+          summary: "📊 HPA at maximum replicas"
+          description: |
+            HPA: {{ $labels.horizontalpodautoscaler }}
+            Current replicas: {{ $value }}
+            Action: Consider increasing max replicas or optimizing performance
+
+      - alert: PersistentVolumeSpaceLow
+        expr: |
+          (
+            kubelet_volume_stats_available_bytes{namespace="taskflow"}
+            /
+            kubelet_volume_stats_capacity_bytes
+          ) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          category: kubernetes
+        annotations:
+          summary: "💾 Persistent volume space low"
+          description: |
+            PVC: {{ $labels.persistentvolumeclaim }}
+            Available: {{ $value | humanizePercentage }}
+            Action: Consider expanding volume or cleanup

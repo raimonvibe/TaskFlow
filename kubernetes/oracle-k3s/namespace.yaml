@@ -1,0 +1,19 @@
+# TaskFlow - Oracle Cloud K3s Namespace
+# Namespace for TaskFlow application on Oracle Cloud
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskflow
+  labels:
+    name: taskflow
+    environment: production
+    managed-by: terraform
+    cost-center: learning
+  annotations:
+    description: "TaskFlow DevOps Learning Application"
+    contact: "devops@taskflow.com"
+    cost-optimization: "enabled"
+    monitoring: "enabled"
+    backup: "enabled"
+    security: "hardened"

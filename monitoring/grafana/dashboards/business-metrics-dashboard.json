@@ -1,0 +1,61 @@
+{
+  "dashboard": {
+    "title": "TaskFlow - Business Metrics",
+    "tags": ["taskflow", "business"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Tasks by Status",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "tasks_by_status",
+            "legendFormat": "{{status}}"
+          }
+        ]
+      },
+      {
+        "title": "Task Creation Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(tasks_created_total[5m]) * 60",
+            "legendFormat": "Tasks/min"
+          }
+        ]
+      },
+      {
+        "title": "Authentication Success Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(auth_attempts_total{status=\"success\"}[5m])) / sum(rate(auth_attempts_total[5m]))",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "max": 1}
+        ]
+      },
+      {
+        "title": "Active Users",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "count(active_connections > 0)",
+            "legendFormat": "Active Users"
+          }
+        ]
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  }
+}

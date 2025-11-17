@@ -1,0 +1,66 @@
+# TaskFlow - Backup Playbook
+# Creates backups of application data and configuration
+
+- name: Create backups
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Create backup directory
+      file:
+        path: /var/backups/taskflow
+        state: directory
+        mode: '0755'
+
+    - name: Backup database
+      kubernetes.core.k8s_exec:
+        namespace: taskflow
+        pod: postgres-0
+        command: pg_dump -U taskflow_user taskflow
+      register: db_backup
+      when: postgres_pod is defined
+
+    - name: Save database backup
+      copy:
+        content: "{{ db_backup.stdout }}"
+        dest: "/var/backups/taskflow/database_{{ ansible_date_time.iso8601 }}.sql"
+        mode: '0600'
+
+    - name: Backup Kubernetes resources
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: taskflow
+      register: namespace_info
+
+    - name: Save namespace backup
+      copy:
+        content: "{{ namespace_info.resources[0] | to_nice_yaml }}"
+        dest: "/var/backups/taskflow/namespace_{{ ansible_date_time.iso8601 }}.yaml"
+        mode: '0600'
+
+    - name: Backup all resources
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: taskflow
+      register: pods_info
+
+    - name: Save pods backup
+      copy:
+        content: "{{ pods_info.resources | to_nice_yaml }}"
+        dest: "/var/backups/taskflow/pods_{{ ansible_date_time.iso8601 }}.yaml"
+        mode: '0600'
+
+    - name: Cleanup old backups
+      find:
+        paths: /var/backups/taskflow
+        age: 7d
+        state: file
+      register: old_backups
+
+    - name: Remove old backups
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_backups.files }}"
+      when: old_backups.files is defined
