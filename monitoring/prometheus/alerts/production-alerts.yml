@@ -350,8 +350,7 @@ groups:
         annotations:
           summary: "💾 Backup size significantly different from normal"
           description: |
-            Current backup: {{ $value | humanize1024 }}B
-            7-day average: {{ avg_over_time(backup_size_bytes[7d]) | humanize1024 }}B
+            Backup size deviation: {{ $value | humanizePercentage }}
             Action: Verify backup integrity
 
   # Certificate Management

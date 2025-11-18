@@ -24,7 +24,7 @@ RUN npm run build
 FROM nginx:alpine3.21
 
 # Update base image packages to fix security vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat libtiff
+RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf
