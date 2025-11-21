@@ -474,11 +474,6 @@ TaskFlow has been transformed from a functional application to an **enterprise-g
 
 ---
 
-## 📞 Security Contact
-
-- **Security Team:** security@taskflow.com
-- **Emergency:** Defined in docs/SECURITY.md
-- **Issues:** GitHub Security Advisories
 
 ---
 
