@@ -1,0 +1,54 @@
+# TaskFlow - Scale Down Playbook
+# Scales down the application by reducing replicas
+
+- name: Scale down TaskFlow application
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Scale down backend
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: backend
+        namespace: taskflow
+        state: present
+        definition:
+          spec:
+            replicas: "{{ backend_replicas | default(1) }}"
+
+    - name: Scale down frontend
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: frontend
+        namespace: taskflow
+        state: present
+        definition:
+          spec:
+            replicas: "{{ frontend_replicas | default(1) }}"
+
+    - name: Wait for scaling
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: taskflow
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+      loop:
+        - backend
+        - frontend
+
+    - name: Display scaling status
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: taskflow
+      register: deployments
+
+    - name: Show deployments
+      debug:
+        msg: "{{ deployments.resources }}"

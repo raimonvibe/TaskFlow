@@ -1,0 +1,117 @@
+# TaskFlow - K3s Master Role Tasks
+# K3s master node installation and configuration
+
+- name: Install K3s master
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - server \
+      --token={{ k3s_token }} \
+      --cluster-init \
+      --disable traefik \
+      --disable servicelb \
+      --kube-apiserver-arg="enable-admission-plugins=NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook" \
+      --kube-controller-manager-arg="bind-address=0.0.0.0" \
+      --kube-scheduler-arg="bind-address=0.0.0.0" \
+      --kubelet-arg="node-ip=$(hostname -I | awk '{print $1}')"
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Start and enable K3s
+  systemd:
+    name: k3s
+    enabled: yes
+    state: started
+
+- name: Wait for K3s to be ready
+  wait_for:
+    port: 6443
+    host: "{{ ansible_default_ipv4.address }}"
+    delay: 10
+    timeout: 300
+
+- name: Install kubectl
+  get_url:
+    url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+
+- name: Install Helm
+  shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Create kubeconfig for user
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /home/{{ ansible_user }}/.kube/config
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Create taskflow namespace
+  kubernetes.core.k8s:
+    name: taskflow
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install metrics server
+  kubernetes.core.helm:
+    name: metrics-server
+    chart_ref: metrics-server/metrics-server
+    release_namespace: kube-system
+    create_namespace: yes
+    values:
+      args:
+        - --kubelet-insecure-tls
+        - --kubelet-preferred-address-types=InternalIP
+
+- name: Create storage class
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: local-storage
+      provisioner: kubernetes.io/no-provisioner
+      volumeBindingMode: WaitForFirstConsumer
+
+- name: Get join token
+  shell: cat /var/lib/rancher/k3s/server/node-token
+  register: k3s_join_token
+  changed_when: false
+
+- name: Display join token
+  debug:
+    msg: "K3s join token: {{ k3s_join_token.stdout }}"
+
+- name: Create join token file
+  copy:
+    content: "{{ k3s_join_token.stdout }}"
+    dest: /home/{{ ansible_user }}/join-token.txt
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Configure K3s log rotation
+  copy:
+    content: |
+      /var/log/k3s.log {
+        daily
+        rotate 7
+        compress
+        delaycompress
+        missingok
+        notifempty
+      }
+    dest: /etc/logrotate.d/k3s
+    mode: '0644'
+
+- name: Verify K3s installation
+  command: kubectl get nodes
+  register: k3s_nodes
+  changed_when: false
+
+- name: Display K3s nodes
+  debug:
+    msg: "{{ k3s_nodes.stdout_lines }}"

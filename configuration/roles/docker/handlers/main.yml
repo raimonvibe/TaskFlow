@@ -1,0 +1,12 @@
+# TaskFlow - Docker Role Handlers
+# Handlers for Docker role tasks
+
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+
+- name: reload docker
+  systemd:
+    name: docker
+    state: reloaded

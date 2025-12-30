@@ -1,0 +1,60 @@
+---
+# Default variables for security role
+
+# Fail2ban configuration
+security_fail2ban_enabled: true
+security_fail2ban_bantime: "1h"
+security_fail2ban_findtime: "10m"
+security_fail2ban_maxretry: 5
+
+# UFW firewall
+security_ufw_enabled: true
+security_ufw_default_incoming: "deny"
+security_ufw_default_outgoing: "allow"
+security_ufw_allowed_ports:
+  - "22/tcp"   # SSH
+  - "80/tcp"   # HTTP
+  - "443/tcp"  # HTTPS
+  - "6443/tcp" # K8s API (if master)
+
+# SSL/TLS certificates
+security_ssl_enabled: true
+security_ssl_provider: "letsencrypt"  # or "selfsigned"
+security_ssl_email: "admin@example.com"
+security_ssl_domains:
+  - "taskflow.example.com"
+
+# Automatic security updates
+security_auto_updates: true
+security_unattended_upgrades_enabled: true
+
+# System hardening
+security_kernel_hardening: true
+security_sysctl_config:
+  net.ipv4.ip_forward: 1
+  net.ipv4.conf.all.forwarding: 1
+  net.ipv6.conf.all.forwarding: 1
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+  vm.swappiness: 10
+  fs.file-max: 2097152
+  fs.inotify.max_user_watches: 524288
+
+# SELinux/AppArmor
+security_selinux_state: "permissive"  # enforcing, permissive, disabled
+security_apparmor_enabled: true
+
+# Audit logging
+security_auditd_enabled: true
+
+# SSH key management
+security_ssh_key_rotation_days: 90
+
+# Password policy
+security_password_min_length: 12
+security_password_require_complexity: true
+security_password_max_age_days: 90
+
+# Backup security
+security_backup_encryption_enabled: true
+security_backup_retention_days: 30

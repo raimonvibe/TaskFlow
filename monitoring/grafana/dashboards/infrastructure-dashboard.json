@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "title": "TaskFlow - Infrastructure Metrics",
+    "tags": ["taskflow", "infrastructure"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[5m])",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "max": 1}
+        ]
+      },
+      {
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes / 1024 / 1024",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "mbytes"}
+        ]
+      },
+      {
+        "title": "Database Connections",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "database_connections{state=\"total\"}",
+            "legendFormat": "Total"
+          },
+          {
+            "expr": "database_connections{state=\"active\"}",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "database_connections{state=\"idle\"}",
+            "legendFormat": "Idle"
+          }
+        ]
+      },
+      {
+        "title": "System Load",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "node_load1",
+            "legendFormat": "1m"
+          },
+          {
+            "expr": "node_load5",
+            "legendFormat": "5m"
+          },
+          {
+            "expr": "node_load15",
+            "legendFormat": "15m"
+          }
+        ]
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

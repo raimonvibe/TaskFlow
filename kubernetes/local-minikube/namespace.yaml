@@ -1,0 +1,8 @@
+# Namespace for TaskFlow application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskflow
+  labels:
+    name: taskflow
+    environment: development
