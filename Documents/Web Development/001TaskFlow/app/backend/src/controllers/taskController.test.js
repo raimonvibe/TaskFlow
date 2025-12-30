@@ -27,7 +27,7 @@ vi.mock('../models/Task.js', () => ({
 }))
 
 vi.mock('../utils/metrics.js', () => ({
-  taskOperations: { inc: vi.fn() },
+  tasksByStatus: { inc: vi.fn(), dec: vi.fn() },
 }))
 
 vi.mock('../utils/logger.js', () => ({
@@ -109,7 +109,7 @@ describe('Task Controller', () => {
       await getTasks(mockReq, mockRes, mockNext)
 
       expect(Task.findByUserId).toHaveBeenCalledWith(1, {})
-      expect(mockRes.json).toHaveBeenCalledWith({ tasks: mockTasks })
+      expect(mockRes.json).toHaveBeenCalledWith({ tasks: mockTasks, count: 2 })
     })
 
     it('should apply filters from query params', async () => {
@@ -143,7 +143,7 @@ describe('Task Controller', () => {
 
       await getTask(mockReq, mockRes, mockNext)
 
-      expect(Task.findByIdAndUserId).toHaveBeenCalledWith(1, 1)
+      expect(Task.findByIdAndUserId).toHaveBeenCalledWith('1', 1)
       expect(mockRes.json).toHaveBeenCalledWith({ task: mockTask })
     })
 
@@ -173,6 +173,13 @@ describe('Task Controller', () => {
       mockReq.params = { id: '1' }
       mockReq.body = { title: 'Updated Task', status: 'completed' }
 
+      const oldTask = {
+        id: 1,
+        title: 'Old Task',
+        status: 'todo',
+        user_id: 1,
+      }
+
       const mockTask = {
         id: 1,
         title: 'Updated Task',
@@ -180,11 +187,13 @@ describe('Task Controller', () => {
         user_id: 1,
       }
 
+      Task.findByIdAndUserId.mockResolvedValue(oldTask)
       Task.update.mockResolvedValue(mockTask)
 
       await updateTask(mockReq, mockRes, mockNext)
 
-      expect(Task.update).toHaveBeenCalledWith(1, 1, mockReq.body)
+      expect(Task.findByIdAndUserId).toHaveBeenCalledWith('1', 1)
+      expect(Task.update).toHaveBeenCalledWith('1', 1, mockReq.body)
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Task updated successfully',
         task: mockTask,
@@ -218,11 +227,15 @@ describe('Task Controller', () => {
   describe('deleteTask', () => {
     it('should delete a task successfully', async () => {
       mockReq.params = { id: '1' }
+      const mockTask = { id: 1, status: 'todo' }
+
+      Task.findByIdAndUserId.mockResolvedValue(mockTask)
       Task.delete.mockResolvedValue({ id: 1 })
 
       await deleteTask(mockReq, mockRes, mockNext)
 
-      expect(Task.delete).toHaveBeenCalledWith(1, 1)
+      expect(Task.findByIdAndUserId).toHaveBeenCalledWith('1', 1)
+      expect(Task.delete).toHaveBeenCalledWith('1', 1)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Task deleted successfully' })
     })
 
@@ -260,7 +273,7 @@ describe('Task Controller', () => {
       await getStatistics(mockReq, mockRes, mockNext)
 
       expect(Task.getStatistics).toHaveBeenCalledWith(1)
-      expect(mockRes.json).toHaveBeenCalledWith({ statistics: mockStats })
+      expect(mockRes.json).toHaveBeenCalledWith(mockStats)
     })
 
     it('should handle errors', async () => {
