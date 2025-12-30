@@ -24,7 +24,22 @@ RUN npm run build
 FROM nginx:alpine3.21
 
 # Update base image packages to fix security vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff
+# Addresses: libpng (CVE-2024-*), c-ares (DoS), BusyBox (network flooding), OpenSSL (timing attacks)
+RUN apk update && \
+    apk upgrade --no-cache \
+      openssl \
+      libssl3 \
+      libcrypto3 \
+      libxml2 \
+      curl \
+      libcurl \
+      expat \
+      tiff \
+      libpng \
+      c-ares \
+      busybox \
+      busybox-binsh && \
+    rm -rf /var/cache/apk/*
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf

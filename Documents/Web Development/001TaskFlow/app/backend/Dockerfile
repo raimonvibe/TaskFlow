@@ -18,7 +18,22 @@ FROM node:22-alpine3.21 AS runner
 WORKDIR /app
 
 # Update base image packages to fix security vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff
+# Addresses: libpng (CVE-2024-*), c-ares (DoS), BusyBox (network flooding), OpenSSL (timing attacks)
+RUN apk update && \
+    apk upgrade --no-cache \
+      openssl \
+      libssl3 \
+      libcrypto3 \
+      libxml2 \
+      curl \
+      libcurl \
+      expat \
+      tiff \
+      libpng \
+      c-ares \
+      busybox \
+      busybox-binsh && \
+    rm -rf /var/cache/apk/*
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
