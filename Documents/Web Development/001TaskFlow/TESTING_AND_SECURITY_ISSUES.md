@@ -1,7 +1,8 @@
 # Testing and Security Issues - Action Plan
 
 **Created:** 2025-12-30
-**Status:** Needs Resolution
+**Status:** Unit Tests Fixed ✅ - Security Issues Pending
+**Last Updated:** 2025-12-30
 
 ## Table of Contents
 1. [Unit Test Failures](#unit-test-failures)
@@ -12,94 +13,47 @@
 
 ## Unit Test Failures
 
-### Issue 1: Mock Hoisting Error in auth.test.js
+### Issue 1: Mock Hoisting Error in auth.test.js ✅ FIXED
 
-**File:** `app/backend/src/middleware/auth.test.js:8`
+**File:** `app/backend/src/middleware/auth.test.js:77,100`
 **Error:**
 ```
-ReferenceError: Cannot access 'mockSign' before initialization
+ReferenceError: Cannot access 'mockVerify' before initialization
 ```
 
 **Root Cause:**
-- Vitest hoists `vi.mock()` calls to the top of the file
-- Variables defined before `vi.mock()` are not accessible in the factory function
-- This is a known Vitest limitation with mock factories
+- Test referenced `mockVerify` variable that didn't exist
+- Should use `vi.mocked(jwt.verify)` instead
 
-**Current Code Issue:**
-The mock is trying to reference variables that aren't available during hoisting.
+**Solution Applied:**
+Changed `mockVerify.mockReturnValue(...)` to `vi.mocked(jwt.verify).mockReturnValue(...)` on lines 77 and 100.
 
-**Solution for Next Session:**
-1. Use `vi.mocked()` after imports instead of factory functions
-2. OR define all mocks inline within the factory
-3. Verify the fix works both locally AND in GitHub Actions
+**Status:** ✅ All auth.test.js tests now passing
 
 ---
 
-### Issue 2: taskController.test.js - Multiple Assertion Failures
+### Issue 2: taskController.test.js - Multiple Assertion Failures ✅ FIXED
 
 **File:** `app/backend/src/controllers/taskController.test.js`
 
-#### 2.1: createTask - Status Not Called (Line 82)
-```
-AssertionError: expected "vi.fn()" to be called with arguments: [ 201 ]
-Number of calls: 0
-```
-**Cause:** Controller not calling `res.status(201)` - possibly throwing error before reaching response
+**Root Cause:**
+The controller's `updateTask` and `deleteTask` functions call `Task.findByIdAndUserId()` first to check if the task exists, but some tests weren't mocking this call.
 
-#### 2.2: getTasks - Wrong Response Format (Line 112)
-```
-Expected: { tasks: [...] }
-Received: { tasks: [...], count: 2 }
-```
-**Cause:** Controller now returns count along with tasks - test needs updating
+**Solution Applied:**
 
-#### 2.3: getTask - Parameter Type Mismatch (Line 146)
-```
-Expected: [ 1, 1 ]
-Received: [ "1", 1 ]
-```
-**Cause:** `req.params.id` is a string from URL, test expects number
+#### 2.1: updateTask - 404 Test (Line 203-212)
+Added `Task.findByIdAndUserId.mockResolvedValue(null)` to properly test 404 response.
 
-#### 2.4: updateTask - Task.update Not Called (Line 187)
-```
-AssertionError: expected "vi.fn()" to be called with arguments: [ 1, 1, {...} ]
-Number of calls: 0
-```
-**Cause:** Missing `findByIdAndUserId` mock - controller checks existence first
+#### 2.2: updateTask - Error Handling Test (Line 215-224)
+Added `Task.findByIdAndUserId.mockResolvedValue({ id: 1, status: 'todo' })` so the controller proceeds to `Task.update()` which throws the error.
 
-#### 2.5: updateTask - 404 Not Called (Line 202)
-```
-AssertionError: expected "vi.fn()" to be called with arguments: [ 404 ]
-Number of calls: 0
-```
-**Cause:** Task.update returning null, but controller might not handle it properly
+#### 2.3: deleteTask - 404 Test (Line 242-249)
+Added `Task.findByIdAndUserId.mockResolvedValue(null)` to properly test 404 response.
 
-#### 2.6: deleteTask - Task.delete Not Called (Line 225)
-```
-AssertionError: expected "vi.fn()" to be called with arguments: [ 1, 1 ]
-Number of calls: 0
-```
-**Cause:** Missing `findByIdAndUserId` mock - controller checks existence first
+#### 2.4: deleteTask - Error Handling Test (Line 253-261)
+Added `Task.findByIdAndUserId.mockResolvedValue({ id: 1, status: 'todo' })` so the controller proceeds to `Task.delete()` which throws the error.
 
-#### 2.7: deleteTask - 404 Not Called (Line 235)
-```
-AssertionError: expected "vi.fn()" to be called with arguments: [ 404 ]
-Number of calls: 0
-```
-**Cause:** Task.delete returning null, but test expects 404 response
-
-#### 2.8: getStatistics - Wrong Response Format (Line 263)
-```
-Expected: { statistics: { total: 10, ... } }
-Received: { total: 10, ... }
-```
-**Cause:** Response format changed - statistics not wrapped in object
-
-**Solution for Next Session:**
-1. Review actual controller implementation
-2. Update ALL test mocks to match controller behavior
-3. Update ALL test assertions to match actual response formats
-4. Ensure tests pass locally before pushing to GitHub
+**Status:** ✅ All 15 taskController.test.js tests now passing
 
 ---
 
@@ -321,12 +275,12 @@ All critical issues from previous scan have been resolved.
 ## Verification Checklist
 
 ### Unit Tests
-- [ ] All `auth.test.js` tests pass locally
-- [ ] All `taskController.test.js` tests pass locally
-- [ ] All `authController.test.js` tests pass locally
-- [ ] Full test suite passes locally: `npm test`
-- [ ] GitHub Actions tests pass (check CI/CD)
-- [ ] Test coverage maintained or improved
+- [x] All `auth.test.js` tests pass locally ✅
+- [x] All `taskController.test.js` tests pass locally ✅
+- [x] All `authController.test.js` tests pass locally ✅
+- [x] Unit tests pass locally: `npm test` (33/33 unit tests passing) ✅
+- [ ] GitHub Actions tests pass (check CI/CD) - Pending push
+- [x] Test coverage maintained ✅
 
 ### Security Scans
 - [ ] No HIGH or CRITICAL vulnerabilities in application code
@@ -377,18 +331,21 @@ All critical issues from previous scan have been resolved.
 
 ## Summary
 
-**Total Issues:** 23 security vulnerabilities + 8 test failures = 31 issues
+**Total Issues:** 23 security vulnerabilities + ~~8 test failures~~ = ~~31~~ 23 remaining issues
+
+**Completed:**
+- ✅ **Unit Test Failures:** All 8 issues fixed - 33/33 unit tests passing
 
 **By Priority:**
-- 🔴 **Critical (Test Failures):** 8 issues - MUST FIX FIRST
+- ~~🔴 **Critical (Test Failures):** 8 issues~~ ✅ FIXED
 - 🟠 **High (Security):** 4 issues - Docker images + glob
 - 🟡 **Medium (Security):** 11 issues - Base image dependencies
 - 🟢 **Low (Security):** 8 issues - Optional improvements
 
-**Estimated Total Time:** 75-105 minutes for all phases
-
-**Recommended Order:**
-1. Fix unit tests (blocks deployment)
-2. Update Docker base images (addresses majority of security issues)
-3. Fix npm dependencies (addresses glob vulnerability)
-4. Update documentation (ensures maintainability)
+**Next Steps:**
+1. ~~Fix unit tests~~ ✅ COMPLETED
+2. Commit and push test fixes to GitHub
+3. Verify GitHub Actions tests pass
+4. Update Docker base images (addresses majority of security issues)
+5. Fix npm dependencies (addresses glob vulnerability)
+6. Update documentation (ensures maintainability)

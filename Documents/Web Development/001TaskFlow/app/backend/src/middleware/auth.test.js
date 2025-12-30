@@ -74,7 +74,7 @@ describe('Auth Middleware', () => {
     it('should authenticate valid token', () => {
       mockReq.headers.authorization = 'Bearer valid-token'
       const mockDecoded = { id: 1, email: 'test@example.com' }
-      mockVerify.mockReturnValue(mockDecoded)
+      vi.mocked(jwt.verify).mockReturnValue(mockDecoded)
 
       authenticate(mockReq, mockRes, mockNext)
 
@@ -97,7 +97,7 @@ describe('Auth Middleware', () => {
       mockReq.headers.authorization = 'Bearer invalid-token'
       const error = new Error('Invalid token')
       error.name = 'JsonWebTokenError'
-      mockVerify.mockImplementation(() => {
+      vi.mocked(jwt.verify).mockImplementation(() => {
         throw error
       })
 

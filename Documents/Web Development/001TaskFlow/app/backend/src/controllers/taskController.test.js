@@ -204,7 +204,7 @@ describe('Task Controller', () => {
       mockReq.params = { id: '999' }
       mockReq.body = { title: 'Updated' }
 
-      Task.update.mockResolvedValue(null)
+      Task.findByIdAndUserId.mockResolvedValue(null)
 
       await updateTask(mockReq, mockRes, mockNext)
 
@@ -216,6 +216,7 @@ describe('Task Controller', () => {
       mockReq.params = { id: '1' }
       mockReq.body = { title: 'Updated' }
       const error = new Error('Database error')
+      Task.findByIdAndUserId.mockResolvedValue({ id: 1, status: 'todo' })
       Task.update.mockRejectedValue(error)
 
       await updateTask(mockReq, mockRes, mockNext)
@@ -241,7 +242,7 @@ describe('Task Controller', () => {
 
     it('should return 404 if task not found', async () => {
       mockReq.params = { id: '999' }
-      Task.delete.mockResolvedValue(null)
+      Task.findByIdAndUserId.mockResolvedValue(null)
 
       await deleteTask(mockReq, mockRes, mockNext)
 
@@ -252,6 +253,7 @@ describe('Task Controller', () => {
     it('should handle errors', async () => {
       mockReq.params = { id: '1' }
       const error = new Error('Database error')
+      Task.findByIdAndUserId.mockResolvedValue({ id: 1, status: 'todo' })
       Task.delete.mockRejectedValue(error)
 
       await deleteTask(mockReq, mockRes, mockNext)
