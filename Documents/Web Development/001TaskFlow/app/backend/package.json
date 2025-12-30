@@ -12,9 +12,9 @@
     "test:ui": "cross-env NODE_ENV=test vitest --ui",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write \"src/**/*.js\"",
-    "migrate:up": "node-pg-migrate up",
-    "migrate:down": "node-pg-migrate down",
-    "migrate:create": "node-pg-migrate create",
+    "migrate:up": "node-pg-migrate up -m ../database/migrations",
+    "migrate:down": "node-pg-migrate down -m ../database/migrations",
+    "migrate:create": "node-pg-migrate create -m ../database/migrations",
     "seed": "node src/database/seed.js"
   },
   "keywords": [
