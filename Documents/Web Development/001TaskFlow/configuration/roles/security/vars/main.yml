@@ -1,0 +1,34 @@
+---
+# Variables for security role
+
+# Fail2ban jails
+fail2ban_jails:
+  - name: sshd
+    enabled: true
+    port: ssh
+    logpath: "/var/log/auth.log"
+  - name: nginx-http-auth
+    enabled: true
+    port: "http,https"
+    logpath: "/var/log/nginx/error.log"
+
+# Packages to install
+security_packages:
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - apt-listchanges
+  - needrestart
+  - libpam-pwquality
+  - auditd
+
+# CertBot configuration
+certbot_auto_renew_enabled: true
+certbot_auto_renew_user: "root"
+certbot_auto_renew_hour: "3"
+certbot_auto_renew_minute: "30"
+
+# Firewall application profiles
+ufw_application_profiles:
+  - "OpenSSH"
+  - "Nginx Full"

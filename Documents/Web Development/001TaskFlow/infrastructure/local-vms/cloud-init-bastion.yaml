@@ -1,0 +1,99 @@
+#cloud-config
+# TaskFlow - Local VMs Bastion Host Cloud Init
+# This script initializes the bastion host on local VirtualBox VMs
+
+# Update system packages
+package_update: true
+package_upgrade: true
+
+# Install essential packages
+packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - unzip
+  - jq
+  - ufw
+  - fail2ban
+  - kubectl
+
+# Create users and groups
+users:
+  - name: taskflow
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+
+# Write files
+write_files:
+  # Firewall configuration
+  - path: /etc/ufw/before.rules
+    content: |
+      # Allow SSH
+      -A ufw-before-input -p tcp --dport 22 -j ACCEPT
+    permissions: '0644'
+    owner: root:root
+
+  # Fail2ban configuration
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime = 3600
+      findtime = 600
+      maxretry = 3
+      
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 3
+    permissions: '0644'
+    owner: root:root
+
+# Run commands
+runcmd:
+  # Update system
+  - apt-get update
+  - apt-get upgrade -y
+
+  # Configure firewall
+  - ufw --force enable
+  - ufw allow ssh
+
+  # Configure fail2ban
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+
+  # Install kubectl
+  - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  - chmod +x kubectl
+  - mv kubectl /usr/local/bin/
+
+  # Create welcome message
+  - cat > /home/ubuntu/welcome.txt <<EOF
+    ========================================
+    TaskFlow Local VMs Bastion Host Ready!
+    ========================================
+    
+    Bastion IP: $(hostname -I | awk '{print $1}')
+    
+    Next Steps:
+    1. SSH to master: ssh ubuntu@<master-ip>
+    2. Check K3s status: kubectl get nodes
+    3. Deploy TaskFlow application
+    
+    ========================================
+    EOF
+
+  - chown ubuntu:ubuntu /home/ubuntu/welcome.txt
+
+# Final message
+final_message: |
+  TaskFlow Local VMs Bastion Host initialization complete!
+  
+  Bastion IP: $(hostname -I | awk '{print $1}')
+  
+  Check /home/ubuntu/welcome.txt for more information.

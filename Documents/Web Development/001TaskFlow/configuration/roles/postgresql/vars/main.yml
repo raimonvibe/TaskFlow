@@ -1,0 +1,21 @@
+---
+# Variables for postgresql role
+
+postgresql_packages:
+  - "postgresql-{{ postgresql_version }}"
+  - "postgresql-contrib-{{ postgresql_version }}"
+  - "postgresql-client-{{ postgresql_version }}"
+  - python3-psycopg2
+
+postgresql_service_name: "postgresql"
+postgresql_data_dir: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_config_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+postgresql_config_file: "{{ postgresql_config_dir }}/postgresql.conf"
+postgresql_hba_file: "{{ postgresql_config_dir }}/pg_hba.conf"
+postgresql_ident_file: "{{ postgresql_config_dir }}/pg_ident.conf"
+
+postgresql_user: "postgres"
+postgresql_group: "postgres"
+
+# Firewall port
+postgresql_firewall_port: "{{ postgresql_port }}/tcp"

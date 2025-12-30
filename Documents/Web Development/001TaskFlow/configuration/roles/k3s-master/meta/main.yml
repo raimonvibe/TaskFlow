@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: TaskFlow DevOps
+  description: Install and configure K3s as master/server node
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - kubernetes
+    - k3s
+    - container
+    - orchestration
+
+dependencies: []
