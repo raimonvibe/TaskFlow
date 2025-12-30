@@ -62,6 +62,7 @@ describe('Auth Middleware', () => {
     beforeEach(() => {
       mockReq = {
         headers: {},
+        cookies: {},
       }
       mockRes = {
         status: vi.fn().mockReturnThis(),
