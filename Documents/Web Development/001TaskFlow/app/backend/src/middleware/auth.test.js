@@ -7,9 +7,13 @@ import { authenticate, generateToken, verifyToken } from './auth.js'
 
 vi.mock('../config/index.js', () => ({
   default: {
+    env: 'test',
     jwt: {
       secret: 'test-secret',
       expiresIn: '1h',
+    },
+    log: {
+      level: 'info',
     },
   },
 }))

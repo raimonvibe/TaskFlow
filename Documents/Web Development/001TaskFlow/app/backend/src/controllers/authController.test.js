@@ -51,6 +51,8 @@ describe('Auth Controller', () => {
     mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
+      cookie: vi.fn().mockReturnThis(),
+      clearCookie: vi.fn().mockReturnThis(),
     }
     mockNext = vi.fn()
 
@@ -81,10 +83,10 @@ describe('Auth Controller', () => {
 
       expect(User.findByEmail).toHaveBeenCalledWith('test@example.com')
       expect(User.create).toHaveBeenCalledWith('Test User', 'test@example.com', 'password123')
+      expect(mockRes.cookie).toHaveBeenCalled()
       expect(mockRes.status).toHaveBeenCalledWith(201)
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'User created successfully',
-        token: 'mock-jwt-token',
         user: {
           id: 1,
           name: 'Test User',
@@ -148,9 +150,9 @@ describe('Auth Controller', () => {
 
       expect(User.findByEmail).toHaveBeenCalledWith('test@example.com')
       expect(User.comparePassword).toHaveBeenCalledWith('password123', 'hashed-password')
+      expect(mockRes.cookie).toHaveBeenCalled()
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Login successful',
-        token: 'mock-jwt-token',
         user: {
           id: 1,
           name: 'Test User',

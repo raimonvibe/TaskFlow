@@ -7,9 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "NODE_ENV=test vitest run --coverage",
-    "test:watch": "NODE_ENV=test vitest",
-    "test:ui": "NODE_ENV=test vitest --ui",
+    "test": "cross-env NODE_ENV=test vitest run --coverage",
+    "test:watch": "cross-env NODE_ENV=test vitest",
+    "test:ui": "cross-env NODE_ENV=test vitest --ui",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write \"src/**/*.js\"",
     "migrate:up": "node-pg-migrate up",
@@ -46,6 +46,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.10",
     "@vitest/ui": "^4.0.10",
+    "cross-env": "^10.1.0",
     "eslint": "^8.55.0",
     "jest": "^29.7.0",
     "node-pg-migrate": "^6.2.2",

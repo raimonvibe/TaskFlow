@@ -3,11 +3,11 @@ import dotenv from 'dotenv'
 // Load environment variables
 dotenv.config()
 
-// Validate required environment variables
+// Validate required environment variables (skip in test environment)
 const requiredEnvVars = ['JWT_SECRET', 'DB_PASSWORD']
 const missingVars = requiredEnvVars.filter((varName) => !process.env[varName])
 
-if (missingVars.length > 0) {
+if (missingVars.length > 0 && process.env.NODE_ENV !== 'test') {
   throw new Error(
     `Missing required environment variables: ${missingVars.join(', ')}\n` +
       'Please set these in your .env file or environment.'
@@ -26,7 +26,7 @@ const config = {
     port: parseInt(process.env.DB_PORT || '5432', 10),
     database: process.env.DB_NAME || 'taskflow',
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD, // Required - no fallback
+    password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'test' ? 'test-password' : undefined),
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
@@ -34,7 +34,7 @@ const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET, // Required - no fallback
+    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-secret-key' : undefined),
     expiresIn: process.env.JWT_EXPIRE || '7d',
   },
 
