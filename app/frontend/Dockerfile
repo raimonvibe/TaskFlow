@@ -1,8 +1,8 @@
 # Multi-stage Dockerfile for React Frontend
 # Optimized for size and security
 
-# Stage 1: Build
-FROM node:22-alpine3.21 AS builder
+# Stage 1: Build (Alpine 3.22+ for OpenSSL CVE-2025-15467 fix)
+FROM node:22-alpine3.22 AS builder
 
 WORKDIR /app
 
@@ -20,8 +20,8 @@ ARG VITE_API_URL=http://localhost:3000
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
-# Stage 2: Production
-FROM nginx:alpine3.21
+# Stage 2: Production (Alpine 3.23+ for OpenSSL CVE-2025-15467 fix)
+FROM nginx:alpine3.23
 
 # Update base image packages to fix security vulnerabilities
 RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff

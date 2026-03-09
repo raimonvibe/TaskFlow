@@ -179,11 +179,14 @@ jobs:
           name: trivy-results
           path: trivy-results.json
 
-  # Job 4: Build Docker Images
+  # Job 4: Build Docker Images (skipped unless Docker Hub push is enabled)
+  # To enable: add repo secrets DOCKER_USERNAME and DOCKER_PASSWORD, and set
+  # repo variable ENABLE_DOCKER_PUSH = 'true' (Settings → Secrets and variables → Actions → Variables).
   build:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: [test, security]
+    if: vars.ENABLE_DOCKER_PUSH == 'true'
     permissions:
       contents: read
       packages: write
@@ -322,11 +325,11 @@ jobs:
           draft: false
           prerelease: false
 
-  # Job 8: Notify
+  # Job 8: Notify (runs after test+security; also runs when build is skipped)
   notify:
     name: Notify Team
     runs-on: ubuntu-latest
-    needs: [build, deploy-staging, deploy-production]
+    needs: [test, security]
     if: always()
     permissions:
       contents: read
