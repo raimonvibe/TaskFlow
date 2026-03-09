@@ -23,8 +23,9 @@ RUN npm run build
 # Stage 2: Production (Alpine 3.23+ for OpenSSL CVE-2025-15467 fix)
 FROM nginx:alpine3.23
 
-# Update base image packages to fix security vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff
+# Update base image packages to fix security vulnerabilities (OpenSSL, libpng, libexpat, c-ares, BusyBox)
+RUN apk update && apk upgrade --no-cache && \
+    apk add --no-cache openssl libpng libxml2 curl expat tiff c-ares busybox
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf

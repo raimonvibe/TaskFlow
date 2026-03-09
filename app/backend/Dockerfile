@@ -17,11 +17,9 @@ FROM node:22-alpine3.22 AS runner
 
 WORKDIR /app
 
-# Update base image packages to fix security vulnerabilities
-RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff
-
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Update base image packages to fix security vulnerabilities (OpenSSL, BusyBox, etc.)
+RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff busybox && \
+    apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
