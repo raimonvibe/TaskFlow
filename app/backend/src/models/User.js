@@ -35,13 +35,15 @@ export const User = {
     return result.rows
   },
 
-  // Update user
+  // Update user (whitelist fields to prevent SQL injection via object keys)
   update: async (id, updates) => {
+    const allowedFields = ['name', 'email', 'password']
     const fields = []
     const values = []
     let paramCount = 1
 
     Object.entries(updates).forEach(([key, value]) => {
+      if (!allowedFields.includes(key)) return
       if (key === 'password') {
         value = bcrypt.hashSync(value, 10)
       }
@@ -49,6 +51,10 @@ export const User = {
       values.push(value)
       paramCount++
     })
+
+    if (fields.length === 0) {
+      throw new Error('No valid fields to update')
+    }
 
     values.push(id)
     const result = await query(
