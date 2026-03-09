@@ -20,10 +20,18 @@ export default async function globalSetup() {
     password: process.env.DB_PASSWORD || 'postgres',
   })
 
+  let ended = false
+  const endPool = async () => {
+    if (!ended) {
+      ended = true
+      await pool.end()
+    }
+  }
+
   try {
     const check = await pool.query("SELECT to_regclass('public.users') AS users_exist")
     if (check.rows[0].users_exist != null) {
-      await pool.end()
+      await endPool()
       return
     }
 
@@ -31,6 +39,6 @@ export default async function globalSetup() {
     const schema = readFileSync(schemaPath, 'utf8')
     await pool.query(schema)
   } finally {
-    await pool.end()
+    await endPool()
   }
 }

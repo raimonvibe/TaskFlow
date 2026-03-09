@@ -1,10 +1,13 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  root: '.',
   test: {
     globals: true,
     environment: 'node',
-    globalSetup: './src/test/globalSetup.js',
+    include: ['src/**/*.test.js', 'src/**/*.spec.js'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
+    globalSetup: ['./src/test/globalSetup.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
