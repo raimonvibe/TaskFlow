@@ -1,8 +1,8 @@
 # Multi-stage Dockerfile for Node.js Backend
 # Optimized for size and security
 
-# Stage 1: Dependencies
-FROM node:22-alpine3.21 AS deps
+# Stage 1: Dependencies (Alpine 3.22+ for OpenSSL CVE-2025-15467 fix)
+FROM node:22-alpine3.22 AS deps
 
 WORKDIR /app
 
@@ -12,8 +12,8 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Stage 2: Production
-FROM node:22-alpine3.21 AS runner
+# Stage 2: Production (Alpine 3.22+ for OpenSSL CVE-2025-15467 fix)
+FROM node:22-alpine3.22 AS runner
 
 WORKDIR /app
 
