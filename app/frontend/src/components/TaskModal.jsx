@@ -89,7 +89,13 @@ const TaskModal = ({ isOpen, onClose, onSave, task }) => {
               <label htmlFor="status" className="label">
                 Status
               </label>
-              <select id="status" name="status" value={formData.status} onChange={handleChange} className="input">
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="input"
+              >
                 <option value="todo">To Do</option>
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>

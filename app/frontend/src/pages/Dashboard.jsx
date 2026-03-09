@@ -3,7 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
 import { tasksAPI } from '../api/tasks'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 
 const COLORS = ['#9CA3AF', '#3B82F6', '#10B981']
 
@@ -78,12 +90,7 @@ const Dashboard = () => {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Tasks" value={stats?.total || 0} icon="📋" color="primary" />
-          <StatCard
-            title="To Do"
-            value={stats?.byStatus.todo || 0}
-            icon="⏳"
-            color="yellow"
-          />
+          <StatCard title="To Do" value={stats?.byStatus.todo || 0} icon="⏳" color="yellow" />
           <StatCard
             title="In Progress"
             value={stats?.byStatus.in_progress || 0}
@@ -110,9 +117,7 @@ const Dashboard = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"

@@ -105,7 +105,7 @@ jobs:
           DB_USER: test_user
           DB_PASSWORD: test_password
         run: |
-          PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f ../database/schema.sql
+          PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f "$GITHUB_WORKSPACE/app/database/schema.sql"
 
       - name: Run tests
         working-directory: app/${{ matrix.component }}

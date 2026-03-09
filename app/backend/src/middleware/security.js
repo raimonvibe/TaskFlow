@@ -169,10 +169,7 @@ export const validationSchemas = {
       .optional()
       .isIn(['todo', 'in_progress', 'completed'])
       .withMessage('Invalid status'),
-    body('priority')
-      .optional()
-      .isIn(['low', 'medium', 'high'])
-      .withMessage('Invalid priority'),
+    body('priority').optional().isIn(['low', 'medium', 'high']).withMessage('Invalid priority'),
     body('due_date').optional().isISO8601().toDate().withMessage('Invalid date format'),
   ],
 
@@ -193,10 +190,7 @@ export const validationSchemas = {
       .optional()
       .isIn(['todo', 'in_progress', 'completed'])
       .withMessage('Invalid status'),
-    body('priority')
-      .optional()
-      .isIn(['low', 'medium', 'high'])
-      .withMessage('Invalid priority'),
+    body('priority').optional().isIn(['low', 'medium', 'high']).withMessage('Invalid priority'),
     body('due_date').optional().isISO8601().toDate().withMessage('Invalid date format'),
   ],
 }
@@ -267,7 +261,11 @@ export const ipFilter = (whitelist = [], blacklist = []) => {
 
 // Require HTTPS in production
 export const requireHttps = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !req.secure && req.get('x-forwarded-proto') !== 'https') {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !req.secure &&
+    req.get('x-forwarded-proto') !== 'https'
+  ) {
     logger.warn('HTTP request in production environment', {
       ip: req.ip,
       path: req.path,

@@ -70,10 +70,10 @@ export const Task = {
 
   // Delete a task
   delete: async (id, userId) => {
-    const result = await query(
-      'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING id',
-      [id, userId]
-    )
+    const result = await query('DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING id', [
+      id,
+      userId,
+    ])
     return result.rows[0]
   },
 

@@ -34,7 +34,14 @@ vi.mock('../utils/logger.js', () => ({
   default: { info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
-import { createTask, getTasks, getTask, updateTask, deleteTask, getStatistics } from './taskController.js'
+import {
+  createTask,
+  getTasks,
+  getTask,
+  updateTask,
+  deleteTask,
+  getStatistics,
+} from './taskController.js'
 import { Task } from '../models/Task.js'
 
 describe('Task Controller', () => {

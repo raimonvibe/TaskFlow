@@ -52,7 +52,7 @@ export const authenticate = (req, res, next) => {
     logger.warn('Authentication failed', {
       error: error.message,
       ip: req.ip,
-      userAgent: req.headers['user-agent']
+      userAgent: req.headers['user-agent'],
     })
 
     if (error.name === 'TokenExpiredError') {
@@ -91,7 +91,7 @@ export const verifyToken = token => {
       issuer: 'taskflow-api',
       audience: 'taskflow-client',
     })
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -104,9 +104,12 @@ export const blacklistToken = token => {
 
   // In production, set TTL to token expiration time
   // Clean up after token would have expired anyway
-  setTimeout(() => {
-    tokenBlacklist.delete(tokenHash)
-  }, 7 * 24 * 60 * 60 * 1000) // 7 days
+  setTimeout(
+    () => {
+      tokenBlacklist.delete(tokenHash)
+    },
+    7 * 24 * 60 * 60 * 1000
+  ) // 7 days
 }
 
 // Optional authentication (don't fail if no token)
@@ -146,30 +149,24 @@ export const requireRole = (...roles) => {
 
 // Refresh token rotation
 export const generateRefreshToken = payload => {
-  return jwt.sign(
-    { ...payload, type: 'refresh' },
-    config.jwt.refreshSecret || config.jwt.secret,
-    {
-      expiresIn: '30d',
-      algorithm: 'HS256',
-    }
-  )
+  return jwt.sign({ ...payload, type: 'refresh' }, config.jwt.refreshSecret || config.jwt.secret, {
+    expiresIn: '30d',
+    algorithm: 'HS256',
+  })
 }
 
 export const verifyRefreshToken = token => {
   try {
-    const decoded = jwt.verify(
-      token,
-      config.jwt.refreshSecret || config.jwt.secret,
-      { algorithms: ['HS256'] }
-    )
+    const decoded = jwt.verify(token, config.jwt.refreshSecret || config.jwt.secret, {
+      algorithms: ['HS256'],
+    })
 
     if (decoded.type !== 'refresh') {
       return null
     }
 
     return decoded
-  } catch (error) {
+  } catch {
     return null
   }
 }

@@ -212,7 +212,9 @@ export const preventClickjacking = () => {
 export const generateSecureRandom = length => {
   const array = new Uint8Array(length)
   crypto.getRandomValues(array)
-  return Array.from(array, byte => byte.toString(36)).join('').substring(0, length)
+  return Array.from(array, byte => byte.toString(36))
+    .join('')
+    .substring(0, length)
 }
 
 // Input validation helpers

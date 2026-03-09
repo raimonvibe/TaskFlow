@@ -25,8 +25,13 @@ const config = {
   jwt: {
     secret: (() => {
       const secret = process.env.JWT_SECRET
-      if (process.env.NODE_ENV === 'production' && (!secret || secret === 'default_secret_change_in_production')) {
-        throw new Error('FATAL: JWT_SECRET must be set to a strong random value in production. Do not use default secret.')
+      if (
+        process.env.NODE_ENV === 'production' &&
+        (!secret || secret === 'default_secret_change_in_production')
+      ) {
+        throw new Error(
+          'FATAL: JWT_SECRET must be set to a strong random value in production. Do not use default secret.'
+        )
       }
       return secret || 'default_secret_change_in_production'
     })(),

@@ -18,9 +18,7 @@ describe('StatCard', () => {
   })
 
   it('should apply custom color class', () => {
-    const { container } = render(
-      <StatCard title="Completed" value={5} color="green" icon="✓" />
-    )
+    const { container } = render(<StatCard title="Completed" value={5} color="green" icon="✓" />)
 
     // Color is applied to the icon container, not the value
     const iconContainer = container.querySelector('.rounded-full')

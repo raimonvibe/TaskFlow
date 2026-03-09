@@ -30,9 +30,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="text-center text-4xl font-bold text-primary-600">TaskFlow</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            DevOps Learning Project
-          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">DevOps Learning Project</p>
           <h3 className="mt-6 text-center text-2xl font-semibold text-gray-900">
             Sign in to your account
           </h3>

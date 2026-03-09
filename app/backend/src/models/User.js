@@ -31,7 +31,9 @@ export const User = {
 
   // Get all users (admin only)
   findAll: async () => {
-    const result = await query('SELECT id, name, email, created_at FROM users ORDER BY created_at DESC')
+    const result = await query(
+      'SELECT id, name, email, created_at FROM users ORDER BY created_at DESC'
+    )
     return result.rows
   },
 

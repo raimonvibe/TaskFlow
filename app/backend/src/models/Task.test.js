@@ -166,9 +166,9 @@ describe('Task Model', () => {
 
     it('should throw error if no valid fields to update', async () => {
       const createdTask = await Task.create(testUserId, { title: 'Test' })
-      await expect(Task.update(createdTask.id, testUserId, { invalid_field: 'value' })).rejects.toThrow(
-        'No valid fields to update'
-      )
+      await expect(
+        Task.update(createdTask.id, testUserId, { invalid_field: 'value' })
+      ).rejects.toThrow('No valid fields to update')
     })
 
     it('should return undefined if task does not exist', async () => {
