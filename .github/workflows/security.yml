@@ -48,12 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      # On push: scan the pushed commits. On schedule/workflow_dispatch: base==HEAD, so scan last 100 commits.
       - uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
+          base: ${{ github.event_name == 'push' && github.event.before || 'HEAD~100' }}
+          head: ${{ github.event_name == 'push' && github.event.after || 'HEAD' }}
 
+  # CodeQL: if you see "advanced configurations cannot be processed when the default setup is enabled",
+  # turn off Default setup in repo Settings → Code security and analysis → Code scanning.
   codeql-analysis:
     runs-on: ubuntu-latest
     permissions: { actions: read, contents: read, security-events: write }
@@ -65,6 +68,9 @@ jobs:
           languages: ${{ matrix.language }}
       - uses: github/codeql-action/autobuild@v4
       - uses: github/codeql-action/analyze@v4
+        with:
+          category: security-workflow
+        continue-on-error: true
 
   security-report:
     runs-on: ubuntu-latest

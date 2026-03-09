@@ -6,8 +6,9 @@ FROM node:22-alpine3.22 AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and npm config (legacy-peer-deps for eslint-plugin-react-hooks + eslint@9)
 COPY package*.json ./
+COPY .npmrc ./
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci && npm cache clean --force

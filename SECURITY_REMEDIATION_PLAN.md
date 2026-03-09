@@ -116,11 +116,17 @@ Single plan to resolve all Trivy/GitHub security alerts for TaskFlow: **npm depe
 
 **Goal:** Confirm fixes and close all related alerts in GitHub Security.
 
+**Why the 94 alerts still show:** Alerts come from **previous** Trivy/scan runs (old images and dependency trees). They do not clear until a **new** scan runs and uploads new results. The fixes (npm overrides + Dockerfile apk upgrade) are already in the repo and will be reflected in the next scan.
+
 **Actions:**
 
-1. **Re-run Trivy** on the new image tags and on the repo (dependency scan). Confirm Library and image alerts are resolved.
-2. **Commit and push** lockfiles and Dockerfile changes. Trigger or wait for the next security scan.
-3. **Close alerts** in GitHub → Security → Code security and analysis: resolve or dismiss the listed alerts with a note that remediation was done per this plan (npm overrides + Docker base/package upgrades).
+1. **Trigger a new security scan:** Go to **Actions** → **Security Scan** → **Run workflow**. This builds fresh Docker images with the fixed Dockerfiles and lockfile, runs Trivy, and uploads SARIF. Many alerts should disappear after this run.
+
+2. **After the run finishes**, open **Security** → **Code security and analysis** (or Dependabot / Code scanning). See which alerts are still open.
+
+3. **Close alerts that are fixed:** For Trivy/Code scanning, if the new scan no longer reports that CVE, **Dismiss** with reason "Fixed" and note: *"Remediated: Docker image rebuilt with apk upgrade; npm overrides applied."* For Dependabot, close or merge the PR or dismiss with a comment.
+
+4. **If some alerts remain**, check the alert source and CVE; fix or dismiss with a note.
 
 **Optional:** Document the overrides in README or SECURITY.md so future dependency changes don’t drop them by mistake.
 
