@@ -8,7 +8,7 @@ A complete, production-ready task management application designed to teach every
 ![Status](https://img.shields.io/badge/status-active-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-## 🎯 Project Overview
+## 🎯 Project Overview -
 
 TaskFlow is a full-stack application built specifically for learning DevOps practices. It demonstrates:
 
