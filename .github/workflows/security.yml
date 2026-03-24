@@ -16,6 +16,8 @@ jobs:
         with: { node-version: '20' }
       - run: npm ci
         working-directory: app/${{ matrix.component }}
+      - run: npm ls tar minimatch glob jsdiff diff
+        working-directory: app/${{ matrix.component }}
       - run: npm audit --json > audit-results.json || true
         working-directory: app/${{ matrix.component }}
       - uses: actions/upload-artifact@v4
@@ -35,7 +37,8 @@ jobs:
           image-ref: taskflow-${{ matrix.component }}:scan
           format: sarif
           output: trivy-${{ matrix.component }}.sarif
-          severity: CRITICAL,HIGH,MEDIUM
+          severity: CRITICAL,HIGH
+          exit-code: '1'
       - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-${{ matrix.component }}.sarif
