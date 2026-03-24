@@ -39,6 +39,14 @@ jobs:
           format: table
           severity: CRITICAL,HIGH
           exit-code: '0'
+      - name: Trivy image scan report (json)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: taskflow-${{ matrix.component }}:scan
+          format: json
+          output: trivy-${{ matrix.component }}.json
+          severity: CRITICAL,HIGH
+          exit-code: '0'
       - uses: aquasecurity/trivy-action@master
         with:
           image-ref: taskflow-${{ matrix.component }}:scan
@@ -46,6 +54,11 @@ jobs:
           output: trivy-${{ matrix.component }}.sarif
           severity: CRITICAL,HIGH
           exit-code: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-image-${{ matrix.component }}-json
+          path: trivy-${{ matrix.component }}.json
       - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-${{ matrix.component }}.sarif
