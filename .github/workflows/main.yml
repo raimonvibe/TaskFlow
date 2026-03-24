@@ -226,6 +226,7 @@ jobs:
         with:
           context: ./app/${{ matrix.component }}
           push: ${{ steps.docker_login.outcome == 'success' }}
+          load: ${{ steps.docker_login.outcome != 'success' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
