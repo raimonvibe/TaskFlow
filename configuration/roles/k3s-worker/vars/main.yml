@@ -1,0 +1,13 @@
+---
+# Variables for k3s-worker role
+
+k3s_binary_path: "/usr/local/bin/k3s"
+k3s_service_file: "/etc/systemd/system/k3s-agent.service"
+k3s_config_dir: "/etc/rancher/k3s"
+
+# Firewall ports for K3s agent
+k3s_agent_firewall_ports:
+  - "10250/tcp"  # Kubelet metrics
+  - "8472/udp"   # Flannel VXLAN
+  - "51820/udp"  # Flannel WireGuard (if enabled)
+  - "51821/udp"  # Flannel WireGuard (if enabled)

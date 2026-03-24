@@ -1,0 +1,67 @@
+# TaskFlow - Deploy Application Playbook
+# Deploys TaskFlow application to Kubernetes cluster
+
+- name: Deploy TaskFlow application
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: taskflow
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy PostgreSQL
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ item }}') }}"
+      loop:
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/postgres-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/postgres-service.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/postgres-pvc.yaml"
+
+    - name: Deploy Backend
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ item }}') }}"
+      loop:
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/backend-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/backend-service.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/backend-hpa.yaml"
+
+    - name: Deploy Frontend
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ item }}') }}"
+      loop:
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/frontend-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/frontend-service.yaml"
+
+    - name: Deploy Ingress
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ playbook_dir }}/../kubernetes/oracle-k3s/ingress.yaml') }}"
+
+    - name: Wait for deployment
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: taskflow
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+      loop:
+        - postgres
+        - backend
+        - frontend
+
+    - name: Display deployment status
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: taskflow
+      register: deployments
+
+    - name: Show deployments
+      debug:
+        msg: "{{ deployments.resources }}"

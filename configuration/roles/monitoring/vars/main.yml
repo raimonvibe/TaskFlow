@@ -1,0 +1,24 @@
+---
+# Variables for monitoring role
+
+prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+prometheus_user: "prometheus"
+prometheus_group: "prometheus"
+
+grafana_apt_key_url: "https://apt.grafana.com/gpg.key"
+grafana_apt_repository: "deb https://apt.grafana.com stable main"
+
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_user: "node_exporter"
+node_exporter_group: "node_exporter"
+
+alertmanager_download_url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+alertmanager_user: "alertmanager"
+alertmanager_group: "alertmanager"
+
+# Firewall ports
+monitoring_firewall_ports:
+  - "{{ prometheus_port }}/tcp"
+  - "{{ grafana_port }}/tcp"
+  - "{{ node_exporter_port }}/tcp"
+  - "{{ alertmanager_port }}/tcp"

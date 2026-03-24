@@ -1,0 +1,137 @@
+# TaskFlow - Local VMs Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control
+
+# =============================================================================
+# REQUIRED VARIABLES - You must set these
+# =============================================================================
+
+# SSH Configuration (Required)
+ssh_public_key_path  = "~/.ssh/id_rsa.pub"
+ssh_private_key_path = "~/.ssh/id_rsa"
+
+# =============================================================================
+# OPTIONAL VARIABLES - Defaults are provided
+# =============================================================================
+
+# VM Configuration
+master_cpu = 2
+master_memory = 2048
+
+worker_count = 2
+worker_cpu = 2
+worker_memory = 2048
+
+bastion_cpu = 1
+bastion_memory = 1024
+enable_bastion = false
+
+# Network Configuration
+network_device = "IntelPro1000MTDesktop"
+host_interface = "en0"  # Change to your network interface
+
+# Shared Folder
+shared_folder_path = "~/TaskFlow"
+
+# Project Configuration
+project_name = "taskflow"
+environment = "local"
+
+# K3s Configuration
+# k3s_token = "your-custom-token-here"  # Leave empty to auto-generate
+
+# =============================================================================
+# NETWORK INTERFACE CONFIGURATION
+# =============================================================================
+
+# Find your network interface:
+# Windows: ipconfig
+# macOS: ifconfig
+# Linux: ip addr show
+
+# Common interfaces:
+# Windows: "Ethernet" or "Wi-Fi"
+# macOS: "en0" (Wi-Fi) or "en1" (Ethernet)
+# Linux: "eth0" or "wlan0"
+
+# =============================================================================
+# RESOURCE CONFIGURATION EXAMPLES
+# =============================================================================
+
+# Scenario 1: Minimal Resources (4GB RAM total)
+# master_cpu = 1
+# master_memory = 1024
+# worker_count = 1
+# worker_cpu = 1
+# worker_memory = 1024
+# bastion_cpu = 1
+# bastion_memory = 512
+
+# Scenario 2: Balanced Resources (8GB RAM total)
+# master_cpu = 2
+# master_memory = 2048
+# worker_count = 2
+# worker_cpu = 2
+# worker_memory = 2048
+# bastion_cpu = 1
+# bastion_memory = 1024
+
+# Scenario 3: High Performance (16GB RAM total)
+# master_cpu = 4
+# master_memory = 4096
+# worker_count = 2
+# worker_cpu = 4
+# worker_memory = 4096
+# bastion_cpu = 2
+# bastion_memory = 2048
+
+# =============================================================================
+# DEVELOPMENT WORKFLOW
+# =============================================================================
+
+# Shared Folder Setup:
+# 1. Create shared folder: mkdir -p ~/TaskFlow
+# 2. Clone repository: git clone <repo-url> ~/TaskFlow
+# 3. VMs will have access to shared folder
+# 4. Edit code on host, test on VMs
+
+# =============================================================================
+# TROUBLESHOOTING
+# =============================================================================
+
+# Common Issues:
+# 1. "Network interface not found": Check host_interface value
+# 2. "VM won't start": Check VirtualBox installation
+# 3. "SSH connection failed": Check SSH key path
+# 4. "K3s not starting": Check VM resources
+
+# Debug Commands:
+# terraform plan -var-file="terraform.tfvars"
+# terraform apply -var-file="terraform.tfvars"
+# terraform destroy -var-file="terraform.tfvars"
+
+# =============================================================================
+# COST BREAKDOWN
+# =============================================================================
+
+# Local Development Environment:
+# - VirtualBox: Free and open-source
+# - Ubuntu VMs: Free and open-source
+# - K3s: Free and open-source
+# - No cloud resources used
+# - No internet required after setup
+
+# Monthly Cost: $0.00
+# One-time setup cost: $0.00
+
+# =============================================================================
+# NEXT STEPS AFTER APPLYING
+# =============================================================================
+
+# 1. Wait 5-10 minutes for VMs to initialize
+# 2. SSH to master: ssh -i ~/.ssh/id_rsa ubuntu@<master-ip>
+# 3. Check K3s status: sudo systemctl status k3s
+# 4. Get kubeconfig: sudo cat /etc/rancher/k3s/k3s.yaml
+# 5. Deploy TaskFlow application
+# 6. Access application via master IP
+# 7. Set up monitoring with Prometheus/Grafana

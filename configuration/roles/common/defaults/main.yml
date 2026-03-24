@@ -1,0 +1,57 @@
+---
+# Default variables for common role
+
+# System packages to install
+common_packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - net-tools
+  - unzip
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+# Timezone configuration
+common_timezone: "UTC"
+
+# NTP configuration
+common_ntp_enabled: true
+common_ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+
+# Firewall configuration
+common_firewall_enabled: true
+common_firewall_allowed_ports:
+  - "22/tcp"  # SSH
+  - "80/tcp"  # HTTP
+  - "443/tcp" # HTTPS
+
+# Swap configuration
+common_swap_enabled: true
+common_swap_size: "2G"
+common_swap_file: "/swapfile"
+
+# System limits
+common_system_limits:
+  - domain: "*"
+    type: soft
+    item: nofile
+    value: 65536
+  - domain: "*"
+    type: hard
+    item: nofile
+    value: 65536
+
+# SSH hardening
+common_ssh_hardening_enabled: true
+common_ssh_permit_root_login: "no"
+common_ssh_password_authentication: "no"
+common_ssh_port: 22
+
+# Automatic security updates
+common_auto_updates_enabled: true

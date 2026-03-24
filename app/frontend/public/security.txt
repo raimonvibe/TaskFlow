@@ -1,0 +1,36 @@
+# Security Policy
+
+Contact: security@taskflow.com
+Preferred-Languages: en
+Canonical: https://taskflow.com/.well-known/security.txt
+
+# Reporting Security Issues
+
+If you discover a security vulnerability in TaskFlow, please report it to:
+- Email: security@taskflow.com
+- PGP Key: [Your PGP Key URL if available]
+
+Please include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+# Bug Bounty
+
+We do not currently have a bug bounty program, but we appreciate responsible disclosure.
+
+# Security Best Practices
+
+This application implements:
+- JWT authentication with secure token handling
+- Input validation and sanitization
+- XSS and CSRF protection
+- SQL injection prevention
+- Rate limiting
+- Security headers (HSTS, CSP, etc.)
+- HTTPS enforcement in production
+
+# Acknowledgments
+
+We thank security researchers who responsibly disclose vulnerabilities.

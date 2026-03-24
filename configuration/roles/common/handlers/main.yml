@@ -1,0 +1,31 @@
+# TaskFlow - Common Role Handlers
+# Handlers for common role tasks
+
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+
+- name: restart ntp
+  systemd:
+    name: ntp
+    state: restarted
+
+- name: restart ufw
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: reload sysctl
+  sysctl:
+    name: "{{ item }}"
+    state: reloaded
+  loop:
+    - vm.swappiness
+    - vm.vfs_cache_pressure
+    - net.bridge.bridge-nf-call-iptables
+    - net.ipv4.ip_forward

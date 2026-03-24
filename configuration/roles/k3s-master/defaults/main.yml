@@ -1,0 +1,50 @@
+---
+# Default variables for k3s-master role
+
+# K3s version (leave empty for latest stable)
+k3s_version: "v1.28.4+k3s1"
+
+# K3s installation method
+k3s_install_script_url: "https://get.k3s.io"
+
+# K3s server configuration
+k3s_server_config:
+  write-kubeconfig-mode: "0644"
+  disable:
+    - traefik  # We'll install our own if needed
+  tls-san:
+    - "{{ ansible_default_ipv4.address }}"
+    - "{{ ansible_hostname }}"
+  cluster-cidr: "10.42.0.0/16"
+  service-cidr: "10.43.0.0/16"
+  cluster-dns: "10.43.0.10"
+
+# Cluster token (generate secure token)
+k3s_token: "{{ lookup('env', 'K3S_TOKEN') | default('changeme-insecure-token', true) }}"
+
+# Enable embedded etcd for HA
+k3s_etcd_enabled: false
+
+# Node labels
+k3s_node_labels:
+  - "node-role.kubernetes.io/master=true"
+
+# Node taints
+k3s_node_taints: []
+#  - "node-role.kubernetes.io/master=NoSchedule"
+
+# Kubeconfig location
+k3s_kubeconfig_path: "/etc/rancher/k3s/k3s.yaml"
+
+# Data directory
+k3s_data_dir: "/var/lib/rancher/k3s"
+
+# Flannel backend
+k3s_flannel_backend: "vxlan"
+
+# Enable metrics server
+k3s_metrics_server_enabled: true
+
+# Systemd service configuration
+k3s_service_enabled: true
+k3s_service_state: started

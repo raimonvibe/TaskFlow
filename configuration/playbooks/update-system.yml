@@ -1,0 +1,37 @@
+# TaskFlow - Update System Playbook
+# Updates system packages and security patches
+
+- name: Update system packages
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade packages
+      apt:
+        name: "*"
+        state: latest
+        upgrade: safe
+
+    - name: Install security updates
+      apt:
+        name: "*"
+        state: latest
+        upgrade: dist
+
+    - name: Clean up packages
+      apt:
+        autoremove: yes
+        autoclean: yes
+
+    - name: Reboot if required
+      reboot:
+        msg: "Reboot initiated by Ansible for kernel updates"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+      when: ansible_reboot_required is defined and ansible_reboot_required

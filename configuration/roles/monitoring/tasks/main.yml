@@ -1,0 +1,157 @@
+# TaskFlow - Monitoring Role Tasks
+# Prometheus and Grafana installation and configuration
+
+- name: Install Prometheus
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: monitoring
+    create_namespace: yes
+    values:
+      prometheus:
+        prometheusSpec:
+          retention: 15d
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                storageClassName: local-storage
+                resources:
+                  requests:
+                    storage: 10Gi
+      grafana:
+        adminPassword: "{{ grafana_admin_password | default('admin') }}"
+        persistence:
+          enabled: true
+          storageClassName: local-storage
+          size: 5Gi
+        service:
+          type: NodePort
+          nodePort: 30001
+      alertmanager:
+        alertmanagerSpec:
+          storage:
+            volumeClaimTemplate:
+              spec:
+                storageClassName: local-storage
+                resources:
+                  requests:
+                    storage: 2Gi
+
+- name: Install Node Exporter
+  kubernetes.core.helm:
+    name: node-exporter
+    chart_ref: prometheus-community/prometheus-node-exporter
+    release_namespace: monitoring
+    values:
+      service:
+        type: NodePort
+        nodePort: 30002
+
+- name: Install Kube State Metrics
+  kubernetes.core.helm:
+    name: kube-state-metrics
+    chart_ref: prometheus-community/kube-state-metrics
+    release_namespace: monitoring
+
+- name: Create monitoring dashboard
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: taskflow-dashboard
+        namespace: monitoring
+      data:
+        dashboard.json: |
+          {
+            "dashboard": {
+              "id": null,
+              "title": "TaskFlow Dashboard",
+              "tags": ["taskflow"],
+              "timezone": "browser",
+              "panels": [
+                {
+                  "id": 1,
+                  "title": "CPU Usage",
+                  "type": "stat",
+                  "targets": [
+                    {
+                      "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                      "legendFormat": "CPU Usage %"
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "title": "Memory Usage",
+                  "type": "stat",
+                  "targets": [
+                    {
+                      "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+                      "legendFormat": "Memory Usage %"
+                    }
+                  ]
+                }
+              ],
+              "time": {
+                "from": "now-1h",
+                "to": "now"
+              },
+              "refresh": "30s"
+            }
+          }
+
+- name: Create alert rules
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: monitoring.coreos.com/v1
+      kind: PrometheusRule
+      metadata:
+        name: taskflow-alerts
+        namespace: monitoring
+      spec:
+        groups:
+        - name: taskflow.rules
+          rules:
+          - alert: HighCPUUsage
+            expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage detected"
+              description: "CPU usage is above 80% for more than 5 minutes"
+          - alert: HighMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage detected"
+              description: "Memory usage is above 90% for more than 5 minutes"
+
+- name: Create monitoring service
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: monitoring-service
+        namespace: monitoring
+      spec:
+        type: NodePort
+        ports:
+        - port: 80
+          targetPort: 3000
+          nodePort: 30001
+        selector:
+          app: grafana
+
+- name: Verify monitoring installation
+  command: kubectl get pods -n monitoring
+  register: monitoring_pods
+  changed_when: false
+
+- name: Display monitoring pods
+  debug:
+    msg: "{{ monitoring_pods.stdout_lines }}"

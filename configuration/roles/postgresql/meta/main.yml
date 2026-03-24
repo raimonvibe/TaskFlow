@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: TaskFlow DevOps
+  description: Install and configure PostgreSQL database
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - database
+    - postgresql
+    - postgres
+    - sql
+
+dependencies: []

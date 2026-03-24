@@ -1,0 +1,51 @@
+---
+# Default variables for monitoring role
+
+# Prometheus configuration
+prometheus_version: "2.48.0"
+prometheus_port: 9090
+prometheus_data_retention: "15d"
+prometheus_storage_path: "/var/lib/prometheus"
+prometheus_config_dir: "/etc/prometheus"
+
+# Grafana configuration
+grafana_version: "10.2.2"
+grafana_port: 3001
+grafana_admin_user: "admin"
+grafana_admin_password: "admin"  # Change in production!
+grafana_data_dir: "/var/lib/grafana"
+
+# Node Exporter
+node_exporter_version: "1.7.0"
+node_exporter_port: 9100
+node_exporter_enabled: true
+
+# Alertmanager
+alertmanager_enabled: true
+alertmanager_version: "0.26.0"
+alertmanager_port: 9093
+
+# Scrape configurations
+prometheus_scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["localhost:9100"]
+
+  - job_name: "taskflow-backend"
+    static_configs:
+      - targets: ["localhost:3000"]
+    metrics_path: "/metrics"
+
+# Alert rules enabled
+prometheus_alert_rules_enabled: true
+
+# Retention policies
+grafana_retention_days: 90
+prometheus_retention_days: 15
+
+# Enable Docker integration
+monitoring_docker_enabled: true

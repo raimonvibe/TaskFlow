@@ -1,0 +1,12 @@
+---
+# Variables for common role
+
+# Package manager specific settings
+apt_packages:
+  - apt-transport-https
+  - software-properties-common
+
+yum_packages:
+  - yum-utils
+  - device-mapper-persistent-data
+  - lvm2

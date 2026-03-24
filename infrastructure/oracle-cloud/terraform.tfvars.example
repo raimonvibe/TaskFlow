@@ -1,0 +1,260 @@
+# TaskFlow - Oracle Cloud Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control
+
+# =============================================================================
+# REQUIRED VARIABLES - You must set these
+# =============================================================================
+
+# Compartment OCID (Required)
+# Get this from: OCI Console > Identity > Compartments
+# Or use: oci iam compartment list --compartment-id-in-subtree true
+compartment_ocid = "ocid1.compartment.oc1..aaaaaaaa..."
+
+# =============================================================================
+# OPTIONAL VARIABLES - Defaults are provided for free tier
+# =============================================================================
+
+# Region (Optional - defaults to us-ashburn-1)
+# Free tier is available in all regions
+region = "us-ashburn-1"
+
+# SSH Configuration (Optional - defaults to ~/.ssh/id_rsa)
+ssh_public_key_path  = "~/.ssh/id_rsa.pub"
+ssh_private_key_path = "~/.ssh/id_rsa"
+
+# SSH Access (IMPORTANT: Change this to your IP for security)
+# Get your IP: curl -s ifconfig.me
+ssh_source_cidr = "203.0.113.1/32"  # Replace with your IP
+
+# =============================================================================
+# AUTHENTICATION (Choose one method)
+# =============================================================================
+
+# Method 1: Environment Variables (Recommended)
+# Set these in your shell or .bashrc:
+# export TF_VAR_tenancy_ocid="ocid1.tenancy.oc1..xxxxx"
+# export TF_VAR_user_ocid="ocid1.user.oc1..xxxxx"
+# export TF_VAR_fingerprint="xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+# export TF_VAR_private_key_path="~/.oci/oci_api_key.pem"
+
+# Method 2: Terraform Variables (Alternative)
+# Uncomment and fill in if not using environment variables:
+# tenancy_ocid = "ocid1.tenancy.oc1..xxxxx"
+# user_ocid = "ocid1.user.oc1..xxxxx"
+# fingerprint = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+# private_key_path = "~/.oci/oci_api_key.pem"
+
+# =============================================================================
+# RESOURCE CONFIGURATION (Free Tier Optimized)
+# =============================================================================
+
+# Instance Configuration (Within free tier limits)
+# Total: 4 instances, 24GB RAM, 200GB storage
+master_cpu = 1
+master_memory = 6
+
+worker_cpu = 1
+worker_memory = 6
+
+bastion_cpu = 1
+bastion_memory = 1
+
+# Storage Configuration
+storage_size_gb = 200  # Free tier limit
+
+# Load Balancer Configuration
+load_balancer_bandwidth = 10  # Free tier limit (Mbps)
+
+# =============================================================================
+# NETWORK CONFIGURATION
+# =============================================================================
+
+# VCN Configuration
+vcn_cidr = "10.0.0.0/16"
+subnet_cidr = "10.0.1.0/24"
+
+# =============================================================================
+# K3S CONFIGURATION
+# =============================================================================
+
+# K3s Version
+k3s_version = "latest"
+k3s_channel = "stable"
+
+# Application Configuration
+app_namespace = "taskflow"
+app_domain = "taskflow.local"
+
+# =============================================================================
+# MONITORING CONFIGURATION
+# =============================================================================
+
+# Enable monitoring stack
+enable_monitoring = true
+enable_logging = true
+
+# =============================================================================
+# SECURITY CONFIGURATION
+# =============================================================================
+
+# Security features
+enable_firewall = true
+enable_fail2ban = true
+enable_ssl = true
+
+# =============================================================================
+# BACKUP CONFIGURATION
+# =============================================================================
+
+# Backup settings
+enable_backups = true
+backup_retention_days = 7
+
+# =============================================================================
+# COST OPTIMIZATION
+# =============================================================================
+
+# Cost optimization features
+enable_cost_optimization = true
+
+# Optional: Schedule shutdown for cost savings
+schedule_shutdown = false
+shutdown_time = "22:00"
+startup_time = "08:00"
+
+# =============================================================================
+# TAGS (Optional)
+# =============================================================================
+
+# Resource tags
+tags = {
+  Project     = "TaskFlow"
+  Environment = "dev"
+  Purpose     = "DevOps Learning"
+  ManagedBy   = "Terraform"
+  CostCenter  = "Learning"
+  Owner       = "your-name"
+  Contact     = "your-email@example.com"
+}
+
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+
+# Project settings
+project_name = "taskflow"
+environment = "dev"
+
+# =============================================================================
+# EXAMPLE CONFIGURATION FOR DIFFERENT SCENARIOS
+# =============================================================================
+
+# Scenario 1: Maximum Free Tier Resources
+# Use all 4 ARM instances with maximum resources
+# master_cpu = 2
+# master_memory = 8
+# worker_cpu = 1
+# worker_memory = 8
+# bastion_cpu = 1
+# bastion_memory = 0  # Minimal bastion
+
+# Scenario 2: Minimal Resources (Cost Savings)
+# Use fewer resources to save on potential future costs
+# master_cpu = 1
+# master_memory = 4
+# worker_cpu = 1
+# worker_memory = 4
+# bastion_cpu = 1
+# bastion_memory = 1
+
+# Scenario 3: Development Environment
+# Optimized for development and testing
+# master_cpu = 1
+# master_memory = 6
+# worker_cpu = 1
+# worker_memory = 6
+# bastion_cpu = 1
+# bastion_memory = 1
+# schedule_shutdown = true
+# shutdown_time = "18:00"
+# startup_time = "09:00"
+
+# =============================================================================
+# REGION-SPECIFIC CONFIGURATIONS
+# =============================================================================
+
+# US East (Ashburn) - Default
+# region = "us-ashburn-1"
+
+# US West (Phoenix)
+# region = "us-phoenix-1"
+
+# Europe (Frankfurt)
+# region = "eu-frankfurt-1"
+
+# Europe (London)
+# region = "uk-london-1"
+
+# Asia Pacific (Sydney)
+# region = "ap-sydney-1"
+
+# Asia Pacific (Mumbai)
+# region = "ap-mumbai-1"
+
+# Asia Pacific (Seoul)
+# region = "ap-seoul-1"
+
+# Asia Pacific (Tokyo)
+# region = "ap-tokyo-1"
+
+# Canada (Toronto)
+# region = "ca-toronto-1"
+
+# South America (São Paulo)
+# region = "sa-saopaulo-1"
+
+# Mexico (Mexico City)
+# region = "me-mexicocity-1"
+
+# =============================================================================
+# TROUBLESHOOTING NOTES
+# =============================================================================
+
+# Common Issues:
+# 1. "Out of capacity" error: Try different availability domain
+# 2. SSH connection failed: Check security list rules
+# 3. K3s not starting: Check cloud-init logs
+# 4. Load balancer not accessible: Check firewall rules
+
+# Debug Commands:
+# terraform plan -var-file="terraform.tfvars"
+# terraform apply -var-file="terraform.tfvars"
+# terraform destroy -var-file="terraform.tfvars"
+
+# =============================================================================
+# COST MONITORING
+# =============================================================================
+
+# Always Free Tier Resources:
+# - 4 ARM instances (up to 24GB RAM total)
+# - 200GB block storage
+# - 10 Mbps load balancer
+# - VCN and networking
+# - No time limits - free forever
+
+# Monthly Cost: $0.00
+# No credit card required (in most regions)
+# No usage limits (within free tier)
+
+# =============================================================================
+# NEXT STEPS AFTER APPLYING
+# =============================================================================
+
+# 1. Wait 5-10 minutes for instances to initialize
+# 2. SSH to master: ssh -i ~/.ssh/id_rsa opc@<master-ip>
+# 3. Check K3s status: sudo systemctl status k3s
+# 4. Get kubeconfig: sudo cat /etc/rancher/k3s/k3s.yaml
+# 5. Deploy TaskFlow application
+# 6. Access application via load balancer IP
+# 7. Set up monitoring with Prometheus/Grafana

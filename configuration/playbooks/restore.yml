@@ -1,0 +1,65 @@
+# TaskFlow - Restore Playbook
+# Restores application from backup
+
+- name: Restore TaskFlow application
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Check backup directory
+      stat:
+        path: /var/backups/taskflow
+      register: backup_dir
+
+    - name: List available backups
+      find:
+        paths: /var/backups/taskflow
+        patterns: "*.sql"
+      register: db_backups
+      when: backup_dir.stat.exists
+
+    - name: Display available backups
+      debug:
+        msg: "{{ db_backups.files }}"
+      when: db_backups.files is defined
+
+    - name: Restore database
+      kubernetes.core.k8s_exec:
+        namespace: taskflow
+        pod: postgres-0
+        command: psql -U taskflow_user -d taskflow -f /backup/restore.sql
+      when: backup_file is defined
+
+    - name: Restore Kubernetes resources
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ backup_file }}') }}"
+      when: backup_file is defined
+
+    - name: Wait for restoration
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ item }}"
+        namespace: taskflow
+        wait: true
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+      loop:
+        - postgres
+        - backend
+        - frontend
+      when: backup_file is defined
+
+    - name: Display restoration status
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: taskflow
+      register: deployments
+      when: backup_file is defined
+
+    - name: Show deployments
+      debug:
+        msg: "{{ deployments.resources }}"
+      when: backup_file is defined

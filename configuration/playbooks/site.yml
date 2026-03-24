@@ -1,0 +1,39 @@
+# TaskFlow - Main Ansible Playbook
+# Orchestrates all roles for complete infrastructure setup
+
+- name: Configure all hosts
+  hosts: all
+  become: yes
+  roles:
+    - common
+    - docker
+    - security
+
+- name: Configure K3s master
+  hosts: k3s_master
+  become: yes
+  roles:
+    - k3s-master
+    - monitoring
+
+- name: Configure K3s workers
+  hosts: k3s_workers
+  become: yes
+  roles:
+    - k3s-worker
+
+- name: Deploy TaskFlow application
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Deploy TaskFlow
+      kubernetes.core.k8s:
+        definition: "{{ lookup('file', '{{ item }}') }}"
+      loop:
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/namespace.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/configmap.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/secrets.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/postgres-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/backend-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/frontend-deployment.yaml"
+        - "{{ playbook_dir }}/../kubernetes/oracle-k3s/ingress.yaml"

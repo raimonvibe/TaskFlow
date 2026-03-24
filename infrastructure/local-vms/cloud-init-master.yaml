@@ -1,0 +1,189 @@
+#cloud-config
+# TaskFlow - Local VMs K3s Master Node Cloud Init
+# This script initializes the K3s master node on local VirtualBox VMs
+
+# Update system packages
+package_update: true
+package_upgrade: true
+
+# Install essential packages
+packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - unzip
+  - jq
+  - ufw
+  - fail2ban
+
+# Create users and groups
+users:
+  - name: taskflow
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+
+# Write files
+write_files:
+  # K3s configuration
+  - path: /etc/rancher/k3s/config.yaml
+    content: |
+      token: ${k3s_token}
+      cluster-init: true
+      disable:
+        - traefik
+        - servicelb
+      kube-apiserver-arg:
+        - "enable-admission-plugins=NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook"
+      kube-controller-manager-arg:
+        - "bind-address=0.0.0.0"
+      kube-scheduler-arg:
+        - "bind-address=0.0.0.0"
+      kubelet-arg:
+        - "node-ip=$(hostname -I | awk '{print $1}')"
+    permissions: '0644'
+    owner: root:root
+
+  # Firewall configuration
+  - path: /etc/ufw/before.rules
+    content: |
+      # Allow Kubernetes API server
+      -A ufw-before-input -p tcp --dport 6443 -j ACCEPT
+      # Allow K3s agent port
+      -A ufw-before-input -p tcp --dport 10250 -j ACCEPT
+      # Allow node port range
+      -A ufw-before-input -p tcp --dport 30000:32767 -j ACCEPT
+    permissions: '0644'
+    owner: root:root
+
+  # Fail2ban configuration
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime = 3600
+      findtime = 600
+      maxretry = 3
+      
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 3
+    permissions: '0644'
+    owner: root:root
+
+  # System optimization
+  - path: /etc/sysctl.d/99-k3s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.ipv4.ip_forward = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+    permissions: '0644'
+    owner: root:root
+
+# Run commands
+runcmd:
+  # Update system
+  - apt-get update
+  - apt-get upgrade -y
+
+  # Configure firewall
+  - ufw --force enable
+  - ufw allow ssh
+  - ufw allow 6443/tcp
+  - ufw allow 10250/tcp
+  - ufw allow 30000:32767/tcp
+
+  # Configure fail2ban
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+
+  # Apply sysctl settings
+  - sysctl --system
+
+  # Install K3s
+  - curl -sfL https://get.k3s.io | sh -s - server --config /etc/rancher/k3s/config.yaml
+
+  # Wait for K3s to be ready
+  - sleep 30
+
+  # Get join token
+  - echo "K3s join token: $(sudo cat /var/lib/rancher/k3s/server/node-token)" > /home/ubuntu/join-token.txt
+
+  # Create kubeconfig for ubuntu user
+  - mkdir -p /home/ubuntu/.kube
+  - cp /etc/rancher/k3s/k3s.yaml /home/ubuntu/.kube/config
+  - chown ubuntu:ubuntu /home/ubuntu/.kube/config
+  - chmod 600 /home/ubuntu/.kube/config
+
+  # Install kubectl
+  - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  - chmod +x kubectl
+  - mv kubectl /usr/local/bin/
+
+  # Install Helm
+  - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+  # Create taskflow namespace
+  - kubectl create namespace taskflow
+
+  # Install metrics server
+  - kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+  # Create storage class
+  - kubectl apply -f - <<EOF
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: local-storage
+    provisioner: kubernetes.io/no-provisioner
+    volumeBindingMode: WaitForFirstConsumer
+    EOF
+
+  # Set up log rotation
+  - echo "/var/log/k3s.log {" > /etc/logrotate.d/k3s
+  - echo "  daily" >> /etc/logrotate.d/k3s
+  - echo "  rotate 7" >> /etc/logrotate.d/k3s
+  - echo "  compress" >> /etc/logrotate.d/k3s
+  - echo "  delaycompress" >> /etc/logrotate.d/k3s
+  - echo "  missingok" >> /etc/logrotate.d/k3s
+  - echo "  notifempty" >> /etc/logrotate.d/k3s
+  - echo "}" >> /etc/logrotate.d/k3s
+
+  # Create welcome message
+  - cat > /home/ubuntu/welcome.txt <<EOF
+    ========================================
+    TaskFlow Local VMs K3s Master Node Ready!
+    ========================================
+    
+    Master IP: $(hostname -I | awk '{print $1}')
+    K3s Status: systemctl status k3s
+    K3s Logs: journalctl -u k3s -f
+    
+    Join Token: $(sudo cat /var/lib/rancher/k3s/server/node-token)
+    
+    Kubectl: kubectl get nodes
+    Helm: helm list -A
+    
+    Next Steps:
+    1. Wait for workers to join
+    2. Deploy TaskFlow application
+    3. Access via master IP
+    
+    ========================================
+    EOF
+
+  - chown ubuntu:ubuntu /home/ubuntu/welcome.txt
+
+# Final message
+final_message: |
+  TaskFlow Local VMs K3s Master Node initialization complete!
+  
+  Master IP: $(hostname -I | awk '{print $1}')
+  K3s Status: systemctl status k3s
+  Join Token: $(sudo cat /var/lib/rancher/k3s/server/node-token)
+  
+  Check /home/ubuntu/welcome.txt for more information.

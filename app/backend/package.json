@@ -1,0 +1,70 @@
+{
+  "name": "taskflow-backend",
+  "version": "1.0.0",
+  "description": "TaskFlow - DevOps Learning Project Backend API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "NODE_ENV=test vitest run --coverage",
+    "test:watch": "NODE_ENV=test vitest",
+    "test:ui": "NODE_ENV=test vitest --ui",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.js\"",
+    "migrate:up": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "migrate:create": "node-pg-migrate create",
+    "seed": "node src/database/seed.js"
+  },
+  "keywords": [
+    "devops",
+    "learning",
+    "task-management",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.22.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.3.1",
+    "express-slow-down": "^2.0.1",
+    "express-validator": "^7.3.0",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "prom-client": "^15.1.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@vitest/coverage-v8": "4.0.18",
+    "@vitest/ui": "4.0.18",
+    "eslint": "^9.17.0",
+    "globals": "^16.0.0",
+    "jest": "^30.3.0",
+    "node-pg-migrate": "^8.0.4",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1",
+    "supertest": "^7.2.2",
+    "vitest": "4.0.18"
+  },
+  "overrides": {
+    "cross-spawn": "^7.0.6",
+    "brace-expansion": "^2.0.2",
+    "js-yaml": "4.1.1",
+    "validator": "^13.15.23",
+    "tar": "^7.5.10",
+    "minimatch": "^10.2.2",
+    "glob": "^11.0.0",
+    "lodash": "^4.17.21",
+    "qs": "^6.11.2",
+    "jsdiff": "^5.2.0"
+  }
+}

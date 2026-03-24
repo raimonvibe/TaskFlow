@@ -1,0 +1,26 @@
+{
+  "name": "taskflow-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing suite for TaskFlow application",
+  "scripts": {
+    "test:smoke": "k6 run smoke-test.js",
+    "test:load": "k6 run load-test.js",
+    "test:stress": "k6 run stress-test.js",
+    "test:spike": "k6 run spike-test.js",
+    "test:soak": "k6 run soak-test.js",
+    "test:all": "npm run test:smoke && npm run test:load && npm run test:stress",
+    "test:api": "k6 run api-test.js",
+    "install:k6": "echo 'Install k6 from: https://k6.io/docs/getting-started/installation/'"
+  },
+  "keywords": [
+    "k6",
+    "load-testing",
+    "performance",
+    "taskflow"
+  ],
+  "author": "TaskFlow Team",
+  "license": "MIT",
+  "devDependencies": {
+    "k6": "latest"
+  }
+}

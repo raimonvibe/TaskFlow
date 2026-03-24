@@ -1,0 +1,17 @@
+---
+# Variables for k3s-master role
+
+k3s_binary_path: "/usr/local/bin/k3s"
+k3s_service_file: "/etc/systemd/system/k3s.service"
+k3s_config_dir: "/etc/rancher/k3s"
+k3s_config_file: "{{ k3s_config_dir }}/config.yaml"
+
+# Firewall ports for K3s server
+k3s_server_firewall_ports:
+  - "6443/tcp"   # Kubernetes API
+  - "10250/tcp"  # Kubelet metrics
+  - "2379/tcp"   # etcd client port (if using etcd)
+  - "2380/tcp"   # etcd peer port (if using etcd)
+  - "8472/udp"   # Flannel VXLAN
+  - "51820/udp"  # Flannel WireGuard (if enabled)
+  - "51821/udp"  # Flannel WireGuard (if enabled)

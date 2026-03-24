@@ -1,0 +1,21 @@
+# ConfigMap for non-sensitive configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskflow-config
+  namespace: taskflow
+data:
+  # Database configuration
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "taskflow"
+
+  # JWT configuration
+  JWT_EXPIRE: "7d"
+
+  # CORS configuration
+  CORS_ORIGIN: "http://localhost:5173,http://localhost:3000"
+
+  # Logging
+  LOG_LEVEL: "info"
+  NODE_ENV: "production"

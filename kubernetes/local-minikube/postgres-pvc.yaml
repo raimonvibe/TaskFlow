@@ -1,0 +1,13 @@
+# Persistent Volume Claim for PostgreSQL data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: taskflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi  # Adjust based on needs
+  # storageClassName: standard  # Use default storage class

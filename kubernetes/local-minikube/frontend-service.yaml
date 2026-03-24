@@ -1,0 +1,17 @@
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: taskflow
+  labels:
+    app: frontend
+spec:
+  type: LoadBalancer  # For Minikube, use `minikube tunnel` to access
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: frontend

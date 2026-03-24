@@ -1,0 +1,66 @@
+# TaskFlow - Oracle Cloud K3s ConfigMap
+# Non-sensitive configuration for TaskFlow application
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskflow-config
+  namespace: taskflow
+  labels:
+    app: taskflow
+    component: config
+    environment: production
+data:
+  # Application configuration
+  APP_NAME: "TaskFlow"
+  APP_VERSION: "1.0.0"
+  APP_ENVIRONMENT: "production"
+  APP_DEBUG: "false"
+  
+  # Database configuration
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "taskflow"
+  DB_USER: "taskflow_user"
+  DB_SSL_MODE: "require"
+  
+  # Redis configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # API configuration
+  API_PORT: "3000"
+  API_HOST: "0.0.0.0"
+  API_TIMEOUT: "30s"
+  API_RATE_LIMIT: "100"
+  
+  # Monitoring configuration
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "9090"
+  HEALTH_CHECK_ENABLED: "true"
+  HEALTH_CHECK_PORT: "8080"
+  
+  # Logging configuration
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  LOG_OUTPUT: "stdout"
+  
+  # Security configuration
+  CORS_ENABLED: "true"
+  CORS_ORIGINS: "https://taskflow.your-domain.com"
+  CORS_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+  CORS_HEADERS: "Content-Type,Authorization"
+  
+  # Performance configuration
+  CONNECTION_POOL_SIZE: "20"
+  CONNECTION_TIMEOUT: "30s"
+  REQUEST_TIMEOUT: "30s"
+  RESPONSE_TIMEOUT: "30s"
+  
+  # Cost optimization
+  RESOURCE_LIMITS_ENABLED: "true"
+  AUTO_SCALING_ENABLED: "true"
+  SCHEDULED_SHUTDOWN_ENABLED: "false"
+  SHUTDOWN_TIME: "22:00"
+  STARTUP_TIME: "08:00"

@@ -1,0 +1,47 @@
+# TaskFlow - K3s Worker Role Tasks
+# K3s worker node installation and configuration
+
+- name: Install K3s agent
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - agent \
+      --server https://{{ k3s_master_ip }}:6443 \
+      --token={{ k3s_token }} \
+      --kubelet-arg="node-ip=$(hostname -I | awk '{print $1}')"
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Start and enable K3s agent
+  systemd:
+    name: k3s-agent
+    enabled: yes
+    state: started
+
+- name: Wait for K3s agent to be ready
+  wait_for:
+    port: 10250
+    host: "{{ ansible_default_ipv4.address }}"
+    delay: 10
+    timeout: 300
+
+- name: Configure K3s agent log rotation
+  copy:
+    content: |
+      /var/log/k3s-agent.log {
+        daily
+        rotate 7
+        compress
+        delaycompress
+        missingok
+        notifempty
+      }
+    dest: /etc/logrotate.d/k3s-agent
+    mode: '0644'
+
+- name: Verify K3s agent installation
+  command: systemctl status k3s-agent
+  register: k3s_agent_status
+  changed_when: false
+
+- name: Display K3s agent status
+  debug:
+    msg: "{{ k3s_agent_status.stdout_lines }}"

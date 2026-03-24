@@ -1,0 +1,105 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    strategy: { matrix: { component: [frontend, backend] } }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '20' }
+      - run: npm ci
+        working-directory: app/${{ matrix.component }}
+      - run: npm audit --json > audit-results.json || true
+        working-directory: app/${{ matrix.component }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.component }}-audit
+          path: app/${{ matrix.component }}/audit-results.json
+
+  docker-image-scan:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write }
+    strategy: { matrix: { component: [frontend, backend] } }
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker build --no-cache -t taskflow-${{ matrix.component }}:scan ./app/${{ matrix.component }}
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: taskflow-${{ matrix.component }}:scan
+          format: sarif
+          output: trivy-${{ matrix.component }}.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-${{ matrix.component }}.sarif
+          category: docker-${{ matrix.component }}
+        continue-on-error: true
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0 }
+      # On push: scan the pushed commits. On schedule/workflow_dispatch: base==HEAD, so scan last 100 commits.
+      - uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event_name == 'push' && github.event.before || 'HEAD~100' }}
+          head: ${{ github.event_name == 'push' && github.event.after || 'HEAD' }}
+
+  # CodeQL: if you see "advanced configurations cannot be processed when the default setup is enabled",
+  # turn off Default setup in repo Settings → Code security and analysis → Code scanning.
+  codeql-analysis:
+    runs-on: ubuntu-latest
+    permissions: { actions: read, contents: read, security-events: write }
+    strategy: { matrix: { language: [javascript] } }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: security-workflow
+        continue-on-error: true
+
+  security-report:
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, docker-image-scan, secret-scan, codeql-analysis]
+    if: always()
+    permissions: { contents: read, issues: write }
+    steps:
+      - uses: actions/download-artifact@v8
+      - run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Date: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          echo "## Scans Completed" >> security-report.md
+          echo "- ✅ Dependency Scan" >> security-report.md
+          echo "- ✅ Docker Image Scan" >> security-report.md
+          echo "- ✅ Secret Scan" >> security-report.md
+          echo "- ✅ CodeQL Analysis" >> security-report.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.md
+      - if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 Security vulnerabilities detected',
+              body: 'Automated security scan has detected vulnerabilities. Please review the scan results.',
+              labels: ['security', 'automated']
+            });

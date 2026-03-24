@@ -1,0 +1,40 @@
+---
+# Default variables for docker role
+
+# Docker version (leave empty for latest)
+docker_version: ""
+
+# Docker edition (ce = Community Edition)
+docker_edition: "ce"
+
+# Docker users (users to add to docker group)
+docker_users:
+  - "{{ ansible_user }}"
+
+# Docker daemon configuration
+docker_daemon_config:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  storage-driver: "overlay2"
+  userland-proxy: false
+  experimental: false
+  metrics-addr: "0.0.0.0:9323"
+  live-restore: true
+
+# Docker service configuration
+docker_service_enabled: true
+docker_service_state: started
+
+# Docker Compose version
+docker_compose_version: "2.23.0"
+docker_compose_install: true
+
+# Docker network settings
+docker_default_address_pools:
+  - base: "172.17.0.0/16"
+    size: 24
+
+# Restart policy
+docker_restart_policy: "unless-stopped"
