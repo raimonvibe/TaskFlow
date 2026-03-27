@@ -120,7 +120,7 @@ jobs:
         run: npm test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: app/${{ matrix.component }}/coverage/coverage-final.json
           flags: ${{ matrix.component }}
