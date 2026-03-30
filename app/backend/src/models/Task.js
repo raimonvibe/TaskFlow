@@ -15,18 +15,15 @@ export const Task = {
   findByUserId: async (userId, filters = {}) => {
     let queryText = 'SELECT * FROM tasks WHERE user_id = $1'
     const params = [userId]
-    let paramCount = 2
 
     if (filters.status) {
-      queryText += ` AND status = $${paramCount}`
+      queryText += ` AND status = $${params.length + 1}`
       params.push(filters.status)
-      paramCount++
     }
 
     if (filters.priority) {
-      queryText += ` AND priority = $${paramCount}`
+      queryText += ` AND priority = $${params.length + 1}`
       params.push(filters.priority)
-      paramCount++
     }
 
     queryText += ' ORDER BY created_at DESC'
