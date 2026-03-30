@@ -9,9 +9,6 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Upgrade npm to pull in patched tar/minimatch transitive dependencies in base tooling
-RUN npm install -g npm@latest
-
 # Install production dependencies only
 RUN npm ci --omit=dev && npm cache clean --force
 
@@ -23,9 +20,6 @@ WORKDIR /app
 # Update base image packages to fix security vulnerabilities (OpenSSL, BusyBox, etc.)
 RUN apk update && apk upgrade --no-cache openssl libxml2 curl expat tiff busybox && \
     apk add --no-cache dumb-init
-
-# Upgrade npm in runtime image as well (Trivy scans system/node toolchain packages)
-RUN npm install -g npm@latest && npm cache clean --force
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
