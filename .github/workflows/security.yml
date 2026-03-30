@@ -20,7 +20,7 @@ jobs:
         working-directory: app/${{ matrix.component }}
       - run: npm audit --json > audit-results.json || true
         working-directory: app/${{ matrix.component }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.component }}-audit
           path: app/${{ matrix.component }}/audit-results.json
@@ -54,7 +54,7 @@ jobs:
           output: trivy-${{ matrix.component }}.sarif
           severity: CRITICAL,HIGH
           exit-code: '1'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-image-${{ matrix.component }}-json
@@ -111,7 +111,7 @@ jobs:
           echo "- ✅ Docker Image Scan" >> security-report.md
           echo "- ✅ Secret Scan" >> security-report.md
           echo "- ✅ CodeQL Analysis" >> security-report.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: security-report
           path: security-report.md
