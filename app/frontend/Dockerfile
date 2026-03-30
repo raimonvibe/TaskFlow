@@ -10,9 +10,6 @@ WORKDIR /app
 COPY package*.json ./
 COPY .npmrc ./
 
-# Upgrade npm to pull in patched tar/minimatch transitive dependencies in base tooling
-RUN npm install -g npm@latest
-
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci && npm cache clean --force
 

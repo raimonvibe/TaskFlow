@@ -56,6 +56,7 @@
     "vitest": "4.0.18"
   },
   "overrides": {
+    "path-to-regexp": "0.1.13",
     "cross-spawn": "^7.0.6",
     "brace-expansion": "^2.0.2",
     "js-yaml": "4.1.1",
