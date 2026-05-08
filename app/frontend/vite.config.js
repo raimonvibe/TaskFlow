@@ -17,15 +17,33 @@ export default defineConfig({
     sourcemap: false, // Disable for smaller bundle size
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-        }
-      }
-    }
+        manualChunks(id) {
+          if (
+            /[/\\]node_modules[/\\](?:react|react-dom|react-router-dom)(?:[/\\]|$)/.test(
+              id
+            )
+          ) {
+            return 'react-vendor'
+          }
+        },
+      },
+    },
   },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
-  }
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.test.{js,jsx}',
+        '**/*.config.js',
+        'dist/',
+      ],
+    },
+  },
 })

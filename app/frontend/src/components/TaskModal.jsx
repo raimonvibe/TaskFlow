@@ -1,33 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-const TaskModal = ({ isOpen, onClose, onSave, task }) => {
-  const [formData, setFormData] = useState({
+function emptyForm() {
+  return {
     title: '',
     description: '',
     status: 'todo',
     priority: 'medium',
     due_date: '',
-  })
+  }
+}
 
-  useEffect(() => {
-    if (task) {
-      setFormData({
-        title: task.title || '',
-        description: task.description || '',
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        due_date: task.due_date ? task.due_date.split('T')[0] : '',
-      })
-    } else {
-      setFormData({
-        title: '',
-        description: '',
-        status: 'todo',
-        priority: 'medium',
-        due_date: '',
-      })
-    }
-  }, [task, isOpen])
+function formDataFromTask(task) {
+  if (!task) return emptyForm()
+  return {
+    title: task.title || '',
+    description: task.description || '',
+    status: task.status || 'todo',
+    priority: task.priority || 'medium',
+    due_date: task.due_date ? task.due_date.split('T')[0] : '',
+  }
+}
+
+const TaskModalInner = ({ onClose, onSave, task }) => {
+  const [formData, setFormData] = useState(() => formDataFromTask(task))
 
   const handleChange = e => {
     const { name, value } = e.target
@@ -38,8 +33,6 @@ const TaskModal = ({ isOpen, onClose, onSave, task }) => {
     e.preventDefault()
     onSave(formData)
   }
-
-  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -146,6 +139,12 @@ const TaskModal = ({ isOpen, onClose, onSave, task }) => {
       </div>
     </div>
   )
+}
+
+const TaskModal = ({ isOpen, onClose, onSave, task }) => {
+  if (!isOpen) return null
+  const key = `${task?.id ?? 'new'}`
+  return <TaskModalInner key={key} task={task} onClose={onClose} onSave={onSave} />
 }
 
 export default TaskModal

@@ -44,8 +44,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "4.1.2",
-    "@vitest/ui": "4.1.2",
+    "@vitest/coverage-v8": "4.1.5",
+    "@vitest/ui": "4.1.5",
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "jest": "^30.3.0",
@@ -53,18 +53,19 @@
     "nodemon": "^3.0.2",
     "prettier": "^3.1.1",
     "supertest": "^7.2.2",
-    "vitest": "4.1.2"
+    "vitest": "4.1.5"
   },
   "overrides": {
     "path-to-regexp": "0.1.13",
     "cross-spawn": "^7.0.6",
-    "brace-expansion": "^2.0.2",
+    "brace-expansion": "^2.1.0",
     "js-yaml": "4.1.1",
     "validator": "^13.15.23",
     "tar": "^7.5.10",
     "minimatch": "^10.2.2",
     "glob": "^11.0.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
+    "ip-address": "^10.2.0",
     "qs": "^6.11.2",
     "jsdiff": "^5.2.0",
     "diff": "^5.2.0"

@@ -14,7 +14,7 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "axios": "^1.6.2",
+    "axios": "^1.16.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -25,14 +25,14 @@
     "@babel/eslint-parser": "^7.26.0",
     "@babel/preset-react": "^7.26.0",
     "@eslint/js": "^10.0.1",
-    "@tailwindcss/vite": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.4",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.5",
     "autoprefixer": "^10.4.16",
     "cross-spawn": "^7.0.6",
     "eslint": "^9.17.0",
@@ -43,16 +43,17 @@
     "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "prettier": "^3.1.1",
-    "tailwindcss": "^4.2.1",
-    "vite": "^7.3.2",
-    "vitest": "^3.2.4"
+    "tailwindcss": "^4.2.4",
+    "vite": "^8.0.11",
+    "vitest": "^4.1.5"
   },
   "overrides": {
     "cross-spawn": "^7.0.6",
+    "brace-expansion": "^5.0.6",
     "tar": "^7.5.10",
     "minimatch": "^10.2.2",
     "glob": "^11.0.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "qs": "^6.11.2",
     "jsdiff": "^5.2.0",
     "diff": "^5.2.0"

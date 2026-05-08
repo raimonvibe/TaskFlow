@@ -1,9 +1,26 @@
-import { createContext, useState, useContext, useEffect } from 'react'
+import { createContext, useState, useContext } from 'react'
 import { jwtDecode } from 'jwt-decode'
 import { authAPI } from '../api/auth'
 import { secureStorage } from '../utils/security'
 
 const AuthContext = createContext(null)
+
+function readInitialUser() {
+  const token = secureStorage.getToken()
+  if (!token) return null
+  try {
+    const decoded = jwtDecode(token)
+    if (decoded.exp * 1000 < Date.now()) {
+      secureStorage.clearToken()
+      return null
+    }
+    const savedUser = sessionStorage.getItem('user')
+    return savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    secureStorage.clearToken()
+    return null
+  }
+}
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
@@ -15,31 +32,7 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const token = secureStorage.getToken()
-    if (token) {
-      try {
-        const decoded = jwtDecode(token)
-        // Check if token is expired
-        if (decoded.exp * 1000 < Date.now()) {
-          secureStorage.clearToken()
-        } else {
-          const savedUser = sessionStorage.getItem('user')
-          if (savedUser) {
-            setUser(JSON.parse(savedUser))
-          }
-        }
-      } catch (error) {
-        console.error('Invalid token:', error)
-        secureStorage.clearToken()
-      }
-    }
-    setLoading(false)
-  }, [])
+  const [user, setUser] = useState(() => readInitialUser())
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password)
@@ -68,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!user,
-    loading,
+    loading: false,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
