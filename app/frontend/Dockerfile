@@ -1,8 +1,8 @@
 # Multi-stage Dockerfile for React Frontend
 # Optimized for size and security
 
-# Stage 1: Build (Alpine 3.22+ for OpenSSL CVE-2025-15467 fix)
-FROM node:22-alpine3.22 AS builder
+# Stage 1: Build (node:22-alpine tracks patched Node + Alpine releases)
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
