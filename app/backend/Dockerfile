@@ -20,6 +20,10 @@ WORKDIR /app
 # Upgrade all installed OS packages (narrow apk lists miss security fixes Trivy flags)
 RUN apk update && apk upgrade --no-cache && apk add --no-cache dumb-init
 
+# Remove npm and bundled global modules from runtime (not needed; reduces Trivy findings)
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 

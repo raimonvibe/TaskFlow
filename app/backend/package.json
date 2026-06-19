@@ -56,17 +56,19 @@
     "vitest": "4.1.6"
   },
   "overrides": {
+    "@babel/core": "^7.29.6",
     "path-to-regexp": "0.1.13",
     "cross-spawn": "^7.0.6",
-    "brace-expansion": "^2.1.0",
-    "js-yaml": "4.1.1",
+    "brace-expansion": "^5.0.5",
+    "js-yaml": "4.2.0",
+    "picomatch": "^4.0.4",
     "validator": "^13.15.23",
     "tar": "^7.5.10",
     "minimatch": "^10.2.2",
     "glob": "^11.0.0",
     "lodash": "^4.18.1",
     "ip-address": "^10.2.0",
-    "qs": "^6.11.2",
+    "qs": "^6.15.2",
     "jsdiff": "^5.2.0",
     "diff": "^5.2.0"
   }
