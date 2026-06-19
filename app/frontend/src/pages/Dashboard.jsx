@@ -26,20 +26,32 @@ const Dashboard = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchStatistics()
-  }, [])
+    let cancelled = false
 
-  const fetchStatistics = async () => {
-    try {
-      const data = await tasksAPI.getStatistics()
-      setStats(data)
-    } catch (err) {
-      setError('Failed to load statistics')
-      console.error(err)
-    } finally {
-      setLoading(false)
+    async function loadStatistics() {
+      try {
+        const data = await tasksAPI.getStatistics()
+        if (!cancelled) {
+          setStats(data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Failed to load statistics')
+          console.error(err)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
     }
-  }
+
+    void loadStatistics()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (loading) {
     return (

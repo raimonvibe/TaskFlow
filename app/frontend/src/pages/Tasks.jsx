@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
@@ -12,22 +12,48 @@ const Tasks = () => {
   const [editingTask, setEditingTask] = useState(null)
   const [filters, setFilters] = useState({ status: '', priority: '' })
 
-  const fetchTasks = useCallback(async () => {
+  const refreshTasks = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
       const data = await tasksAPI.getTasks(filters)
       setTasks(data.tasks)
+      setError('')
     } catch (err) {
       setError('Failed to load tasks')
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }
 
   useEffect(() => {
-    fetchTasks()
-  }, [fetchTasks])
+    let cancelled = false
+
+    async function loadTasks() {
+      try {
+        const data = await tasksAPI.getTasks(filters)
+        if (!cancelled) {
+          setTasks(data.tasks)
+          setError('')
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Failed to load tasks')
+          console.error(err)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadTasks()
+
+    return () => {
+      cancelled = true
+    }
+  }, [filters])
 
   const handleCreateTask = () => {
     setEditingTask(null)
@@ -48,7 +74,7 @@ const Tasks = () => {
       }
       setIsModalOpen(false)
       setEditingTask(null)
-      fetchTasks()
+      refreshTasks()
     } catch (err) {
       alert('Failed to save task: ' + (err.response?.data?.message || err.message))
     }
@@ -59,7 +85,7 @@ const Tasks = () => {
 
     try {
       await tasksAPI.deleteTask(id)
-      fetchTasks()
+      refreshTasks()
     } catch (err) {
       alert('Failed to delete task: ' + (err.response?.data?.message || err.message))
     }
@@ -68,13 +94,14 @@ const Tasks = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       await tasksAPI.updateTask(id, { status: newStatus })
-      fetchTasks()
+      refreshTasks()
     } catch (err) {
       alert('Failed to update task status: ' + (err.response?.data?.message || err.message))
     }
   }
 
   const handleFilterChange = (filterType, value) => {
+    setLoading(true)
     setFilters(prev => ({ ...prev, [filterType]: value }))
   }
 
@@ -126,7 +153,10 @@ const Tasks = () => {
             {(filters.status || filters.priority) && (
               <div className="flex items-end">
                 <button
-                  onClick={() => setFilters({ status: '', priority: '' })}
+                  onClick={() => {
+                    setLoading(true)
+                    setFilters({ status: '', priority: '' })
+                  }}
                   className="btn btn-secondary"
                 >
                   Clear Filters
