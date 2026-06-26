@@ -46,7 +46,7 @@
     "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "4.1.6",
     "@vitest/ui": "4.1.6",
-    "eslint": "^10.1.0",
+    "eslint": "^10.5.0",
     "globals": "^17.6.0",
     "jest": "^30.3.0",
     "node-pg-migrate": "^8.0.4",
