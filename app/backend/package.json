@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "4.1.6",
+    "@vitest/coverage-v8": "4.1.9",
     "@vitest/ui": "4.1.6",
     "eslint": "^10.1.0",
     "globals": "^17.6.0",
