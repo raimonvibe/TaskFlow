@@ -60,10 +60,10 @@ services:
         value: info
 
   # --- Frontend static site --------------------------------------------------
+  # Static sites are free on Render; the `plan` field does not apply (omit it).
   - type: web
     name: taskflow-frontend
     runtime: static
-    plan: free
     rootDir: app/frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist

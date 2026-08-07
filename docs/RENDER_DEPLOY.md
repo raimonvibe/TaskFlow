@@ -6,7 +6,7 @@ This repo includes a [Render Blueprint](https://render.com/docs/blueprint-spec) 
 |---|---|---|---|
 | `taskflow-db` | Render Postgres | Free | **Deleted automatically 30 days after creation** — see [Free Postgres expiry](#free-postgres-expires-after-30-days) below |
 | `taskflow-backend` | Web service (Node) | Free | Sleeps after ~15 min idle; cold start ~30-60s |
-| `taskflow-frontend` | Static site (Vite build) | Free | Never sleeps, served from Render's CDN |
+| `taskflow-frontend` | Static site (Vite build) | Free (default) | Never sleeps, served from Render's CDN; static sites do not use a `plan` field in `render.yaml` |
 
 A GitHub Actions workflow (`.github/workflows/keepalive.yml`) pings the backend's `/health` endpoint every 10 minutes to keep it from sleeping. Render's own Cron Jobs were **not** used for this because they aren't free (minimum $1/month) — see [Why GitHub Actions instead of a Render Cron Job](#why-github-actions-instead-of-a-render-cron-job).
 
