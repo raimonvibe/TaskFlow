@@ -12,6 +12,9 @@ const TourOverview = () => {
             <Compass size={28} weight="duotone" />
           </div>
           <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-accent-600 dark:text-accent-300">
+              Field Guide
+            </p>
             <h1 className="page-title">DevOps Tour</h1>
             <p className="mt-1 max-w-2xl text-sm text-primary-500 dark:text-primary-300">
               TaskFlow doubles as a learning project for the tools around it, not just the app

@@ -44,6 +44,17 @@ export const errorHandler = (err, req, res, _next) => {
     message = 'Token expired'
   }
 
+  // Everything above gives statusCode/message a deliberate, safe value for
+  // an error type we recognize. Anything still sitting at the 500 default
+  // is unclassified - could be a raw driver error, a third-party library's
+  // internal message, a file path, anything - and previously went straight
+  // to the client even in production. Only the classified messages above
+  // (and the full detail already logged server-side, stack included) are
+  // safe to hand back.
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'Internal Server Error'
+  }
+
   res.status(statusCode).json({
     status: 'error',
     message,

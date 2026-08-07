@@ -1,31 +1,37 @@
 import express from 'express'
 import { query, getPoolStats } from '../config/database.js'
-import metricsRegister from '../utils/metrics.js'
+import metricsRegister, { databaseConnections } from '../utils/metrics.js'
 import config from '../config/index.js'
+import logger from '../utils/logger.js'
 
 const router = express.Router()
 
-// Health check endpoint
+// Health check endpoint. Public and unauthenticated by design (Render's
+// health checker hits it directly, no way to pass a header), so it stays
+// minimal on purpose - uptime and pool stats (connection counts, load) tell
+// an attacker more than they need to know about the app's internal state.
+// That detail lives in /metrics instead, which requires the key.
 router.get('/health', async (req, res) => {
   try {
     // Test database connection
     await query('SELECT 1')
 
-    const poolStats = getPoolStats()
-
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
       database: 'connected',
-      poolStats,
     })
   } catch (error) {
+    // /health is public and unauthenticated (Render's health checker hits it
+    // directly) - error.message from a DB driver can include internal
+    // connection details (host, port, sometimes more). The full error is
+    // already captured server-side by the query() helper's own logging;
+    // don't also hand it to whoever's asking.
+    logger.error('Health check failed', { error: error.message })
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       database: 'disconnected',
-      error: error.message,
     })
   }
 })
@@ -41,11 +47,22 @@ router.get('/metrics', async (req, res) => {
   }
 
   try {
+    // Was previously only exposed via the public, unauthenticated /health
+    // response - moved here since /metrics is the endpoint actually gated
+    // behind METRICS_KEY in production. The gauge existed but nothing ever
+    // set it, so it always reported empty; wire it to the real pool stats
+    // right before each scrape.
+    const poolStats = getPoolStats()
+    databaseConnections.set({ state: 'total' }, poolStats.total)
+    databaseConnections.set({ state: 'idle' }, poolStats.idle)
+    databaseConnections.set({ state: 'waiting' }, poolStats.waiting)
+
     res.set('Content-Type', metricsRegister.contentType)
     const metrics = await metricsRegister.metrics()
     res.send(metrics)
   } catch (error) {
-    res.status(500).send(error.message)
+    logger.error('Metrics collection failed', { error: error.message })
+    res.status(500).json({ message: 'Failed to collect metrics' })
   }
 })
 

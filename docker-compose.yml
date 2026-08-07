@@ -1,5 +1,14 @@
 # Docker Compose for Local Development
 # Complete stack with frontend, backend, database, Redis, and monitoring
+#
+# Every port below binds to 127.0.0.1 specifically, not 0.0.0.0 (Docker's
+# default). Without that, every service here - including Adminer, a
+# full database browser with no auth of its own beyond the DB password -
+# is reachable by anyone else on the same network (LAN, hotel wifi, a cloud
+# VM's public interface if this ever runs there), not just this machine.
+# Each port is also overridable via env var (e.g. ADMINER_PORT=8081) if the
+# default is already taken - copy .env.example to .env and set it there, or
+# export it before running docker-compose up.
 
 version: '3.8'
 
@@ -13,7 +22,7 @@ services:
       POSTGRES_PASSWORD: taskflow_password
       POSTGRES_DB: taskflow
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./app/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
@@ -32,7 +41,7 @@ services:
     container_name: taskflow-redis
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -60,7 +69,7 @@ services:
       JWT_SECRET: dev_secret_change_in_production
       CORS_ORIGIN: http://localhost:5173,http://localhost:3000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./app/backend:/app
       - /app/node_modules
@@ -89,7 +98,7 @@ services:
         VITE_API_URL: http://localhost:3000
     container_name: taskflow-frontend
     ports:
-      - "5173:80"
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
     depends_on:
       - backend
     healthcheck:
@@ -112,7 +121,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=30d'
     ports:
-      - "9090:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./monitoring/prometheus/alerts:/etc/prometheus/alerts
@@ -130,7 +139,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
-      - "3001:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
@@ -146,7 +155,7 @@ services:
     image: adminer:latest
     container_name: taskflow-adminer
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${ADMINER_PORT:-8080}:8080"
     environment:
       ADMINER_DEFAULT_SERVER: postgres
     depends_on:
