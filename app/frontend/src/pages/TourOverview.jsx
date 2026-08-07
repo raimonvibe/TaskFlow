@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
-import { Compass, ShieldCheck } from '@phosphor-icons/react'
+import { Compass, ShieldCheck, Lifebuoy } from '@phosphor-icons/react'
 import Layout from '../components/Layout'
-import { TOUR_PAGES } from '../data/tourContent'
+import CodeBlock from '../components/tour/CodeBlock'
+import { TOUR_PAGES, DEBUG_PROMPT_TEMPLATE } from '../data/tourContent'
 
 const TourOverview = () => {
   return (
@@ -57,6 +58,19 @@ const TourOverview = () => {
               </Link>
             )
           })}
+        </div>
+
+        <div id="stuck" className="card scroll-mt-24 space-y-3">
+          <div className="flex items-center gap-2">
+            <Lifebuoy size={22} weight="duotone" className="text-primary-600 dark:text-accent-300" />
+            <h2 className="section-title">Stuck? Get unstuck</h2>
+          </div>
+          <p className="text-sm leading-relaxed text-primary-600 dark:text-primary-300">
+            Every machine is different, so no static page covers every error. Fill in the brackets
+            below and paste it into any AI assistant (Claude, ChatGPT, whatever you have) - it
+            gives useful context instead of just the raw error.
+          </p>
+          <CodeBlock code={DEBUG_PROMPT_TEMPLATE} />
         </div>
       </div>
     </Layout>

@@ -101,7 +101,11 @@ const TourPage = () => {
         )}
 
         <p className="text-xs text-primary-400 dark:text-primary-400">
-          Full guide: <code className="font-mono">{page.guidePath}</code> in the repo.
+          Full guide: <code className="font-mono">{page.guidePath}</code> in the repo. Still stuck?{' '}
+          <Link to="/tour#stuck" className="font-medium text-primary-600 hover:underline dark:text-accent-300">
+            Use the debug prompt
+          </Link>{' '}
+          on the Overview page.
         </p>
       </div>
     </Layout>

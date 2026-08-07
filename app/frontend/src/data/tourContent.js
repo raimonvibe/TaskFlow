@@ -95,7 +95,7 @@ export const TOUR_PAGES = [
           },
           {
             label: '"Network ... needs to be recreated"',
-            code: 'docker-compose down\ndocker-compose up -d',
+            code: '# docker-compose down doesn’t always fully clear the old network - if\n# the error repeats after that, force it:\ndocker rm -f taskflow-postgres taskflow-redis taskflow-backend taskflow-frontend taskflow-prometheus taskflow-grafana taskflow-adminer\ndocker network rm 001taskflow_taskflow-network\ndocker-compose up -d',
           },
         ],
       },
@@ -397,3 +397,18 @@ export const TOUR_PAGES = [
 ]
 
 export const getTourPage = slug => TOUR_PAGES.find(page => page.slug === slug)
+
+// Every machine is different (OS, Docker version, what else is already
+// running on a given port) - static docs can't cover every combination.
+// This is a reusable template for asking any AI assistant for help, built
+// so it actually gives useful context instead of just the raw error.
+export const DEBUG_PROMPT_TEMPLATE = `I'm following the DevOps Tour in github.com/raimonvibe/TaskFlow.
+
+OS: [Windows / Mac / Linux - version]
+Page: [which DevOps Tour page you're on]
+Command I ran: [paste it here]
+Error I got: [paste it here]
+
+(I've removed any passwords, tokens, or keys from the error above)
+
+What's wrong, and how do I fix it?`
