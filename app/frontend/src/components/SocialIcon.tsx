@@ -52,8 +52,7 @@ interface SocialIconProps {
  * One social mark. Always rendered in its full brand colour - solid fill,
  * Instagram's gradient, or TikTok's offset cyan/magenta stack - on both the
  * light and dark themes, since the footer itself stays on a dark navy
- * surface either way. Hover/focus only adds a lift and a brass ring, it
- * doesn't gate the colour.
+ * surface either way. Hover/focus only adds a lift; it doesn't gate the colour.
  */
 const SocialIcon = ({ link, size = 20 }: SocialIconProps): ReactElement => {
   const gradientId = `ig-gradient-${link.id}`
@@ -68,7 +67,7 @@ const SocialIcon = ({ link, size = 20 }: SocialIconProps): ReactElement => {
       rel="noopener noreferrer me"
       title={link.label}
       aria-label={link.label}
-      className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-[var(--brand)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300"
+      className="group inline-flex items-center justify-center text-[var(--brand)] transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-300"
       style={brandStyle}
     >
       {link.fill === 'chromatic' && path ? (
