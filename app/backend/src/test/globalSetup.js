@@ -50,6 +50,14 @@ export default async function globalSetup() {
     await pool.query(
       'CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at)'
     )
+
+    // Sweep leftovers from a previous run that crashed before its own
+    // afterAll cleanup could run. This is the *only* place allowed to delete
+    // every sectest user at once: it runs once, before any test file starts,
+    // so it can't pull rows out from under a test that's still using them.
+    // Per-file cleanup is scoped to that file's own users - see
+    // helpers/testUser.js.
+    await pool.query("DELETE FROM users WHERE email LIKE 'sectest-%@example.com'")
   } finally {
     await endPool()
   }
