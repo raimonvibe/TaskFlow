@@ -6,6 +6,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Tasks from './pages/Tasks'
+import TourOverview from './pages/TourOverview'
+import TourPage from './pages/TourPage'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -29,6 +31,22 @@ function App() {
               element={
                 <PrivateRoute>
                   <Tasks />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tour"
+              element={
+                <PrivateRoute>
+                  <TourOverview />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tour/:slug"
+              element={
+                <PrivateRoute>
+                  <TourPage />
                 </PrivateRoute>
               }
             />
