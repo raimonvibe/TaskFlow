@@ -9,12 +9,7 @@
     "rootDir": "src",
     "declaration": false
   },
-  // src/database/*.js is listed explicitly because nothing imports it -
-  // init-schema.js is its own entrypoint (`npm run db:init`), so tsc would
-  // not otherwise pull it into the program and dist/ would be missing the
-  // script the container runs before start. seed.js rides along for the
-  // same reason.
-  "include": ["src/**/*.ts", "src/database/**/*.js"],
+  "include": ["src/**/*.ts"],
   // Test files and the fakes they use are not part of the shipped image.
   "exclude": ["node_modules", "dist", "coverage", "src/**/*.test.ts", "src/test/**"]
 }

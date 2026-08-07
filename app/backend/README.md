@@ -16,6 +16,7 @@ Node.js/Express REST API for the TaskFlow DevOps learning project.
 
 ## Technology Stack
 
+- **Language**: TypeScript (strict), compiled to `dist/` for production
 - **Runtime**: Node.js 22+
 - **Framework**: Express.js
 - **Database**: PostgreSQL with node-postgres (pg)
@@ -66,7 +67,7 @@ npm run migrate:up
 
 6. (Optional) Seed database:
 ```bash
-npm run seed
+npm run seed:dev
 ```
 
 7. Start development server:
@@ -90,14 +91,18 @@ The API will be available at `http://localhost:3000`
 - `npm run migrate:up` - Run database migrations
 - `npm run migrate:down` - Rollback last migration
 - `npm run migrate:create <name>` - Create new migration
-- `npm run seed` - Seed database with sample data
+- `npm run db:init` - Apply `database/schema.sql` if the schema is missing (idempotent; runs on deploy)
+- `npm run seed` - Seed the database with sample data (runs `dist/`, so build first)
+- `npm run seed:dev` - Same, straight from the TypeScript source via tsx
 
 ## Project Structure
 
-Mid-migration: the auth endpoints run a layered TypeScript architecture,
-everything else still runs the original JavaScript. See
-[docs/BACKEND_REWRITE_PLAN.md](../../docs/BACKEND_REWRITE_PLAN.md) for what
-moves when, and why.
+`src/` is TypeScript end to end and laid out in layers, with dependencies
+pointing inward only: `domain/` imports nothing, `application/` imports
+`domain/`, and `infrastructure/` and `presentation/` implement the
+interfaces the inner layers declare. See
+[docs/BACKEND_REWRITE_PLAN.md](../../docs/BACKEND_REWRITE_PLAN.md) for how
+it got here and why.
 
 ```
 src/
@@ -110,25 +115,23 @@ src/
 │   ├── events/                # DomainEvent, AuthEvents, TaskEvents
 │   └── repositories/          # Interfaces only
 ├── application/               # Use cases; depends only on domain/
-│   ├── services/              # AuthService, TaskService, TokenService
+│   ├── services/              # Auth, Task, Token, Health
 │   ├── ports/                 # Interfaces infrastructure must satisfy
 │   └── subscribers/           # Metrics, audit log
 ├── infrastructure/            # Concrete implementations of the interfaces
 │   ├── persistence/postgres/  # Repositories, connection pool
 │   ├── security/              # Bcrypt hashing, JWT provider
 │   ├── config/Config.ts
-│   ├── logging/, metrics/, events/, clock/
+│   ├── metrics/               # The only file that imports prom-client
+│   ├── logging/, events/, clock/
 ├── presentation/http/         # Express boundary
 │   ├── app.ts                 # Middleware stack + route mounting
 │   ├── controllers/, routes/, middleware/, dto/, validators/
-├── composition/container.ts   # The only file that does `new`
-├── main.ts                    # Entry point (npm start -> dist/main.js)
-│
-│   # Not yet migrated - replaced in phase 5:
-├── config/                    # index.js, database.js
-├── middleware/requestLogger.js
-├── routes/healthRoutes.js
-└── utils/                     # logger.js, metrics.js
+├── composition/
+│   ├── container.ts           # The only file that does `new`
+│   └── scriptContext.ts       # Smaller root for the standalone scripts
+├── database/                  # initSchema.ts, seed.ts (own entrypoints)
+└── main.ts                    # Entry point (npm start -> dist/main.js)
 ```
 
 ### Local development note
@@ -214,11 +217,11 @@ Interactive UI mode:
 npm run test:ui
 ```
 
-**Note:** Unit tests (`domain/`, `application/`, and the fakes in
-`src/test/fakes/`) need no database and run in about a second - they exercise
-services against in-memory implementations of the repository interfaces, with
-no mocking framework involved. Integration tests (`src/test/security/*`,
-`PostgresUserRepository.test.ts`, `models/Task.test.js`) do require a
+**Note:** Unit tests (`domain/`, `application/`, `presentation/`, and the
+fakes in `src/test/fakes/`) need no database and run in about a second -
+they exercise services against in-memory implementations of the repository
+interfaces, with no mocking framework involved. Integration tests
+(`src/test/security/*` and the `Postgres*Repository` tests) do require a
 PostgreSQL connection.
 
 ## Docker

@@ -36,7 +36,7 @@ Once the first deploy finishes, copy the backend's URL from its page in the Rend
 
 ## Database schema init
 
-`app/backend/src/database/init-schema.js` runs in the backend's `startCommand` (`npm run db:init && npm start`) on every deploy. Render's free tier does not support `preDeployCommand`, so schema init runs at service start instead (when `DATABASE_URL` is available). It checks whether the `users` table already exists; if not, it applies `app/database/schema.sql` once. This makes first-deploy setup automatic without risking errors from re-running non-idempotent `CREATE TYPE`/`CREATE TRIGGER` statements on later deploys.
+`app/backend/src/database/initSchema.ts` (compiled to `dist/database/initSchema.js`) runs in the backend's `startCommand` (`npm run db:init && npm start`) on every deploy. Render's free tier does not support `preDeployCommand`, so schema init runs at service start instead (when `DATABASE_URL` is available). It checks whether the `users` table already exists; if not, it applies `app/database/schema.sql` once. This makes first-deploy setup automatic without risking errors from re-running non-idempotent `CREATE TYPE`/`CREATE TRIGGER` statements on later deploys.
 
 If you need to change the schema later, either add a new guarded step to that script or switch to `node-pg-migrate` (already a dependency) for real migrations.
 

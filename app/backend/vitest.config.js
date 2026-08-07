@@ -5,19 +5,22 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.test.js', 'src/**/*.spec.js', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    globalSetup: ['./src/test/globalSetup.js'],
+    globalSetup: ['./src/test/globalSetup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/**',
         'dist/**',
-        '**/*.test.js',
         '**/*.test.ts',
         '**/*.config.js',
-        'src/database/seed.js',
+        // Standalone entrypoints: run by `npm run db:init` / `npm run seed`
+        // and by the deploy, not importable as units.
+        'src/main.ts',
+        'src/database/**',
+        'src/composition/scriptContext.ts',
         // Phase 1 placeholder marker files (docs/BACKEND_REWRITE_PLAN.md) -
         // `export {}` with nothing to cover.
         'src/domain/index.ts',

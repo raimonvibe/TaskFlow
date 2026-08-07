@@ -1,9 +1,9 @@
 /**
  * Validated, fail-fast application configuration.
  *
- * Mirrors `config/index.js`'s current values and defaults exactly (see that
- * file) - this is a structural rewrite, not a behavior change. Two real
- * differences from the current module:
+ * Carries over `config/index.js`'s values and defaults exactly - this was a
+ * structural rewrite, not a behavior change. Two real differences from the
+ * module it replaced:
  *
  * 1. It's a class you construct, not a module-level object built once at
  *    import time. The constructor takes an optional `env` source
@@ -11,14 +11,14 @@
  *    plain object (`new Config({ NODE_ENV: 'production' })`) instead of
  *    mutating the real `process.env` and hoping nothing else read it first.
  * 2. Loading a `.env` file (`dotenv.config()`) is *not* done here - that's
- *    a startup/bootstrap concern for the future `main.ts` entrypoint
- *    (Phase 3+), not something a config value object should have as a side
- *    effect of merely being constructed.
+ *    a bootstrap concern, handled by `main.ts` and `scriptContext.ts`, not
+ *    something a config value object should have as a side effect of
+ *    merely being constructed.
  *
  * `getInstance()` provides the actual Singleton for the rest of the app to
- * share (same one `Config` for the lifetime of the process), matching how
- * `config/index.js` is already, in effect, a singleton today - just
- * explicit now instead of implicit in module caching.
+ * share (same one `Config` for the lifetime of the process) - the same
+ * thing `config/index.js` got implicitly from module caching, just explicit
+ * now.
  */
 export interface DatabaseConfig {
   readonly connectionString?: string
@@ -109,8 +109,8 @@ export class Config {
 
   /** Require an explicit JWT_SECRET in production - refuses to boot with
    * the default placeholder value rather than silently signing tokens
-   * anyone could forge. Same rule as today's config/index.js, just named
-   * and callable on its own instead of buried in an IIFE inside an object
+   * anyone could forge. Same rule `config/index.js` had, just named and
+   * callable on its own instead of buried in an IIFE inside an object
    * literal. */
   private resolveJwtSecret(env: NodeJS.ProcessEnv): string {
     const secret = env.JWT_SECRET

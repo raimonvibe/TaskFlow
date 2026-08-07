@@ -2,8 +2,6 @@ import 'dotenv/config'
 import type { Server } from 'http'
 import { createContainer, type Container } from './composition/container.js'
 import { createApp } from './presentation/http/app.js'
-import { PrometheusMetricsRegistry } from './infrastructure/metrics/PrometheusMetricsRegistry.js'
-import { authAttempts, tasksByStatus } from './utils/metrics.js'
 
 const FORCED_SHUTDOWN_MS = 10000
 
@@ -16,13 +14,7 @@ const FORCED_SHUTDOWN_MS = 10000
  * This is the bootstrap, so this is where bootstrap concerns belong.
  */
 async function main(): Promise<void> {
-  const container = createContainer({
-    // Wraps the instruments that already exist in utils/metrics.js rather
-    // than declaring new ones - prom-client rejects duplicate metric names,
-    // and /metrics must keep exposing exactly one auth_attempts_total and
-    // one tasks_by_status.
-    metrics: new PrometheusMetricsRegistry({ authAttempts, tasksByStatus }),
-  })
+  const container = createContainer()
 
   const { config, logger, db } = container
 

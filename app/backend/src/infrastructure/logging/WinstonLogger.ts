@@ -19,11 +19,11 @@ export interface WinstonLoggerOptions {
   level?: string
   /**
    * Write to logs/error.log and logs/combined.log in addition to the
-   * console - the production default, matching today's utils/logger.js
-   * exactly. Set to `false` in tests (or anywhere else that shouldn't touch
-   * the filesystem) - unlike the current module, which unconditionally
-   * creates a `logs/` directory as a side effect of being imported, this
-   * only happens when file transports are actually enabled.
+   * console - the production default, matching what `utils/logger.js` did.
+   * Set to `false` in tests (or anywhere else that shouldn't touch the
+   * filesystem) - unlike that module, which unconditionally created a
+   * `logs/` directory as a side effect of being imported, this only happens
+   * when file transports are actually enabled.
    */
   enableFileTransports?: boolean
 }

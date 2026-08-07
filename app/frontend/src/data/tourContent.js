@@ -71,10 +71,10 @@ export const TOUR_PAGES = [
       },
       {
         heading: 'Rebuilding after a code change',
-        body: 'The backend image deliberately has npm removed at build time (hardening step, cuts Trivy findings), and only ever installs production dependencies - so anything needing npm or a dev dependency (like running tests) has to happen on your host, not inside the container.',
+        body: 'Compose builds the Dockerfile\'s "dev" stage, which bind-mounts the source and keeps the dev dependencies so tsx can reload TypeScript on change. The published production image is a different stage entirely: it ships the compiled dist/ only, installs production dependencies only, and has npm removed at build time as a hardening step (it cuts Trivy findings). Tests still belong on your host, not in either container.',
         commands: [
           {
-            code: 'docker-compose up --build\ndocker-compose exec backend node src/database/seed.js   # seed demo data\ndocker-compose exec postgres psql -U taskflow_user -d taskflow',
+            code: 'docker-compose up --build\ndocker-compose exec backend npm run seed:dev   # seed demo data\ndocker-compose exec postgres psql -U taskflow_user -d taskflow',
           },
           {
             label: 'Run tests (on your host, not in the container)',

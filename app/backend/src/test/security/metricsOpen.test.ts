@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import type { Express } from 'express'
 import request from 'supertest'
 
-// Counterpart to metrics.test.js - kept in a separate file/module registry
-// so this scenario's app.js import sees METRICS_KEY unset, without needing
-// to tear down and rebuild the other file's prom-client Registry.
+// Counterpart to metrics.test.ts - kept in a separate file/module registry
+// so this scenario's testApp import sees METRICS_KEY unset, without needing
+// to reset the other file's Config singleton.
 describe('Security: /metrics endpoint gating (METRICS_KEY not configured)', () => {
-  let app
+  let app: Express
 
   beforeAll(async () => {
     delete process.env.METRICS_KEY

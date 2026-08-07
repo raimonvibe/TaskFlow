@@ -13,9 +13,9 @@ export interface NewUser {
  * implements it, `InMemoryUserRepository` (test/fakes/) implements it for
  * unit tests, and `AuthService` cannot tell the difference.
  *
- * That substitution is the whole point: today's controller tests have to
+ * That substitution is the whole point: the old controller tests had to
  * `vi.mock('../models/User.js')` and `vi.mock('../config/database.js')`
- * because `authController.js` reaches for those modules by path. A service
+ * because `authController.js` reached for those modules by path. A service
  * that takes this interface as a constructor argument needs no mocking
  * framework at all (docs/BACKEND_REWRITE_PLAN.md §1, §5).
  *

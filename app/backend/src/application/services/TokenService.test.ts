@@ -121,7 +121,12 @@ describe('TokenService', () => {
       const justBeforeFallback = new InMemoryTokenBlacklistRepository(
         () => new Date(NOW.getTime() + SEVEN_DAYS_SECONDS * 1000 - 1000)
       )
-      const fallbackService = new TokenService(provider, justBeforeFallback, new FixedClock(NOW), logger)
+      const fallbackService = new TokenService(
+        provider,
+        justBeforeFallback,
+        new FixedClock(NOW),
+        logger
+      )
       await fallbackService.revoke(token)
       await justBeforeFallback.deleteExpired()
       expect(justBeforeFallback.size).toBe(1)

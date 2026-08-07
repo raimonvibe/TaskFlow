@@ -2,7 +2,9 @@ import { describe, it, expect, afterAll } from 'vitest'
 import request from 'supertest'
 import app from '../helpers/testApp.js'
 import { uniqueEmail, cleanupAllTestUsers } from '../helpers/testUser.js'
-import config from '../../config/index.js'
+import { Config } from '../../infrastructure/config/Config.js'
+
+const config = Config.getInstance()
 
 // Kept in its own file, deliberately: express-rate-limit's default store is
 // an in-memory Map scoped to this one Express app instance/process. Vitest

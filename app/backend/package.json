@@ -13,12 +13,13 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "format": "prettier --write \"src/**/*.js\" \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "migrate:create": "node-pg-migrate create",
     "seed": "node dist/database/seed.js",
-    "db:init": "node dist/database/init-schema.js"
+    "seed:dev": "tsx src/database/seed.ts",
+    "db:init": "node dist/database/initSchema.js"
   },
   "keywords": [
     "devops",
@@ -54,6 +55,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.4",
+    "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "4.1.9",
     "@vitest/ui": "4.1.9",
     "eslint": "^10.1.0",

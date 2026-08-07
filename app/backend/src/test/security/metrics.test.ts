@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import type { Express } from 'express'
 import request from 'supertest'
 
-// app.js (and transitively config/index.js) reads process.env.METRICS_KEY at
-// import time, so METRICS_KEY has to be set *before* app.js is first
-// imported in this file - a dynamic import() in beforeAll, not a static
-// top-level import (which ES modules hoist above everything else, including
-// the env var assignment). See metricsOpen.test.js for the "key not
-// configured" counterpart - kept in its own file rather than reusing this
-// module (via vi.resetModules() + re-import) because prom-client's Registry
-// doesn't tolerate being torn down and rebuilt more than once per process.
+// testApp.ts builds its container - and therefore reads METRICS_KEY through
+// Config - at import time, so METRICS_KEY has to be set *before* that first
+// import. Hence a dynamic import() in beforeAll rather than a static
+// top-level one, which ES modules hoist above everything else including the
+// env var assignment. metricsOpen.test.ts is the "key not configured"
+// counterpart, in its own file so that each scenario gets its own module
+// registry and its own Config singleton.
 describe('Security: /metrics endpoint gating (METRICS_KEY configured)', () => {
-  let app
+  let app: Express
 
   beforeAll(async () => {
     process.env.METRICS_KEY = 'test-metrics-secret'

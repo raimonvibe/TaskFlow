@@ -26,7 +26,7 @@ describe('Config', () => {
       expect(config.log.level).toBe('info')
       expect(config.metrics.key).toBeNull()
       // Outside production, a missing JWT_SECRET falls back to the known
-      // placeholder rather than throwing - same as today's config/index.js.
+      // placeholder rather than throwing - same as `config/index.js` did.
       expect(config.jwt.secret).toBe('default_secret_change_in_production')
     })
   })

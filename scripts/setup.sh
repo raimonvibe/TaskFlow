@@ -234,12 +234,11 @@ echo
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_info "Seeding database..."
-    # Not "npm run seed" - the backend image deliberately has npm removed at
-    # build time (Dockerfile hardening step, cuts Trivy findings), so npm
-    # doesn't exist in this container at all. Calling node directly on the
-    # script works fine since seed.js only needs runtime deps, which are
-    # present.
-    docker-compose exec -T backend node src/database/seed.js
+    # "seed:dev", not "seed": Compose builds the Dockerfile's `dev` stage,
+    # which bind-mounts the source and keeps tsx, so the TypeScript runs
+    # directly without a build step. "seed" targets dist/ and belongs to the
+    # production image (which also has npm removed as a hardening step).
+    docker-compose exec -T backend npm run seed:dev
     print_success "Database seeded successfully"
     echo ""
     print_info "Demo credentials:"

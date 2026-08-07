@@ -11,7 +11,7 @@
 # .github/workflows/keepalive.yml
 #
 # Free web services do not support preDeployCommand, so db:init runs in
-# startCommand before npm start (init-schema.js is idempotent).
+# startCommand before npm start (initSchema.ts is idempotent).
 #
 # NOTE: Render's free Postgres plan is deleted 30 days after creation. For a
 # real "production" deployment, upgrade taskflow-db's plan (see docs/RENDER_DEPLOY.md).
@@ -36,7 +36,7 @@ services:
     rootDir: app/backend
     # The backend is TypeScript as of the Phase 3 cutover, so the build has
     # to compile it - `npm start` runs dist/main.js, and `db:init` runs
-    # dist/database/init-schema.js. `npm ci` (not --omit=dev) is required:
+    # dist/database/initSchema.js. `npm ci` (not --omit=dev) is required:
     # typescript is a devDependency and the build needs it.
     buildCommand: npm ci && npm run build
     startCommand: npm run db:init && npm start

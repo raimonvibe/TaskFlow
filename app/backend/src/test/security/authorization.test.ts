@@ -3,6 +3,8 @@ import request from 'supertest'
 import app from '../helpers/testApp.js'
 import { registerAndLogin, uniqueEmail, cleanupAllTestUsers } from '../helpers/testUser.js'
 
+type HttpMethod = 'get' | 'post' | 'put' | 'delete'
+
 // OWASP API Security Top 10 2023: API1 Broken Object Level Authorization
 // (IDOR), API3 Broken Object Property Level Authorization (mass
 // assignment), API5 Broken Function Level Authorization (auth required at
@@ -13,7 +15,7 @@ describe('Security: Authorization (BOLA / IDOR / mass assignment)', () => {
   })
 
   describe('every task route requires authentication', () => {
-    const cases = [
+    const cases: Array<[HttpMethod, string]> = [
       ['get', '/api/tasks'],
       ['get', '/api/tasks/stats'],
       ['get', '/api/tasks/1'],
@@ -84,7 +86,7 @@ describe('Security: Authorization (BOLA / IDOR / mass assignment)', () => {
         .set('Authorization', `Bearer ${userB.token}`)
 
       expect(listAsB.status).toBe(200)
-      expect(listAsB.body.tasks.some(t => t.title === "A's task")).toBe(false)
+      expect(listAsB.body.tasks.some((t: { title: string }) => t.title === "A's task")).toBe(false)
     })
 
     it("a user's stats never reflect another user's tasks", async () => {

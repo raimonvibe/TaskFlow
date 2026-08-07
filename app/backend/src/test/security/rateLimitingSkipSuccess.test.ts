@@ -2,9 +2,11 @@ import { describe, it, expect, afterAll } from 'vitest'
 import request from 'supertest'
 import app from '../helpers/testApp.js'
 import { uniqueEmail, cleanupAllTestUsers } from '../helpers/testUser.js'
-import config from '../../config/index.js'
+import { Config } from '../../infrastructure/config/Config.js'
 
-// Separate file from rateLimiting.test.js on purpose - that file deliberately
+const config = Config.getInstance()
+
+// Separate file from rateLimiting.test.ts on purpose - that file deliberately
 // exhausts the auth limiter's counter for its app instance, which would make
 // this test flaky if it ran against the same in-memory store.
 describe('Security: Auth rate limiting - skipSuccessfulRequests', () => {

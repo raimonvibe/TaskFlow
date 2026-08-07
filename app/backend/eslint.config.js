@@ -5,6 +5,8 @@ import tseslint from 'typescript-eslint'
 export default [
   { ignores: ['node_modules/', 'coverage/', 'dist/'] },
   js.configs.recommended,
+  // As of Phase 5 the only .js left in this package is tooling config at
+  // the root (this file, vitest.config.js) - src/ is TypeScript end to end.
   {
     files: ['**/*.js'],
     languageOptions: {
@@ -16,9 +18,6 @@ export default [
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
-  // TypeScript files (docs/BACKEND_REWRITE_PLAN.md) get their own block,
-  // scoped to `**/*.ts` only so it never applies to the existing `.js`
-  // codebase above.
   ...tseslint.configs.recommended.map(config => ({
     ...config,
     files: ['**/*.ts'],

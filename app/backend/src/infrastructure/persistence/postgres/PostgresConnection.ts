@@ -1,33 +1,28 @@
 import pg from 'pg'
 import type { DatabaseConfig } from '../../config/Config.js'
+import type { DatabaseHealth, PoolStats } from '../../../application/ports/IDatabaseHealth.js'
 import type { Logger } from '../../../application/ports/ILogger.js'
 
-export interface PoolStats {
-  readonly total: number
-  readonly idle: number
-  readonly waiting: number
-}
+export type { PoolStats }
 
 /**
- * Adapter around `pg.Pool` - mirrors `config/database.js`'s current
- * behavior (query/testConnection/transaction/getPoolStats), but as an
- * injectable class instead of a module-level pool everything imports by
- * path. Repository implementations (Phase 3+) take a `PostgresConnection`
- * in their constructor instead of importing `query` directly, which is
- * what lets them be swapped for an in-memory fake in unit tests without
- * `vi.mock('../config/database.js')` - see
- * docs/BACKEND_REWRITE_PLAN.md §1 and §5.
+ * Adapter around `pg.Pool`. Took over from `config/database.js`, keeping
+ * its behavior (query/testConnection/transaction/getPoolStats) but as an
+ * injectable class instead of a module-level pool everything imported by
+ * path. Repositories take a `PostgresConnection` in their constructor
+ * rather than importing `query` directly, which is what lets them be
+ * swapped for an in-memory fake in unit tests with no mocking framework -
+ * see docs/BACKEND_REWRITE_PLAN.md §1 and §5.
  *
- * One deliberate behavior change from today's `config/database.js`: this
- * class does **not** call `process.exit(-1)` when the pool emits an
- * `'error'` event on an idle client. Crashing the whole process is a
- * bootstrap-level policy decision, not something a reusable, unit-testable
- * class should hardcode - a class that can call `process.exit` can also
- * kill the test runner. The future composition root (Phase 3+) can
- * subscribe to the same failure mode and decide to exit if that's still the
- * right call operationally.
+ * One deliberate behavior change from the module it replaced: this class
+ * does **not** call `process.exit(-1)` when the pool emits an `'error'`
+ * event on an idle client. Crashing the whole process is a bootstrap-level
+ * policy decision, not something a reusable, unit-testable class should
+ * hardcode - a class that can call `process.exit` can also kill the test
+ * runner. The composition root can subscribe to the same failure mode and
+ * decide to exit if that's still the right call operationally.
  */
-export class PostgresConnection {
+export class PostgresConnection implements DatabaseHealth {
   readonly pool: pg.Pool
 
   constructor(
@@ -73,6 +68,15 @@ export class PostgresConnection {
     }
   }
 
+  /**
+   * Liveness only - `SELECT 1` rather than `testConnection`'s `SELECT NOW()`
+   * plus a log line, because /health calls this on every check and has no
+   * use for the timestamp. Same query healthRoutes.js runs today.
+   */
+  async ping(): Promise<void> {
+    await this.pool.query('SELECT 1')
+  }
+
   async query<T extends pg.QueryResultRow = pg.QueryResultRow>(
     text: string,
     params?: unknown[]
@@ -115,10 +119,10 @@ export class PostgresConnection {
     }
   }
 
-  /** Not present in the current config/database.js (which just lets the
-   * pool live for the process lifetime) - added because a unit-testable,
-   * constructible class also needs a way to clean itself up, e.g. between
-   * test files that each build their own PostgresConnection. */
+  /** Not present in `config/database.js`, which just let the pool live for
+   * the process lifetime - added because a unit-testable, constructible
+   * class also needs a way to clean itself up, e.g. between test files that
+   * each build their own PostgresConnection. */
   async close(): Promise<void> {
     await this.pool.end()
   }

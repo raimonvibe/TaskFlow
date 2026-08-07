@@ -5,13 +5,6 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import type { Container } from '../../composition/container.js'
 
-// Not yet migrated - still plain JavaScript, imported here so the app keeps
-// serving health and metrics exactly as before while the rewrite proceeds
-// one slice at a time. Phase 5 replaces healthRoutes and requestLogger.
-// `allowJs` in tsconfig.json exists for exactly this window.
-import { requestLogger } from '../../middleware/requestLogger.js'
-import healthRoutes from '../../routes/healthRoutes.js'
-
 /**
  * Builds the Express application from an already-wired container.
  *
@@ -45,14 +38,13 @@ export function createApp(container: Container): Express {
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
   app.use(compression())
-  app.use(requestLogger)
+  app.use(container.requestLogger)
 
   // Health and metrics: public, no auth (Render's health checker hits
-  // /health directly; /metrics is gated on METRICS_KEY inside the route).
-  app.use('/', healthRoutes)
+  // /health directly; /metrics is gated on METRICS_KEY inside the
+  // controller).
+  app.use('/', container.healthRouter)
 
-  // Migrated in Phase 3 and Phase 4 - both API resources are now served by
-  // the new architecture. Nothing under /api/ runs pre-rewrite code.
   app.use('/api/auth', container.authRouter)
   app.use('/api/tasks', container.taskRouter)
 

@@ -21,7 +21,7 @@ describe('Security: Authentication', () => {
         .send({ name: 'Test', email: uniqueEmail('short-pw'), password: 'short1' })
 
       expect(res.status).toBe(400)
-      expect(res.body.errors.some(e => e.field === 'password')).toBe(true)
+      expect(res.body.errors.some((e: { field: string }) => e.field === 'password')).toBe(true)
     })
 
     it('rejects an invalid email format', async () => {

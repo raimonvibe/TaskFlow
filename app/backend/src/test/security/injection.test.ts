@@ -1,8 +1,9 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import request from 'supertest'
-import app from '../helpers/testApp.js'
+import app, { getTestContainer } from '../helpers/testApp.js'
 import { registerAndLogin, uniqueEmail, cleanupAllTestUsers } from '../helpers/testUser.js'
-import { query } from '../../config/database.js'
+
+const query = getTestContainer().db.query.bind(getTestContainer().db)
 
 describe('Security: Injection & input handling', () => {
   afterAll(async () => {
@@ -31,8 +32,10 @@ describe('Security: Injection & input handling', () => {
       // injection involved.
       expect([400, 401]).toContain(res.status)
 
-      const tableStillExists = await query("SELECT to_regclass('public.users') AS users_table")
-      expect(tableStillExists.rows[0].users_table).not.toBeNull()
+      const tableStillExists = await query<{ users_table: string | null }>(
+        "SELECT to_regclass('public.users') AS users_table"
+      )
+      expect(tableStillExists.rows[0]?.users_table).not.toBeNull()
 
       const injectedRow = await query('SELECT id FROM users WHERE email = $1', [injectedEmail])
       expect(injectedRow.rows).toHaveLength(0)
@@ -103,8 +106,9 @@ describe('Security: Injection & input handling', () => {
         .set('Content-Type', 'application/json')
         .send(rawBody)
 
-      expect({}.polluted).toBeUndefined()
-      expect({}.polluted2).toBeUndefined()
+      const probe: Record<string, unknown> = {}
+      expect(probe.polluted).toBeUndefined()
+      expect(probe.polluted2).toBeUndefined()
       expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false)
     })
   })

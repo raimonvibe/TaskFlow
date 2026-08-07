@@ -56,9 +56,10 @@ docker-compose logs -f
 ### Seed Database (Optional)
 
 ```bash
-# npm is intentionally removed from the backend container at build time
-# (hardening step, cuts Trivy findings) - run the script with node directly
-docker-compose exec backend node src/database/seed.js
+# Compose builds the Dockerfile's `dev` stage, which keeps tsx and can run
+# the TypeScript source directly. (The production image ships dist/ only and
+# has npm removed as a hardening step - there, it's `node dist/database/seed.js`.)
+docker-compose exec backend npm run seed:dev
 
 # Demo credentials will be displayed:
 # Email: demo@taskflow.com

@@ -1,6 +1,6 @@
 # Backend Rewrite Plan: TypeScript, Clean Architecture, Design Patterns
 
-Status: **Phase 4 (task vertical slice) done — nothing under `/api/` runs pre-rewrite code any more.** Next up: Phase 5 (cross-cutting cleanup: health/metrics).
+Status: **Phase 5 (cross-cutting cleanup) done — `src/` is TypeScript end to end and no pre-rewrite file remains.** Next up: Phase 6 (docs & infra catch-up: `docs/ARCHITECTURE.md`, the DevOps Tour).
 
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
@@ -15,7 +15,28 @@ Phases 1 and 2 changed nothing in `src/*.js`; Phase 3 is where the new code took
 
   Retired: `models/Task.js` (+ test — replaced by `PostgresTaskRepository.test.ts`), `controllers/taskController.js` (+ test — replaced by `TaskService.test.ts`), `routes/taskRoutes.js`, and, now that nothing imported them any more, `middleware/auth.js` (+ test), `middleware/validate.js`, and `models/TokenBlacklist.js`. The `LEGACY_PG_ERRORS` block in `errorHandler.ts` is gone too: every query in the app now runs inside a repository, so there is no Postgres error code left for the HTTP layer to recognize.
 
-  What remains under `src/` as JavaScript: `config/`, `database/`, `middleware/requestLogger.js`, `routes/healthRoutes.js`, `utils/`, and the test helpers — all Phase 5/6 work.
+- *Phase 5 (cross-cutting cleanup)*: **done.** `src/` contains no `.js` at all. `HealthService` behind a new `DatabaseHealth` port, `HealthController` and `MetricsController`, `healthRoutes.ts`, and `requestLogger` as a middleware factory over the `Logger` and `HttpMetrics` ports. `PrometheusMetricsRegistry` now owns the prom-client Registry and every instrument, so it is the only file in the codebase that imports prom-client. `initSchema.ts` and `seed.ts` replaced their JavaScript originals and share a `composition/scriptContext.ts` root. The security suite, its helpers, and `globalSetup` are TypeScript. 216 tests across 27 files pass.
+
+  Retired: `config/index.js` and `config/database.js` (replaced by `Config` and `PostgresConnection`, which existed since Phase 2 but had these two still shadowing them), `utils/logger.js`, `utils/metrics.js`, `middleware/requestLogger.js`, `routes/healthRoutes.js`, `database/init-schema.js`, `database/seed.js`, and `jest.config.js` (dead since the Vitest migration; its `testMatch` of `**/*.test.js` now provably matches nothing).
+
+  `allowJs`/`checkJs` are gone from `tsconfig.json` — §7 assigned that to Phase 6, but its stated precondition ("once no `.js` remains under `src/`") is exactly what this phase establishes, and leaving the escape hatch open would let a stray `.js` file slip back in unchecked. `tsconfig.build.json` lost its `src/database/**/*.js` special case for the same reason: the scripts are `.ts` now, so the ordinary include covers them.
+
+### What Phase 5 changed about how metrics are wired
+
+`utils/metrics.js` built its Registry and instruments at import time and handed them out as module-level singletons that controllers and middleware incremented directly. The names, help strings, label names, and histogram buckets all survive unchanged, so `/metrics` exposes the same series and the Grafana dashboards keep working. Two things about the *arrangement* are different:
+
+- **Instruments register only into their own Registry.** prom-client's default is to also add every instrument to a global default registry, where a second instance collides on the duplicate metric name. That collision is why the two `/metrics` gating tests were split across files in the first place, with a comment explaining that the Registry "doesn't tolerate being torn down and rebuilt more than once per process." Passing `registers: [registry]` explicitly removes the constraint; the tests stay in separate files now only because each needs its own `METRICS_KEY`.
+- **Nothing above `infrastructure/metrics/` knows what a gauge is.** The ports (`MetricsRegistry`, `HttpMetrics`, `MetricsExporter`) speak in things that happened — a request finished, a task changed status — and the inc/dec/observe arithmetic lives in one file. That includes the pairing the `tasks_by_status` gauge depends on, which used to be an `if (status !== previousStatus)` inline in `taskController.js`.
+
+The container now always constructs the metrics registry rather than taking it as an optional override, because `/metrics` is part of the app it builds. `main.ts` and `testApp.ts` both got shorter as a result.
+
+### Behavior changes in Phase 5
+
+None intended, and none found. `/health` returns the same body and the same 200/503 split; `/metrics` still answers 404 rather than 401 to a caller without `METRICS_KEY`, still sets the database pool gauge immediately before rendering, and still emits the same series. The one internal difference is that the health check runs `SELECT 1` instead of `SELECT NOW()` — the timestamp was never read.
+
+### Verification performed at the Phase 5 cutover
+
+Beyond lint/typecheck/build/tests: the compiled output was run against the real database and checked by hand for `/health` (200, `{status, timestamp, database}`), `/metrics` with no key (404), with a wrong key (404), and with the right key — confirming `http_requests_total`, `http_request_duration_seconds`, `active_connections`, `database_connections{state=...}`, `tasks_by_status`, `auth_attempts_total`, and the prom-client default process metrics are all present and moving. A failed login incremented `auth_attempts_total{status="failure"}`, which is the end-to-end proof that the always-on `MetricsSubscriber` is wired the same way the old override was. `npm run db:init` was run against the dev database and took its idempotent "already initialized, skipping" path, exiting cleanly without `process.exit` now that the script closes its own pool.
 
 ### Behavior changes in Phase 4, and why each one is not a regression
 
@@ -42,7 +63,7 @@ The `tasks_by_status` gauge was checked on `/metrics` afterwards and had returne
 
 It was therefore done as part of Phase 3: `main.ts` + `presentation/http/app.ts`, `allowJs` so the TS entrypoint can keep importing the not-yet-migrated task/health routes, `dev`/`start`/`db:init` pointed at `tsx`/`dist/`, a Dockerfile build stage, a Dockerfile `dev` stage (compose bind-mounts the source, so it needs the dev dependencies for `tsx watch` — this is new hot reload the old `node src/server.js` container never had), and `render.yaml`'s `buildCommand`.
 
-**Correction to §7 for the remaining phases:** the "docs & infra catch-up" phase no longer includes the entrypoint or the Dockerfile/render build wiring — that is done. What remains for Phase 6 is `docs/ARCHITECTURE.md`, the DevOps Tour content, and removing `allowJs`/`checkJs` once no `.js` remains under `src/`.
+**Correction to §7 for the remaining phases:** the "docs & infra catch-up" phase no longer includes the entrypoint or the Dockerfile/render build wiring — that is done. What remains for Phase 6 is `docs/ARCHITECTURE.md` and the DevOps Tour content. (`allowJs`/`checkJs` were also listed here; Phase 5 removed them, since it is the phase that made no `.js` remain under `src/`.)
 
 ### §6's open question, now answered
 
@@ -271,8 +292,8 @@ Recommended approach: **vertical slices, not a big-bang rewrite** — even thoug
 2. **Domain foundations** (shared by both resources) — `AppError` hierarchy, `Email` value object, `IClock`, `IEventBus` + `InMemoryEventBus`, `Config` class, `WinstonLogger` behind `ILogger`, `PostgresConnection` adapter.
 3. **Auth vertical slice** — `IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `AuthService`, `TokenService`, `AuthController`, auth routes/middleware/DTOs, `MetricsSubscriber`/`AuditLogSubscriber` wired to auth events. Old `authController.js`/`authRoutes.js`/`models/User.js` retired once integration tests are green against the new slice.
 4. **Task vertical slice** — same pattern, second time is faster. `ITaskRepository`, `TaskService`, `TaskController`, task events. Old `taskController.js`/`taskRoutes.js`/`models/Task.js` retired. *(Done — it was indeed faster, and it also took `middleware/auth.js`, `middleware/validate.js`, and `models/TokenBlacklist.js` with it, since the task routes were their last remaining importer.)*
-5. **Cross-cutting cleanup** — health/metrics endpoints rebuilt as thin controllers on the new `Config`/`ILogger`; delete every old file the new layers replaced; confirm nothing in `src/` still references the pre-rewrite layout.
-6. **Docs & infra catch-up** — update `docs/ARCHITECTURE.md` (currently describes the old Controllers→Models→Database layering) to reflect the new layered design, update Dockerfile/render.yaml/CI as in §4, sanity-check the DevOps Tour content in the frontend for any command examples that assumed old file paths.
+5. **Cross-cutting cleanup** — health/metrics endpoints rebuilt as thin controllers on the new `Config`/`ILogger`; delete every old file the new layers replaced; confirm nothing in `src/` still references the pre-rewrite layout. *(Done. It also absorbed the two database scripts and the last JavaScript test files, since deleting `config/database.js` left them with nothing to import — and, having reached zero `.js` under `src/`, the `allowJs` removal that §7 had parked in Phase 6.)*
+6. **Docs & infra catch-up** — update `docs/ARCHITECTURE.md` (currently describes the old Controllers→Models→Database layering) to reflect the new layered design, sanity-check the DevOps Tour content in the frontend for any command examples that assumed old file paths, sweep the source comments that still say "today's `taskController.js`" and the like now that there is no such file (the comparisons are worth keeping — the tense is not; Phase 5 fixed only the files it otherwise touched, to keep its own diff reviewable), and clear the remaining tooling cruft: the unused `jest` devDependency (and the `overrides` entries that exist only for its transitive dependencies) and the legacy `.eslintrc.cjs`, which ESLint 10 ignores entirely in favor of the flat config. The Dockerfile/render.yaml/CI work from §4 is already done — see the ordering note above.
 7. **Optional stretch, not required for "done"** — pluggable password-policy strategies, refresh-token rotation as its own service, request-scoped correlation IDs in logs, OpenAPI generation from the DTOs.
 
 ---
@@ -291,5 +312,5 @@ Recommended approach: **vertical slices, not a big-bang rewrite** — even thoug
 ## 9. Open questions worth deciding before Phase 1 starts
 
 - Should `docs/ARCHITECTURE.md` be updated incrementally per phase, or once at the end (Phase 6)? Leaning incremental so it never goes stale mid-rewrite.
-- `node-pg-migrate` is already a devDependency but unused for what's actually shipped (schema.sql + the guarded `init-schema.js` blocks are the real source of truth today). Formalizing on it is implied by §1's `token_blacklist` example — worth confirming that's wanted, since it also touches `scripts/setup.sh`, the Docker Compose Postgres init, and CI's migration step.
+- `node-pg-migrate` is already a devDependency but unused for what's actually shipped (schema.sql + the guarded `initSchema.ts` blocks are the real source of truth today). Formalizing on it is implied by §1's `token_blacklist` example — worth confirming that's wanted, since it also touches `scripts/setup.sh`, the Docker Compose Postgres init, and CI's migration step.
 - Branch strategy: one long-lived `backend-rewrite` branch merged phase-by-phase, or a PR per phase against `main`? Given `main.yml`'s CI already runs on every push to `main`, a PR per phase keeps `main` always deployable, which fits how Render's `autoDeployTrigger: commit` is configured.

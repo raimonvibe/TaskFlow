@@ -1,17 +1,18 @@
 import type { RequestHandler } from 'express'
 import type { ErrorRequestHandler, Router } from 'express'
 import { AuthService } from '../application/services/AuthService.js'
+import { HealthService } from '../application/services/HealthService.js'
 import { TaskService } from '../application/services/TaskService.js'
 import { TokenService } from '../application/services/TokenService.js'
 import { AuditLogSubscriber } from '../application/subscribers/AuditLogSubscriber.js'
 import { MetricsSubscriber } from '../application/subscribers/MetricsSubscriber.js'
 import type { Clock } from '../application/ports/IClock.js'
 import type { Logger } from '../application/ports/ILogger.js'
-import type { MetricsRegistry } from '../application/ports/IMetricsRegistry.js'
 import { SystemClock } from '../infrastructure/clock/SystemClock.js'
 import { Config } from '../infrastructure/config/Config.js'
 import { InMemoryEventBus } from '../infrastructure/events/InMemoryEventBus.js'
 import { WinstonLogger } from '../infrastructure/logging/WinstonLogger.js'
+import { PrometheusMetricsRegistry } from '../infrastructure/metrics/PrometheusMetricsRegistry.js'
 import { PostgresConnection } from '../infrastructure/persistence/postgres/PostgresConnection.js'
 import { PostgresTaskRepository } from '../infrastructure/persistence/postgres/PostgresTaskRepository.js'
 import { PostgresTokenBlacklistRepository } from '../infrastructure/persistence/postgres/PostgresTokenBlacklistRepository.js'
@@ -19,10 +20,14 @@ import { PostgresUserRepository } from '../infrastructure/persistence/postgres/P
 import { BcryptPasswordHasher } from '../infrastructure/security/BcryptPasswordHasher.js'
 import { JwtTokenProvider } from '../infrastructure/security/JwtTokenProvider.js'
 import { AuthController } from '../presentation/http/controllers/AuthController.js'
+import { HealthController } from '../presentation/http/controllers/HealthController.js'
+import { MetricsController } from '../presentation/http/controllers/MetricsController.js'
 import { TaskController } from '../presentation/http/controllers/TaskController.js'
 import { createAuthenticate } from '../presentation/http/middleware/authenticate.js'
 import { createErrorHandler, notFound } from '../presentation/http/middleware/errorHandler.js'
+import { createRequestLogger } from '../presentation/http/middleware/requestLogger.js'
 import { createAuthRouter } from '../presentation/http/routes/authRoutes.js'
+import { createHealthRouter } from '../presentation/http/routes/healthRoutes.js'
 import { createTaskRouter } from '../presentation/http/routes/taskRoutes.js'
 
 export interface ContainerOverrides {
@@ -30,7 +35,6 @@ export interface ContainerOverrides {
   readonly logger?: Logger
   readonly clock?: Clock
   readonly db?: PostgresConnection
-  readonly metrics?: MetricsRegistry
 }
 
 export interface Container {
@@ -39,7 +43,9 @@ export interface Container {
   readonly db: PostgresConnection
   readonly authRouter: Router
   readonly taskRouter: Router
+  readonly healthRouter: Router
   readonly authenticate: RequestHandler
+  readonly requestLogger: RequestHandler
   readonly errorHandler: ErrorRequestHandler
   readonly notFound: RequestHandler
 }
@@ -75,21 +81,25 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
     expiresIn: config.jwt.expiresIn,
   })
   const events = new InMemoryEventBus(logger)
+  // Owns its own prom-client Registry, so building a second container does
+  // not collide on duplicate metric names the way a module-level registry
+  // would (see PrometheusMetricsRegistry).
+  const metrics = new PrometheusMetricsRegistry()
 
   // Application
   const tokenService = new TokenService(tokenProvider, tokenBlacklist, clock, logger)
   const authService = new AuthService(users, passwordHasher, tokenService, events, clock)
   const taskService = new TaskService(tasks, events, clock)
+  const healthService = new HealthService(db, clock, logger)
 
   // Subscribers: side effects attach themselves to events here, rather than
   // services calling them. Nothing above needs to know they exist.
   new AuditLogSubscriber(logger).register(events)
-  if (overrides.metrics) {
-    new MetricsSubscriber(overrides.metrics).register(events)
-  }
+  new MetricsSubscriber(metrics).register(events)
 
   // Presentation
   const authenticate = createAuthenticate(tokenService, logger)
+  const requestLogger = createRequestLogger(logger, metrics)
   const authRouter = createAuthRouter({
     controller: new AuthController(authService),
     authenticate,
@@ -99,13 +109,28 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
     controller: new TaskController(taskService),
     authenticate,
   })
+  const healthRouter = createHealthRouter({
+    health: new HealthController(healthService),
+    metrics: new MetricsController(metrics, db, { key: config.metrics.key }, logger),
+  })
 
   const errorHandler = createErrorHandler(logger, {
     includeStack: config.env === 'development',
     hideInternalErrors: config.env === 'production',
   })
 
-  return { config, logger, db, authRouter, taskRouter, authenticate, errorHandler, notFound }
+  return {
+    config,
+    logger,
+    db,
+    authRouter,
+    taskRouter,
+    healthRouter,
+    authenticate,
+    requestLogger,
+    errorHandler,
+    notFound,
+  }
 }
 
 /**
@@ -113,7 +138,7 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
  * containers freely, and none of them should be creating a logs/ directory
  * or appending to the real log files as a side effect.
  */
-function createDefaultLogger(config: Config): Logger {
+export function createDefaultLogger(config: Config): Logger {
   return new WinstonLogger({
     level: config.log.level,
     enableFileTransports: config.env !== 'test',

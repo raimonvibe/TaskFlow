@@ -1,10 +1,9 @@
 {
   // Base config used for editor type-checking and `npm run typecheck`.
-  // Deliberately scoped to `src/**/*.ts` only (see `include` below) - the
-  // existing `.js` files are untouched by the rewrite in progress
-  // (docs/BACKEND_REWRITE_PLAN.md) and are not type-checked here. As each
-  // phase of the rewrite moves a piece of the app into `src/<layer>/`, its
-  // new `.ts` files start being covered automatically.
+  // Covers all of src/, which as of Phase 5 is TypeScript end to end -
+  // there is no `allowJs` escape hatch anymore, so a stray .js file under
+  // src/ is simply not part of the program and any import of it fails to
+  // resolve rather than silently going unchecked.
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
@@ -17,14 +16,6 @@
     // User.ts exists on disk right now. This is a real NodeNext+TS
     // requirement, not a mistake - see docs/BACKEND_REWRITE_PLAN.md §4.
     "verbatimModuleSyntax": false,
-    // The TypeScript entrypoint (main.ts -> presentation/http/app.ts) has to
-    // import the routes that have not been migrated yet (taskRoutes.js,
-    // healthRoutes.js, requestLogger.js), and they have to end up in dist/
-    // for `node dist/main.js` to run. `checkJs` stays off: those files are
-    // pre-rewrite JavaScript and type-checking them is not this phase's job.
-    // Both settings go away once Phase 5 leaves no .js in src/.
-    "allowJs": true,
-    "checkJs": false,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
