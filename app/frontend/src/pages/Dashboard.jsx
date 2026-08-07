@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardText, HourglassHigh, ArrowsClockwise, SealCheck } from '@phosphor-icons/react'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
 import { tasksAPI } from '../api/tasks'
@@ -120,18 +121,28 @@ const Dashboard = () => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Total Tasks" value={stats?.total || 0} icon="📋" color="primary" />
-          <StatCard title="To Do" value={stats?.byStatus.todo || 0} icon="⏳" color="slate" />
+          <StatCard
+            title="Total Tasks"
+            value={stats?.total || 0}
+            icon={<ClipboardText size={28} weight="duotone" />}
+            color="primary"
+          />
+          <StatCard
+            title="To Do"
+            value={stats?.byStatus.todo || 0}
+            icon={<HourglassHigh size={28} weight="duotone" />}
+            color="slate"
+          />
           <StatCard
             title="In Progress"
             value={stats?.byStatus.in_progress || 0}
-            icon="🔄"
+            icon={<ArrowsClockwise size={28} weight="duotone" />}
             color="navy"
           />
           <StatCard
             title="Completed"
             value={stats?.byStatus.completed || 0}
-            icon="✅"
+            icon={<SealCheck size={28} weight="duotone" />}
             color="gold"
           />
         </div>

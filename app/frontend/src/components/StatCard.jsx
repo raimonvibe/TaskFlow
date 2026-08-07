@@ -18,7 +18,7 @@ const StatCard = ({ title, value, icon, color = 'primary' }) => {
           <p className="font-serif text-3xl font-bold text-ink">{value}</p>
         </div>
         <div className={`p-3 rounded-md ${colorClasses[color] || colorClasses.primary}`}>
-          <span className="text-2xl">{icon}</span>
+          {icon}
         </div>
       </div>
     </div>
