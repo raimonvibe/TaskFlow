@@ -167,6 +167,12 @@ services:
 networks:
   taskflow-network:
     driver: bridge
+    # Pinned explicitly rather than left to Docker's ambient default - that
+    # default can change across Docker Desktop/Engine updates, and when it
+    # does, compose refuses to silently mutate an already-created network
+    # to match ("needs to be recreated" error) instead of just working.
+    # Pinning it means this can't drift out from under an existing network.
+    enable_ipv6: false
 
 volumes:
   postgres_data:
