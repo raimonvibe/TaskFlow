@@ -13,14 +13,17 @@ name: Keep Render backend awake
 
 on:
   schedule:
-    # Every 10 minutes. GitHub may delay scheduled runs by a few minutes
-    # under load, which is fine here since the sleep window is ~15 min.
+    # Every 10 minutes, against a ~15 min sleep window. GitHub delays
+    # scheduled runs under load, sometimes past that margin, so the instance
+    # does go to sleep occasionally and the ping below has to be able to wake
+    # it rather than time out on it.
     - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     steps:
       - name: Ping backend health endpoint
         env:
@@ -30,4 +33,51 @@ jobs:
             echo "::error::RENDER_BACKEND_URL repository variable is not set. See workflow comments for setup steps."
             exit 1
           fi
-          curl -sf --max-time 30 "$BACKEND_URL/health" && echo "Backend is awake."
+
+          # --max-time has to exceed a cold start, not merely a warm response.
+          # Whenever a scheduled run slips past the ~15 min sleep window, this
+          # ping IS the request that wakes the instance, so it has to sit
+          # through the boot it just triggered - 90s against a 30-60s start.
+          #
+          # --connect-timeout stays short because Render's edge accepts the
+          # connection immediately even while the instance is down; a slow
+          # connect means a wrong URL or a deleted service, which should fail
+          # fast rather than burn the whole window.
+          #
+          # The retries are for the other half of a cold start: Render answers
+          # 502/503 for a few seconds once the container is up but the app has
+          # not bound its port yet. curl retries those automatically.
+          #
+          # `|| rc=$?` is load-bearing: GitHub runs this with `bash -e`, which
+          # aborts the step on a failing command substitution unless it sits in
+          # a tested context - and aborting here would skip the diagnostics
+          # below in favour of the bare "exit code 28" this replaced.
+          body=$(mktemp)
+          rc=0
+          result=$(curl -sS -o "$body" -w '%{http_code} %{time_total}' \
+            --connect-timeout 15 \
+            --max-time 90 \
+            --retry 2 --retry-delay 10 --retry-all-errors \
+            "$BACKEND_URL/health") || rc=$?
+          read -r code seconds <<< "$result"
+
+          if [ "$rc" -ne 0 ]; then
+            case "$rc" in
+              28) echo "::error::Timed out after ${seconds}s waiting for $BACKEND_URL/health. A free-tier cold start answers within 30-60s, so exceeding 90s points at an unhealthy deploy rather than a sleeping one - check the Render logs." ;;
+              6|7) echo "::error::Could not reach $BACKEND_URL (curl exit $rc). Check that the RENDER_BACKEND_URL variable matches the service's current URL." ;;
+              *) echo "::error::curl failed with exit code $rc after ${seconds}s." ;;
+            esac
+            exit 1
+          fi
+
+          # No --fail: a 503 is a real answer from an awake instance whose
+          # database is down, and that deserves a different message than a
+          # service that never responded at all.
+          if [ "$code" != "200" ]; then
+            echo "::error::$BACKEND_URL/health answered HTTP $code in ${seconds}s - the instance is awake but unhealthy."
+            cat "$body"; echo
+            exit 1
+          fi
+
+          echo "Backend is awake - HTTP 200 in ${seconds}s."
+          cat "$body"; echo
