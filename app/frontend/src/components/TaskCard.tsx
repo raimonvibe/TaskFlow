@@ -1,17 +1,27 @@
-const priorityColors = {
+import type { ReactElement } from 'react'
+import type { Task, TaskPriority, TaskStatus } from '../api/types'
+
+const priorityColors: Record<TaskPriority, string> = {
   low: 'bg-primary-50 text-primary-600 border border-primary-100',
   medium: 'bg-accent-50 text-accent-700 border border-accent-100',
   high: 'bg-primary-600 text-white border border-primary-700',
 }
 
-const statusColors = {
+const statusColors: Record<TaskStatus, string> = {
   todo: 'bg-primary-50 text-primary-500 border border-primary-100',
   in_progress: 'bg-primary-100 text-primary-700 border border-primary-200',
   completed: 'bg-accent-50 text-accent-700 border border-accent-100',
 }
 
-const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
-  const formatDate = dateString => {
+export interface TaskCardProps {
+  task: Task
+  onEdit: (task: Task) => void
+  onDelete: (id: number) => void
+  onStatusChange: (id: number, status: TaskStatus) => void
+}
+
+const TaskCard = ({ task, onEdit, onDelete, onStatusChange }: TaskCardProps): ReactElement => {
+  const formatDate = (dateString: string | null): string => {
     if (!dateString) return 'No due date'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -54,7 +64,7 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
         <span>{formatDate(task.due_date)}</span>
         <select
           value={task.status}
-          onChange={e => onStatusChange(task.id, e.target.value)}
+          onChange={e => onStatusChange(task.id, e.target.value as TaskStatus)}
           className="text-sm border border-primary-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400"
         >
           <option value="todo">To Do</option>

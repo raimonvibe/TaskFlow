@@ -1,116 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, type ReactElement } from 'react'
 import Layout from '../components/Layout'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
-import { tasksAPI } from '../api/tasks'
+import { useTasks } from '../hooks/useTasks'
+import type { Task, TaskInput } from '../api/types'
 
-const Tasks = () => {
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+const Tasks = (): ReactElement => {
+  const {
+    tasks,
+    loading,
+    error,
+    filters,
+    updateFilter,
+    clearFilters,
+    saveTask,
+    deleteTask,
+    changeStatus,
+  } = useTasks()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState(null)
-  const [filters, setFilters] = useState({ status: '', priority: '' })
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
 
-  const refreshTasks = async () => {
-    setLoading(true)
-    try {
-      const data = await tasksAPI.getTasks(filters)
-      setTasks(data.tasks)
-      setError('')
-    } catch (err) {
-      setError('Failed to load tasks')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadTasks() {
-      try {
-        const data = await tasksAPI.getTasks(filters)
-        if (!cancelled) {
-          setTasks(data.tasks)
-          setError('')
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError('Failed to load tasks')
-          console.error(err)
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
-    }
-
-    void loadTasks()
-
-    return () => {
-      cancelled = true
-    }
-  }, [filters])
-
-  const handleCreateTask = () => {
+  const handleCreateTask = (): void => {
     setEditingTask(null)
     setIsModalOpen(true)
   }
 
-  const handleEditTask = task => {
+  const handleEditTask = (task: Task): void => {
     setEditingTask(task)
     setIsModalOpen(true)
   }
 
-  const apiErrorMessage = (err, fallback) => err.response?.data?.message || err.message || fallback
-
-  const handleSaveTask = async taskData => {
-    try {
-      if (editingTask) {
-        await tasksAPI.updateTask(editingTask.id, taskData)
-      } else {
-        await tasksAPI.createTask(taskData)
-      }
-      setError('')
+  const handleSaveTask = async (taskData: TaskInput): Promise<void> => {
+    const ok = await saveTask(taskData, editingTask?.id ?? null)
+    if (ok) {
       setIsModalOpen(false)
       setEditingTask(null)
-      refreshTasks()
-    } catch (err) {
-      setError('Failed to save task: ' + apiErrorMessage(err, 'Unknown error'))
-      console.error(err)
     }
-  }
-
-  const handleDeleteTask = async id => {
-    if (!confirm('Are you sure you want to delete this task?')) return
-
-    try {
-      await tasksAPI.deleteTask(id)
-      setError('')
-      refreshTasks()
-    } catch (err) {
-      setError('Failed to delete task: ' + apiErrorMessage(err, 'Unknown error'))
-      console.error(err)
-    }
-  }
-
-  const handleStatusChange = async (id, newStatus) => {
-    try {
-      await tasksAPI.updateTask(id, { status: newStatus })
-      setError('')
-      refreshTasks()
-    } catch (err) {
-      setError('Failed to update task status: ' + apiErrorMessage(err, 'Unknown error'))
-      console.error(err)
-    }
-  }
-
-  const handleFilterChange = (filterType, value) => {
-    setLoading(true)
-    setFilters(prev => ({ ...prev, [filterType]: value }))
   }
 
   return (
@@ -123,7 +49,6 @@ const Tasks = () => {
           </button>
         </div>
 
-        {/* Filters */}
         <div className="card">
           <div className="flex flex-wrap gap-4">
             <div>
@@ -133,7 +58,7 @@ const Tasks = () => {
               <select
                 id="statusFilter"
                 value={filters.status}
-                onChange={e => handleFilterChange('status', e.target.value)}
+                onChange={e => updateFilter('status', e.target.value)}
                 className="input"
               >
                 <option value="">All Statuses</option>
@@ -149,7 +74,7 @@ const Tasks = () => {
               <select
                 id="priorityFilter"
                 value={filters.priority}
-                onChange={e => handleFilterChange('priority', e.target.value)}
+                onChange={e => updateFilter('priority', e.target.value)}
                 className="input"
               >
                 <option value="">All Priorities</option>
@@ -160,13 +85,7 @@ const Tasks = () => {
             </div>
             {(filters.status || filters.priority) && (
               <div className="flex items-end">
-                <button
-                  onClick={() => {
-                    setLoading(true)
-                    setFilters({ status: '', priority: '' })
-                  }}
-                  className="btn btn-secondary"
-                >
+                <button onClick={clearFilters} className="btn btn-secondary">
                   Clear Filters
                 </button>
               </div>
@@ -174,21 +93,18 @@ const Tasks = () => {
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-950 dark:border-red-800 dark:text-red-300">
             {error}
           </div>
         )}
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center min-h-96">
             <div className="text-xl">Loading tasks...</div>
           </div>
         ) : (
           <>
-            {/* Tasks Grid */}
             {tasks.length === 0 ? (
               <div className="card text-center py-12">
                 <p className="text-gray-500 dark:text-primary-300 text-lg mb-4">No tasks found</p>
@@ -203,8 +119,8 @@ const Tasks = () => {
                     key={task.id}
                     task={task}
                     onEdit={handleEditTask}
-                    onDelete={handleDeleteTask}
-                    onStatusChange={handleStatusChange}
+                    onDelete={id => void deleteTask(id)}
+                    onStatusChange={(id, status) => void changeStatus(id, status)}
                   />
                 ))}
               </div>
@@ -213,14 +129,13 @@ const Tasks = () => {
         )}
       </div>
 
-      {/* Task Modal */}
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false)
           setEditingTask(null)
         }}
-        onSave={handleSaveTask}
+        onSave={data => void handleSaveTask(data)}
         task={editingTask}
       />
     </Layout>

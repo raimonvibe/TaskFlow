@@ -23,7 +23,7 @@ touch it so it stops claiming otherwise.
 | 3B. Frontend Phase 1–7 treatment | **Still open** | See below |
 
 Baseline after this pass: backend **268 tests / 35 files**, frontend **33 / 6**
-(auth client + interceptor tests).
+(auth client, interceptor, and Tasks slice tests).
 
 Windows note: `npm test` in `app/backend` uses `NODE_ENV=test …` (Unix). On
 PowerShell run `$env:NODE_ENV='test'; npx vitest run --coverage` instead.
@@ -57,8 +57,9 @@ ESLint, Prettier, Vite.
    TypeScript; ESLint understands `.ts`/`.tsx`. Tests cover
    `secureStorage` TTL, `authAPI.refresh`, and the real axios
    401→refresh→retry interceptor (fake adapter, no network).
-3. **Tasks vertical slice** — convert task API + `Tasks` / `TaskModal` /
-   `TaskCard`; extract a thin data hook so the page is not also the client.
+3. **Tasks vertical slice** — **done.** `api/tasks`, `TaskCard`,
+   `TaskModal`, and `pages/Tasks` are TypeScript; list/mutate logic lives
+   in `hooks/useTasks.ts` so the page is mostly composition.
 4. **Rest of UI** — pages/components to TSX; delete `allowJs` when nothing
    `.js`/`.jsx` remains under `src/`.
 5. **Coverage floor** — same ratchet as the backend, after the new tests

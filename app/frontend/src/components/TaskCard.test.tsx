@@ -1,15 +1,19 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import TaskCard from './TaskCard'
+import type { Task } from '../api/types'
 
 describe('TaskCard', () => {
-  const mockTask = {
+  const mockTask: Task = {
     id: 1,
+    user_id: 1,
     title: 'Test Task',
     description: 'Test Description',
     status: 'todo',
     priority: 'high',
     due_date: '2025-12-31',
+    created_at: null,
+    updated_at: null,
   }
 
   const mockHandlers = {
@@ -78,7 +82,6 @@ describe('TaskCard', () => {
   it('should format due date correctly', () => {
     render(<TaskCard task={mockTask} {...mockHandlers} />)
 
-    // The date should be formatted as "Dec 31, 2025" or similar
     expect(screen.getByText(/Dec 31, 2025/i)).toBeInTheDocument()
   })
 })

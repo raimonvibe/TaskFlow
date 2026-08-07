@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent, type ReactElement } from 'react'
+import type { Task, TaskInput, TaskPriority, TaskStatus } from '../api/types'
 
-function emptyForm() {
+function emptyForm(): TaskInput {
   return {
     title: '',
     description: '',
@@ -10,26 +11,34 @@ function emptyForm() {
   }
 }
 
-function formDataFromTask(task) {
+function formDataFromTask(task: Task | null | undefined): TaskInput {
   if (!task) return emptyForm()
   return {
     title: task.title || '',
     description: task.description || '',
     status: task.status || 'todo',
     priority: task.priority || 'medium',
-    due_date: task.due_date ? task.due_date.split('T')[0] : '',
+    due_date: task.due_date ? task.due_date.split('T')[0]! : '',
   }
 }
 
-const TaskModalInner = ({ onClose, onSave, task }) => {
-  const [formData, setFormData] = useState(() => formDataFromTask(task))
+interface TaskModalInnerProps {
+  onClose: () => void
+  onSave: (data: TaskInput) => void
+  task: Task | null
+}
 
-  const handleChange = e => {
+const TaskModalInner = ({ onClose, onSave, task }: TaskModalInnerProps): ReactElement => {
+  const [formData, setFormData] = useState<TaskInput>(() => formDataFromTask(task))
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ): void => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     onSave(formData)
   }
@@ -74,7 +83,7 @@ const TaskModalInner = ({ onClose, onSave, task }) => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows="3"
+              rows={3}
               className="input"
             />
           </div>
@@ -91,9 +100,9 @@ const TaskModalInner = ({ onClose, onSave, task }) => {
                 onChange={handleChange}
                 className="input"
               >
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value={'todo' satisfies TaskStatus}>To Do</option>
+                <option value={'in_progress' satisfies TaskStatus}>In Progress</option>
+                <option value={'completed' satisfies TaskStatus}>Completed</option>
               </select>
             </div>
 
@@ -108,9 +117,9 @@ const TaskModalInner = ({ onClose, onSave, task }) => {
                 onChange={handleChange}
                 className="input"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value={'low' satisfies TaskPriority}>Low</option>
+                <option value={'medium' satisfies TaskPriority}>Medium</option>
+                <option value={'high' satisfies TaskPriority}>High</option>
               </select>
             </div>
           </div>
@@ -143,7 +152,14 @@ const TaskModalInner = ({ onClose, onSave, task }) => {
   )
 }
 
-const TaskModal = ({ isOpen, onClose, onSave, task }) => {
+export interface TaskModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: TaskInput) => void
+  task: Task | null
+}
+
+const TaskModal = ({ isOpen, onClose, onSave, task }: TaskModalProps): ReactElement | null => {
   if (!isOpen) return null
   const key = `${task?.id ?? 'new'}`
   return <TaskModalInner key={key} task={task} onClose={onClose} onSave={onSave} />
