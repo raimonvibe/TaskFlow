@@ -4,8 +4,20 @@ import logger from '../utils/logger.js'
 
 const { Pool } = pg
 
-// Create PostgreSQL connection pool
-const pool = new Pool(config.database)
+// Create PostgreSQL connection pool.
+// When DATABASE_URL is present (Render, Heroku, etc.), connect via connectionString;
+// otherwise fall back to discrete host/port/database/user/password (Docker/local dev).
+const poolConfig = config.database.connectionString
+  ? {
+      connectionString: config.database.connectionString,
+      ssl: config.database.ssl,
+      max: config.database.max,
+      idleTimeoutMillis: config.database.idleTimeoutMillis,
+      connectionTimeoutMillis: config.database.connectionTimeoutMillis,
+    }
+  : config.database
+
+const pool = new Pool(poolConfig)
 
 // Handle pool errors
 pool.on('error', (err, _client) => {

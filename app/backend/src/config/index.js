@@ -10,12 +10,22 @@ const config = {
   host: process.env.HOST || '0.0.0.0',
 
   // Database
+  // If DATABASE_URL is set (e.g. Render's `fromDatabase: connectionString`),
+  // it takes priority. Otherwise falls back to discrete DB_* vars (Docker/local dev).
   database: {
+    connectionString: process.env.DATABASE_URL || undefined,
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     database: process.env.DB_NAME || 'taskflow',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
+    // Managed Postgres providers (Render, Heroku, etc.) terminate SSL with certs
+    // that aren't in the default CA chain; rejectUnauthorized:false trusts them
+    // without requiring a bundled CA. Only applies when connecting via DATABASE_URL.
+    ssl:
+      process.env.DATABASE_URL && process.env.DB_SSL !== 'false'
+        ? { rejectUnauthorized: false }
+        : false,
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
