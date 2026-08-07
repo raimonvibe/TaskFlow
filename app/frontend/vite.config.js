@@ -37,6 +37,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      // Floors sit a point or two under the measured baseline after Option B
+      // phases 1–4 (docs/NEXT_STEPS.md). Raise when coverage grows; do not
+      // set above current reality.
+      thresholds: {
+        statements: 76,
+        branches: 60,
+        functions: 88,
+        lines: 76,
+      },
       exclude: [
         'node_modules/',
         'src/test/',
