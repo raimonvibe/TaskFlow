@@ -1,5 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router'
-import { CaretLeft, ShieldWarning } from '@phosphor-icons/react'
+import { CaretLeft, ShieldWarning, ArrowSquareOut } from '@phosphor-icons/react'
 import Layout from '../components/Layout'
 import CodeBlock from '../components/tour/CodeBlock'
 import { getTourPage } from '../data/tourContent'
@@ -60,6 +60,22 @@ const TourPage = () => {
               <p className="text-sm leading-relaxed text-primary-600 dark:text-primary-300">
                 {section.body}
               </p>
+            )}
+            {section.links && (
+              <div className="flex flex-wrap gap-2">
+                {section.links.map(link => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-primary-200 px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-50 dark:border-primary-600 dark:text-primary-200 dark:hover:bg-primary-700"
+                  >
+                    {link.label}
+                    <ArrowSquareOut size={14} />
+                  </a>
+                ))}
+              </div>
             )}
             {section.commands?.map((cmd, i) => (
               <CodeBlock key={i} label={cmd.label} code={cmd.code} />

@@ -23,15 +23,24 @@ export const TOUR_PAGES = [
         body: "The repo's docker-compose.yml spins up the backend, frontend, Postgres, Prometheus, and Grafana together for local development. Render (production) doesn't use these Docker images directly - it builds the backend and frontend separately from source - so this is purely a local/learning setup.",
       },
       {
+        heading: 'Install Docker',
+        body: 'Not installed by default - grab it for your OS from the official docs:',
+        links: [
+          { label: 'Windows', url: 'https://docs.docker.com/desktop/setup/install/windows-install/' },
+          { label: 'Mac', url: 'https://docs.docker.com/desktop/setup/install/mac-install/' },
+          { label: 'Linux', url: 'https://docs.docker.com/engine/install/' },
+        ],
+      },
+      {
         heading: 'Get everything running',
-        body: 'docker-compose.yml builds the backend and frontend images from ./app/backend and ./app/frontend, so every docker-compose command below has to run from the repository root - the folder that directly contains docker-compose.yml - not from app/, app/backend, or scripts/. Running it from the wrong folder or with Docker Desktop not yet started are the two most common first-run failures, and they can look identical (the same connection error either way). scripts/setup.sh now checks for both before doing anything.',
+        body: 'Run from the repository root (the folder with docker-compose.yml in it).',
         commands: [
           {
             label: 'Recommended: guided setup (checks Docker is running, creates .env files, seeds demo data)',
             code: './scripts/setup.sh',
           },
           {
-            label: 'Manual equivalent - run from the repository root',
+            label: 'Manual equivalent',
             code: 'docker-compose up -d',
           },
           {
