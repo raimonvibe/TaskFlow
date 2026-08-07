@@ -1,0 +1,15 @@
+{
+  // Used by `npm run build` (tsc -p tsconfig.build.json) to actually emit
+  // compiled JS into dist/. Not wired into the Dockerfile or render.yaml
+  // yet - there's no real TypeScript entrypoint to run until the rewrite's
+  // later phases land a src/main.ts. Until then the app keeps running the
+  // existing src/server.js exactly as before (see docs/BACKEND_REWRITE_PLAN.md).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false
+  },
+  "exclude": ["node_modules", "dist", "coverage", "src/**/*.test.ts"]
+}

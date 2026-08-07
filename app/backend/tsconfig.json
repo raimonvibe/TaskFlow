@@ -1,0 +1,32 @@
+{
+  // Base config used for editor type-checking and `npm run typecheck`.
+  // Deliberately scoped to `src/**/*.ts` only (see `include` below) - the
+  // existing `.js` files are untouched by the rewrite in progress
+  // (docs/BACKEND_REWRITE_PLAN.md) and are not type-checked here. As each
+  // phase of the rewrite moves a piece of the app into `src/<layer>/`, its
+  // new `.ts` files start being covered automatically.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // Matches package.json's "type": "module" - relative imports in .ts
+    // source must use the future compiled `.js` extension, e.g.
+    // `import { User } from '../domain/entities/User.js'` even though only
+    // User.ts exists on disk right now. This is a real NodeNext+TS
+    // requirement, not a mistake - see docs/BACKEND_REWRITE_PLAN.md §4.
+    "verbatimModuleSyntax": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}
