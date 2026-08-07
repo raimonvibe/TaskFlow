@@ -2,6 +2,8 @@
 
 Status: **Complete.** All six phases are done, plus the optional stretch work in §7's seventh item. `src/` is TypeScript end to end, no pre-rewrite file remains, and the documentation describes the architecture the code actually has.
 
+What is *not* covered by that: the schema still has three competing sources of truth, one of which is missing a table. That and three smaller items are written up in **§10**, along with what to run on a fresh machine. Nothing there is architectural.
+
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
 
@@ -342,4 +344,40 @@ Recommended approach: **vertical slices, not a big-bang rewrite** — even thoug
 
 - Should `docs/ARCHITECTURE.md` be updated incrementally per phase, or once at the end (Phase 6)? Leaning incremental so it never goes stale mid-rewrite.
 - `node-pg-migrate` is already a devDependency but unused for what's actually shipped (schema.sql + the guarded `initSchema.ts` blocks are the real source of truth today). Formalizing on it is implied by §1's `token_blacklist` example — worth confirming that's wanted, since it also touches `scripts/setup.sh`, the Docker Compose Postgres init, and CI's migration step.
-- Branch strategy: one long-lived `backend-rewrite` branch merged phase-by-phase, or a PR per phase against `main`? Given `main.yml`'s CI already runs on every push to `main`, a PR per phase keeps `main` always deployable, which fits how Render's `autoDeployTrigger: commit` is configured.
+- Branch strategy: one long-lived `backend-rewrite` branch merged phase-by-phase, or a PR per phase against `main`? Given `main.yml`'s CI already runs on every push to `main`, a PR per phase keeps `main` always deployable, which fits how Render's `autoDeployTrigger: commit` is configured. *(Answered by what happened: phases landed as direct commits to `main`, not PRs.)*
+
+---
+
+## 10. What remains after Phase 7
+
+The rewrite itself is finished — every phase in §7 is done, and the architecture goals in §1 and §2 hold in the code. What follows is a separate list, found while verifying Phase 7: things the rewrite did not cover because they were never part of it. None of them is architectural. **The backend does not need more patterns; adding them now would make it worse, not more professional.**
+
+Ordered by whether they are actually defects.
+
+**1. The schema has three sources of truth, and they disagree.** This is the only item here worth calling a defect, and it is the one open question from §9 that was never closed.
+
+- `app/database/schema.sql` — three tables, `token_blacklist` among them. This one is live: `initSchema.ts` runs it, via `npm run db:init`.
+- `app/database/migrations/` — three numbered `.sql` files covering `users`, `tasks`, and the `updated_at` trigger. **`token_blacklist` is not there.**
+- `node-pg-migrate` — still a devDependency, still exposed as `migrate:up`/`migrate:down`, but those files are not in its format and no config points at that directory, so the scripts do not drive it.
+
+The practical risk is not a live outage — nothing in deployment replays that directory. It is that the directory *looks* authoritative. Someone rebuilding a database from it gets one where `POST /api/auth/logout` fails on a missing table, and nothing in the repo tells them that directory is stale. Closing this means picking one mechanism and **deleting the other two**, which is the part that matters: the gap exists because three were left standing, so a fix that adds a fourth has not fixed anything. If the choice is `node-pg-migrate`, note §9's warning that it also touches `scripts/setup.sh`, the Compose Postgres init, and CI. If the choice is `schema.sql`, it is mostly deletion.
+
+**2. No coverage thresholds.** `vitest.config.ts` collects coverage but sets no floor, so today's 93.9% statements / 81.9% branches can rot with nothing failing CI. The weak spots are all error paths — `PostgresConnection` 25% branches, `JwtTokenProvider` 50%, `currentUser.ts` 66% — which is the usual shape, and the usual reason a regression there goes unnoticed. Cheap insurance: set the floor at roughly what is already true, so it ratchets rather than demanding new tests today.
+
+**3. `PostgresConnection.transaction()` has no production caller.** Only its own test exercises it. Not dead weight worth removing — it is correct, tested, and the obvious place to reach when something finally does span two statements — but worth knowing that no current operation does, so it has never run in anger.
+
+**4. `JWT_REFRESH_SECRET` is dead config.** Read into `Config.jwt.refreshSecret`, provisioned in `render.yaml` and `.env.example.secure`, consumed by nothing. It is a placeholder for the refresh-token rotation assessed and declined in the Phase 7 entry. Left in place deliberately so the deployment config does not churn twice; remove it only if that feature is abandoned rather than deferred.
+
+### Picking this up on another machine
+
+The toolchain is pinned and needs **Node 22** — `engines` says `>=22.12.0` and `.nvmrc` says `22`. Neither is missing; the trap is a shell whose default `node` is older, which does not auto-switch. Vitest then dies at startup on a `styleText` import from rolldown, which looks like a broken test suite rather than a wrong Node version.
+
+```
+nvm use              # from the repo root, reads .nvmrc
+cd app/backend
+npm ci
+npm run typecheck && npm run lint && npm test
+npx prettier --check "src/**/*.ts"
+```
+
+`npm run lint` does **not** check formatting — ESLint and Prettier are separate here, so a file can pass lint and still be unformatted. Phase 7 shipped four such files before they were caught. Expect `Test Files 31 passed`, `Tests 252 passed`. The tests need a reachable Postgres; the integration and security suites are not mocked.
