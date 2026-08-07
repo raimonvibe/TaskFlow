@@ -10,8 +10,8 @@ export interface Assignments {
  * Builds the `SET` half of a dynamic `UPDATE`, numbering placeholders as it
  * goes.
  *
- * Both `models/User.js` and `models/Task.js` hand-roll this today, each
- * with its own `paramCount` counter and its own `allowedFields.includes()`
+ * Both `models/User.js` and `models/Task.js` hand-rolled this, each with
+ * its own `paramCount` counter and its own `allowedFields.includes()`
  * whitelist (docs/BACKEND_REWRITE_PLAN.md §1). The whitelist existed
  * because those functions were handed `req.body` directly and had to defend
  * against a client naming any column it liked. This helper has no

@@ -21,7 +21,7 @@ export interface NewUser {
  *
  * Implementations must translate storage-level failures into domain errors -
  * a unique-violation on `email` becomes `ConflictError`, never a raw
- * Postgres `23505` escaping into the HTTP layer the way it does today.
+ * Postgres `23505` escaping into the HTTP layer the way it used to.
  */
 export interface UserRepository {
   /** Without the password hash - for existence checks and lookups that have

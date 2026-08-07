@@ -52,7 +52,7 @@ export interface TaskStatistics {
 export interface TaskRepository {
   create(task: NewTask): Promise<Task>
 
-  /** Newest first, matching today's `ORDER BY created_at DESC`. */
+  /** Newest first, matching the pre-rewrite `ORDER BY created_at DESC`. */
   findByUserId(userId: number, filters?: TaskFilters): Promise<Task[]>
 
   findByIdAndUserId(id: number, userId: number): Promise<Task | null>

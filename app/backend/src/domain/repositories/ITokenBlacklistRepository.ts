@@ -6,7 +6,7 @@
  *
  * Backed by Postgres rather than an in-memory Set so a revoked token stays
  * revoked across process restarts (Render's free tier restarts often) -
- * matching what `models/TokenBlacklist.js` already does today.
+ * matching what `models/TokenBlacklist.js` already did.
  */
 export interface TokenBlacklistRepository {
   /** Idempotent - revoking an already-revoked token is not an error. */

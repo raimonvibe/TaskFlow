@@ -144,8 +144,8 @@ export class AuthService {
   /**
    * Exactly one failure event per failed attempt, for any reason - which is
    * what keeps `auth_attempts_total{status="failure"}` counting the same
-   * things it counts today, where `authController.js` increments it both on
-   * the expected failures and in its catch-all.
+   * things it always has: `authController.js` incremented it both on the
+   * expected failures and in its catch-all.
    */
   private async publishFailure(
     type: 'register' | 'login',

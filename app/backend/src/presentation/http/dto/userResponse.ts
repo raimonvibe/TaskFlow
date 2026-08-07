@@ -12,11 +12,11 @@ export interface UserProfileResponse extends UserCredentialsResponse {
 
 /**
  * The two user shapes the API returns, kept deliberately distinct because
- * the current endpoints return different ones and the frontend is out of
+ * the endpoints already returned different ones and the frontend is out of
  * scope for this rewrite (docs/BACKEND_REWRITE_PLAN.md §6).
  *
  * `/register` and `/login` echo just id/name/email - `authController.js`
- * builds that object by hand even though the query it came from selected
+ * built that object by hand even though the query it came from selected
  * created_at too. `/me` returns the whole row, created_at included. Mapping
  * both here means the difference is a visible decision in one file instead
  * of an accident of which columns a SELECT happened to list, and it keeps

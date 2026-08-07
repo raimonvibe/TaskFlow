@@ -5,11 +5,12 @@ export type TaskStatusValue = 'todo' | 'in_progress' | 'completed'
 /**
  * The set of states a task can be in.
  *
- * Today this concept is a bare string that has to be re-validated wherever
- * it turns up: `isIn([...])` in taskRoutes.js, a hand-written list in the
- * frontend, and the `task_status` enum in Postgres. Nothing in the backend
- * owns the answer to "what is a valid status", so adding a fourth state
- * means finding every one of those places (docs/BACKEND_REWRITE_PLAN.md §1).
+ * This concept used to be a bare string, re-validated wherever it turned
+ * up: `isIn([...])` in taskRoutes.js, a hand-written list in the frontend,
+ * and the `task_status` enum in Postgres. Nothing in the backend owned the
+ * answer to "what is a valid status", so adding a fourth state meant
+ * finding every one of those places (docs/BACKEND_REWRITE_PLAN.md §1). This
+ * class is now the backend's answer; the validators read `values()` off it.
  *
  * The instances are interned - `create('todo')` always returns the same
  * object as `TaskStatus.TODO` - so identity comparison works and there is

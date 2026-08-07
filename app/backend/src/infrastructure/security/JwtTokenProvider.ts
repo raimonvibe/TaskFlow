@@ -7,7 +7,7 @@ import type {
   TokenSubject,
 } from '../../application/ports/ITokenProvider.js'
 
-/** Verified on every token, exactly as middleware/auth.js does today.
+/** Verified on every token, exactly as middleware/auth.js did.
  * Pinning the algorithm is what makes the `alg: none` substitution attack
  * (and HS256/RS256 confusion) a non-issue; issuer and audience make a token
  * minted for some other service useless here. */
@@ -24,7 +24,7 @@ export interface JwtTokenProviderOptions {
  * `TokenProvider` implementation over `jsonwebtoken`. The only file that
  * imports it, and the only one that knows what a `TokenExpiredError` is -
  * every failure leaves here as an `UnauthorizedError` carrying the message
- * clients already see today, so the HTTP layer no longer pattern-matches on
+ * clients already saw, so the HTTP layer no longer pattern-matches on
  * `error.name` (docs/BACKEND_REWRITE_PLAN.md §1).
  */
 export class JwtTokenProvider implements TokenProvider {
@@ -77,17 +77,17 @@ export class JwtTokenProvider implements TokenProvider {
   }
 
   /** sha256 of the raw token - the same fingerprint middleware/auth.js
-   * writes today, so rows already in token_blacklist keep matching. */
+   * wrote, so rows already in token_blacklist keep matching. */
   hashForRevocation(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex')
   }
 }
 
 /**
- * jsonwebtoken's error names -> the 401 messages the current middleware
- * returns, unchanged. Anything unrecognized becomes the same generic
- * 'Authentication failed' the current catch-all produces rather than
- * leaking a library-internal message to the client.
+ * jsonwebtoken's error names -> the 401 messages the old middleware
+ * returned, unchanged. Anything unrecognized becomes the same generic
+ * 'Authentication failed' its catch-all produced, rather than leaking a
+ * library-internal message to the client.
  */
 function toUnauthorized(error: unknown): UnauthorizedError {
   if (error instanceof UnauthorizedError) {

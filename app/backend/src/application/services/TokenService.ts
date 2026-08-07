@@ -15,9 +15,9 @@ const DEFAULT_REVOCATION_MS = 7 * 24 * 60 * 60 * 1000
  * Everything about the lifecycle of an access token: issue it, verify it
  * (including revocation), revoke it.
  *
- * This is the logic that currently lives in `middleware/auth.js` as a set
- * of module-level functions closing over an imported `config` and an
- * imported `TokenBlacklist` model. Pulled into a class with injected
+ * This logic used to live in `middleware/auth.js` as a set of module-level
+ * functions closing over an imported `config` and an imported
+ * `TokenBlacklist` model. Pulled into a class with injected
  * dependencies, the revocation and token-age rules become testable without
  * a database, a real JWT secret, or the passage of time - a `FixedClock`
  * makes the 7-day age check a synchronous assertion instead of something
@@ -36,13 +36,13 @@ export class TokenService {
   }
 
   /**
-   * Full verification of a bearer token, in the same order as today's
-   * `authenticate` middleware: revocation first (a revoked token must be
-   * rejected even if it is otherwise perfectly valid), then signature and
-   * claims, then payload sanity, then age.
+   * Full verification of a bearer token, in the same order the old
+   * `authenticate` middleware used: revocation first (a revoked token must
+   * be rejected even if it is otherwise perfectly valid), then signature
+   * and claims, then payload sanity, then age.
    *
-   * @throws {UnauthorizedError} with the same messages the current
-   * middleware returns, so the HTTP responses clients see are unchanged.
+   * @throws {UnauthorizedError} with the same messages that middleware
+   * returned, so the HTTP responses clients see are unchanged.
    */
   async verify(token: string): Promise<TokenClaims> {
     const tokenHash = this.tokenProvider.hashForRevocation(token)

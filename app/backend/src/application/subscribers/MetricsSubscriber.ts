@@ -15,10 +15,10 @@ import type { MetricsRegistry } from '../ports/IMetricsRegistry.js'
  * Translates domain events into the `auth_attempts_total` counter and the
  * `tasks_by_status` gauge.
  *
- * This is the code that currently sits inline in `authController.js` as six
- * separate `authAttempts.inc({ type, status })` calls, and in
- * `taskController.js` as `tasksByStatus.inc`/`.dec` calls interleaved with
- * the update logic. Collecting them here means each metric's behavior is
+ * This code used to sit inline in `authController.js` as six separate
+ * `authAttempts.inc({ type, status })` calls, and in `taskController.js` as
+ * `tasksByStatus.inc`/`.dec` calls interleaved with the update logic.
+ * Collecting them here means each metric's behavior is
  * readable in one place, and the services that trigger them no longer
  * import prom-client at all.
  */

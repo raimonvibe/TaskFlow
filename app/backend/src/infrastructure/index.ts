@@ -1,18 +1,15 @@
-// Infrastructure layer (Phase 1 placeholder — see docs/BACKEND_REWRITE_PLAN.md).
+// Infrastructure layer marker — see docs/ARCHITECTURE.md for the layering.
 //
-// Concrete implementations of the interfaces defined in domain/ and
-// application/ports/: Postgres repositories, bcrypt password hashing, the
-// jsonwebtoken-backed token provider, Winston logging, prom-client metrics,
-// and the validated Config singleton. This is the only layer allowed to
-// import third-party infrastructure libraries directly.
+// Concrete implementations of the interfaces declared in domain/ and
+// application/ports/: Postgres repositories and the connection pool, bcrypt
+// password hashing, the jsonwebtoken-backed token provider, Winston
+// logging, the prom-client metrics registry, the system clock, the
+// in-process event bus, and the validated Config singleton.
 //
-// Phase 2 populated config/Config, logging/WinstonLogger, clock/SystemClock,
-// events/InMemoryEventBus, and persistence/postgres/PostgresConnection. None
-// of them are wired into the running app yet - src/server.js still uses the
-// pre-rewrite modules they will eventually replace, so the two live side by
-// side until Phase 3 cuts the auth slice over.
+// This is the only layer allowed to import third-party infrastructure
+// libraries directly, and nothing depends on it except composition/ —
+// which is what makes any one of these swappable by writing a new class and
+// changing a line in the container.
 //
-// Phase 3/4 add the per-resource Postgres repositories, BcryptPasswordHasher,
-// and JwtTokenProvider. Layer marker, not a barrel - import from the
-// subfolders directly.
+// Not a barrel: import from the subfolders directly.
 export {}

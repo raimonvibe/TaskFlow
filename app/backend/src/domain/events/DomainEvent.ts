@@ -3,7 +3,7 @@
  * app might care about - a user registered, a task was deleted, and so on.
  *
  * This is what lets metrics recording and audit logging move out of the
- * controllers/services that cause them (today, `authController.js` calls
+ * controllers/services that cause them (`authController.js` called
  * `authAttempts.inc(...)` and `logger.info(...)` directly, inline, in the
  * middle of `register()`/`login()`) and into independent subscribers
  * (`MetricsSubscriber`, `AuditLogSubscriber` - see

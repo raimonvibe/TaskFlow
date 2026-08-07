@@ -18,8 +18,8 @@ export interface AuthRoutesDependencies {
  * importing them, so nothing here reaches for a module-level singleton and
  * the whole router can be built against fakes.
  *
- * The rate limiter stays exactly as configured today: tighter than the
- * generic /api/ limiter in app.js (100 req/15min is too loose to slow
+ * The rate limiter is configured exactly as it always was: tighter than the
+ * generic /api/ limiter in app.ts (100 req/15min is too loose to slow
  * credential stuffing), per-IP, and `skipSuccessfulRequests` so a legitimate
  * user sharing an IP is not locked out by someone else's failures.
  */

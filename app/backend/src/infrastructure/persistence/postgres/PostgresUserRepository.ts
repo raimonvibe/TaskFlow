@@ -22,11 +22,11 @@ const UNIQUE_VIOLATION = '23505'
  *  1. It returns `User` entities, not whatever columns the query selected.
  *     Only `findByEmailWithPassword` loads the hash; the other reads cannot
  *     hand a password hash to a caller even by accident.
- *  2. It catches Postgres's `23505` and throws `ConflictError`. Today that
- *     code travels all the way to `errorHandler.js`, which has to know what
- *     a Postgres error code is in order to produce a 409 - the coupling
- *     this rewrite exists to remove. Nothing above this file sees driver
- *     errors.
+ *  2. It catches Postgres's `23505` and throws `ConflictError`. That code
+ *     used to travel all the way to `errorHandler.js`, which had to know
+ *     what a Postgres error code is in order to produce a 409 - the
+ *     coupling this rewrite exists to remove. Nothing above this file sees
+ *     driver errors.
  */
 export class PostgresUserRepository implements UserRepository {
   constructor(private readonly db: PostgresConnection) {}

@@ -71,7 +71,7 @@ export class PostgresConnection implements DatabaseHealth {
   /**
    * Liveness only - `SELECT 1` rather than `testConnection`'s `SELECT NOW()`
    * plus a log line, because /health calls this on every check and has no
-   * use for the timestamp. Same query healthRoutes.js runs today.
+   * use for the timestamp. Same query healthRoutes.js ran.
    */
   async ping(): Promise<void> {
     await this.pool.query('SELECT 1')

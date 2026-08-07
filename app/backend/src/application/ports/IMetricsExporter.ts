@@ -10,7 +10,7 @@ import type { PoolStats } from './IDatabaseHealth.js'
  * `recordDatabasePool` lives here rather than on `MetricsRegistry` because
  * pool counters are not events that happened - they are a snapshot only
  * worth taking at scrape time, which is exactly when `healthRoutes.js`
- * takes it today.
+ * took it.
  */
 export interface MetricsExporter {
   readonly contentType: string

@@ -3,7 +3,7 @@ import type { TaskPriorityValue } from '../../../domain/value-objects/TaskPriori
 import type { TaskStatusValue } from '../../../domain/value-objects/TaskStatus.js'
 
 /**
- * Exactly the JSON the frontend receives today.
+ * Exactly the JSON the frontend has always received.
  *
  * Snake_case, because that is what `res.json(row)` produced when the
  * response *was* the database row - `TaskCard.jsx` reads `task.due_date`

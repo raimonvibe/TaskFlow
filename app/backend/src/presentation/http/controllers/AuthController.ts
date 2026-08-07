@@ -12,7 +12,7 @@ import { toCredentialsResponse, toProfileResponse } from '../dto/userResponse.js
  * Errors are never caught here. They are `AppError`s carrying their own
  * status code, so `next(error)` and the error middleware handle them
  * uniformly - which is what removes the "did this branch remember to
- * increment the failure counter" question that the current controller's
+ * increment the failure counter" question that `authController.js`'s
  * hand-written 409/401/404 branches each had to answer individually.
  *
  * Handlers are bound arrow-function properties so they can be passed

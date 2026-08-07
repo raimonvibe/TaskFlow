@@ -13,7 +13,7 @@ import type { TaskStatusValue } from '../../domain/value-objects/TaskStatus.js'
  * at import time and handed them out as module-level singletons for
  * controllers and middleware to poke directly. The names, help strings,
  * label names, and histogram buckets are copied across unchanged, so
- * `/metrics` exposes exactly the series it does today and the Grafana
+ * `/metrics` exposes exactly the series it always has and the Grafana
  * dashboards keep working.
  *
  * Two things are different, and both come from this being a constructed

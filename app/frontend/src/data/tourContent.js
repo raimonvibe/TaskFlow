@@ -128,7 +128,7 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Every push to main triggers CI (lint, tests) and, on Render, an auto-deploy. Feature branches let you break things safely before they reach main.',
+        body: 'Every push to main triggers CI (lint, TypeScript type-check, tests, security scan) and, on Render, an auto-deploy. Feature branches let you break things safely before they reach main.',
       },
       {
         heading: 'Install Git',

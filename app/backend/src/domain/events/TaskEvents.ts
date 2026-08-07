@@ -32,8 +32,8 @@ export class TaskCreatedEvent extends DomainEvent {
  * Carries both statuses because the `tasks_by_status` gauge needs the pair
  * to move a task from one bucket to the other. `previousStatus` equal to
  * `status` means the update did not touch the status, which is exactly the
- * condition `taskController.js` checks inline today before adjusting the
- * gauge - now the subscriber's business, not the service's.
+ * condition `taskController.js` checked inline before adjusting the gauge -
+ * now the subscriber's business, not the service's.
  */
 export class TaskUpdatedEvent extends DomainEvent {
   constructor(

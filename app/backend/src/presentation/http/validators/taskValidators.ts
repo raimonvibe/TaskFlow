@@ -9,7 +9,7 @@ const TITLE_MAX_LENGTH = 255
 
 /**
  * The allowed values come from the value objects rather than from a
- * hand-typed array. taskRoutes.js currently repeats
+ * hand-typed array. taskRoutes.js repeated
  * `['todo', 'in_progress', 'completed']` four times across create and
  * update; here adding a status is one edit in TaskStatus.ts and every
  * route follows (docs/BACKEND_REWRITE_PLAN.md §1).

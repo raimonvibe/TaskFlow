@@ -1,8 +1,8 @@
 import { AppError } from './AppError.js'
 
-/** Input failed validation - the current express-validator equivalent of
- * `validate.js`'s 400 response, but thrown from anywhere (including domain
- * value objects like Email), not just route-level middleware. */
+/** Input failed validation - the same 400 response `validate.js` produced,
+ * but throwable from anywhere (including domain value objects like Email),
+ * not just route-level middleware. */
 export class ValidationError extends AppError {
   readonly statusCode = 400
 

@@ -68,7 +68,7 @@ describe('AppError hierarchy', () => {
     expect(new RateLimitedError().message).toBe('Too many requests, please try again later')
   })
 
-  it('ValidationError carries optional field-level details, mirroring the current validate.js shape', () => {
+  it('ValidationError carries optional field-level details, mirroring the validate.js shape', () => {
     const err = new ValidationError('Validation failed', [
       { field: 'email', message: 'Valid email is required' },
       { field: 'password', message: 'Password must be between 8 and 128 characters' },

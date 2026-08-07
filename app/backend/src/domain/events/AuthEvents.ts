@@ -43,7 +43,7 @@ export class UserAuthenticatedEvent extends DomainEvent {
  *
  * Deliberately not split into a class per reason: the metric these feed
  * (`auth_attempts_total{type,status}`) only distinguishes register from
- * login, and today's `authController.js` increments the failure counter
+ * login, and `authController.js` incremented the failure counter
  * identically for "user already exists", "invalid credentials", and "the
  * database threw". Keeping one event preserves those counts exactly, and
  * `reason` is there for the audit log, which is the only subscriber that

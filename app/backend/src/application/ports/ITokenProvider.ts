@@ -17,7 +17,7 @@ export interface TokenSubject {
 
 /**
  * Token issuing/verification port (Strategy - docs/BACKEND_REWRITE_PLAN.md
- * §3). JWT today via `JwtTokenProvider`; the application layer never
+ * §3). JWT for now, via `JwtTokenProvider`; the application layer never
  * imports `jsonwebtoken` and never sees its error types.
  *
  * Implementations are responsible for translating their own library's
@@ -25,7 +25,7 @@ export interface TokenSubject {
  * repositories translate driver errors - so "what does a bad token look
  * like" is answered once, in infrastructure, instead of by the HTTP layer
  * pattern-matching on `error.name === 'JsonWebTokenError'` the way
- * middleware/auth.js does today.
+ * middleware/auth.js did.
  */
 export interface TokenProvider {
   sign(subject: TokenSubject): string

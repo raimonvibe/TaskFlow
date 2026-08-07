@@ -6,7 +6,7 @@ const SERVICE_UNAVAILABLE = 503
 
 /**
  * HTTP adapter for `HealthService`. Maps the report onto the status code
- * and body `healthRoutes.js` produces today, byte for byte - Render's
+ * and body `healthRoutes.js` produced, byte for byte - Render's
  * health checker treats any non-2xx as a failed deploy, so the 503 matters
  * as much as the 200.
  *

@@ -1,8 +1,18 @@
 # Jest ES Modules Test Failures - Fix Plan
 
+> **Resolved — kept as a record of the decision.** Option 2 (migrate to
+> Vitest) was chosen and carried out; the backend has run on Vitest ever
+> since, and `jest.config.js` and the `jest` dependency have both been
+> removed. The mocking problem this plan set out to work around no longer
+> exists in any form: the backend rewrite
+> ([BACKEND_REWRITE_PLAN.md](../../../docs/BACKEND_REWRITE_PLAN.md))
+> replaced constructor-injected services for the modules being mocked, so
+> the tests named below use in-memory fakes and call no `vi.mock()` at all.
+> Every file path in this document predates that rewrite.
+
 ## Problem Statement
 
-Currently, 24 out of 67 tests are failing due to Jest's inability to properly mock ES modules. The mocks are defined but not being applied correctly when modules are imported.
+At the time of writing, 24 out of 67 tests were failing due to Jest's inability to properly mock ES modules. The mocks are defined but not being applied correctly when modules are imported.
 
 **Error Pattern:**
 ```

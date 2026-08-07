@@ -82,7 +82,7 @@ function classify(
   }
 }
 
-/** Unmatched route. Same body and status as today's `notFound`. */
+/** Unmatched route. Same body and status as the pre-rewrite `notFound`. */
 export const notFound: RequestHandler = (req, res) => {
   res.status(404).json({
     status: 'error',

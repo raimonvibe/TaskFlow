@@ -1,6 +1,6 @@
 # Backend Rewrite Plan: TypeScript, Clean Architecture, Design Patterns
 
-Status: **Phase 5 (cross-cutting cleanup) done — `src/` is TypeScript end to end and no pre-rewrite file remains.** Next up: Phase 6 (docs & infra catch-up: `docs/ARCHITECTURE.md`, the DevOps Tour).
+Status: **Complete.** All six phases are done. `src/` is TypeScript end to end, no pre-rewrite file remains, and the documentation describes the architecture the code actually has.
 
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
@@ -20,6 +20,14 @@ Phases 1 and 2 changed nothing in `src/*.js`; Phase 3 is where the new code took
   Retired: `config/index.js` and `config/database.js` (replaced by `Config` and `PostgresConnection`, which existed since Phase 2 but had these two still shadowing them), `utils/logger.js`, `utils/metrics.js`, `middleware/requestLogger.js`, `routes/healthRoutes.js`, `database/init-schema.js`, `database/seed.js`, and `jest.config.js` (dead since the Vitest migration; its `testMatch` of `**/*.test.js` now provably matches nothing).
 
   `allowJs`/`checkJs` are gone from `tsconfig.json` — §7 assigned that to Phase 6, but its stated precondition ("once no `.js` remains under `src/`") is exactly what this phase establishes, and leaving the escape hatch open would let a stray `.js` file slip back in unchecked. `tsconfig.build.json` lost its `src/database/**/*.js` special case for the same reason: the scripts are `.ts` now, so the ordinary include covers them.
+
+- *Phase 6 (docs & infra catch-up)*: **done.** `docs/ARCHITECTURE.md`'s backend sections were rewritten — the Controllers→Models→Database diagram, the directory tree that listed files deleted two phases ago, the request lifecycle, and the "Creating a Task" data flow, which now traces the four layer boundaries instead of a controller-and-model round trip. Two design-decision entries were added for the two choices a reader is most likely to question ("Why TypeScript on the backend?" and "Why raw SQL over an ORM?"). The comment sweep covered roughly fifty sites across the four layers, plus all four layer-marker `index.ts` files, which had been narrating the migration in the present tense ("None of them are wired into the running app yet") long after it finished. Tooling cruft removed: `jest`, its five now-dead `overrides` entries, `nodemon` (unused since `dev` became `tsx watch`), `.eslintrc.cjs` (ESLint 10 ignores it in favor of the flat config), and two stale `package.json.backup` files. 216 tests across 27 files still pass; `npm audit` still reports zero vulnerabilities.
+
+  The DevOps Tour turned out to need almost nothing: it is written around Docker, Kubernetes, and Grafana rather than backend file paths, and the one command it did carry (`npm run seed`) was already corrected in Phase 5. Its CI description gained the type-check and security-scan steps.
+
+  `docs/PERFORMANCE_OPTIMIZATION.md` was not rewritten — its snippets are illustrative CommonJS that never matched this codebase — but its `**File:**` pointers now name real paths, with a note at the top saying what the snippets are and are not.
+
+  Not touched, deliberately: `SECURITY_AUDIT.md`, `SECURITY_ISSUES.md`, `SECURITY_FIX_PLAN.md`, `COMPLETION_REPORT.md`, and `PHASE_6_COMPLETION.md` (an unrelated, earlier project phase) are dated point-in-time records that already read in the past tense. Rewriting a record to match the present defeats its purpose. `app/backend/docs/JEST_ES_MODULES_FIX_PLAN.md` got a resolved banner instead of a rewrite, because it was a *plan* whose problem statement was written in the present tense and read as if still open.
 
 ### What Phase 5 changed about how metrics are wired
 
@@ -86,6 +94,15 @@ Decisions already made (see rationale inline below):
 - **Data access**: stay on raw SQL via `pg`, wrapped in the Repository pattern. No ORM.
 
 ---
+
+> **Sections 1–9 below are the original proposal, left as written.** They
+> describe the pre-rewrite backend in the present tense ("`taskController.js`
+> does…", "instead of the current `nodemon src/server.js`") because that was
+> the present when they were written. The per-phase entries at the top of
+> this document are the record of what was actually built, including the two
+> places the plan turned out to be wrong — see "The ordering problem this
+> phase surfaced" and the §7 correction. Where the two disagree, the phase
+> entries are authoritative.
 
 ## 1. Why rewrite, and why these patterns specifically
 

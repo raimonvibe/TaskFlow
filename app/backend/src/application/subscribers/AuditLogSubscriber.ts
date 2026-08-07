@@ -14,7 +14,7 @@ import type { Logger } from '../ports/ILogger.js'
 
 /**
  * Writes the audit trail. Log lines and their structured fields match what
- * `authController.js` and `taskController.js` emit today ("User
+ * `authController.js` and `taskController.js` emitted ("User
  * registered", "User logged in", "User logged out", "Task created", "Task
  * updated", "Task deleted", each with the same fields), so existing
  * log-based dashboards and greps keep working.

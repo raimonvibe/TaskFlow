@@ -66,11 +66,17 @@ Load Test Results (20 concurrent users):
 
 ## 🚀 Backend Optimization
 
+> The snippets below are illustrative CommonJS, written before the backend
+> moved to TypeScript and a layered architecture. Treat them as the shape of
+> the technique, not as code to paste. Each **File:** line points at where
+> that concern lives (or would live) in the current layout — see
+> [ARCHITECTURE.md](ARCHITECTURE.md) for the layering.
+
 ### 1. Response Caching
 
 #### Redis Integration
 
-**File:** `app/backend/src/middleware/cache.js`
+**File (proposed, does not exist yet):** `app/backend/src/presentation/http/middleware/cache.ts`
 
 ```javascript
 const redis = require('redis');
@@ -125,7 +131,7 @@ router.get('/api/tasks/stats', cacheMiddleware(60), getTaskStats);
 
 #### Connection Pooling
 
-**File:** `app/backend/src/config/database.js`
+**File:** `app/backend/src/infrastructure/persistence/postgres/PostgresConnection.ts` (pool settings come from `infrastructure/config/Config.ts`)
 
 ```javascript
 const { Pool } = require('pg');
@@ -177,7 +183,7 @@ const result = await db.query(query, [userId]);
 
 ### 3. API Response Compression
 
-**File:** `app/backend/src/app.js`
+**File:** `app/backend/src/presentation/http/app.ts`
 
 ```javascript
 const compression = require('compression');
@@ -237,7 +243,7 @@ app.post('/api/tasks', async (req, res) => {
 
 ### 5. Pagination Implementation
 
-**File:** `app/backend/src/controllers/taskController.js`
+**Files:** the SQL belongs in `app/backend/src/infrastructure/persistence/postgres/PostgresTaskRepository.ts`, the page/limit parsing in `presentation/http/validators/taskValidators.ts`, and the envelope in `presentation/http/dto/taskResponse.ts` — the controller would not grow any of this itself
 
 ```javascript
 const getTasks = async (req, res) => {
@@ -558,7 +564,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 USER node
 EXPOSE 3000
-CMD ["dumb-init", "node", "src/server.js"]
+CMD ["dumb-init", "node", "dist/main.js"]
 ```
 
 **Impact:**

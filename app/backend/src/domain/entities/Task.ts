@@ -16,8 +16,8 @@ export interface TaskProps {
 /**
  * A task belonging to exactly one user.
  *
- * Replaces the `SELECT *` row object `models/Task.js` returns today. Two
- * things change by having a real entity:
+ * Replaced the `SELECT *` row object `models/Task.js` returned. Two things
+ * change by having a real entity:
  *
  *  1. `status` and `priority` are value objects, so a `Task` cannot exist
  *     holding a status the application does not recognize - the check
@@ -31,7 +31,7 @@ export interface TaskProps {
  *
  * Column names stay snake_case on the wire; the mapping to `user_id` and
  * `due_date` happens in presentation/http/dto/taskResponse.ts, so the
- * frontend sees exactly what it sees today.
+ * frontend sees exactly what it always has.
  */
 export class Task {
   readonly id: number

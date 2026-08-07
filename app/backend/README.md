@@ -101,6 +101,8 @@ The API will be available at `http://localhost:3000`
 pointing inward only: `domain/` imports nothing, `application/` imports
 `domain/`, and `infrastructure/` and `presentation/` implement the
 interfaces the inner layers declare. See
+[docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) for the layering and the
+request lifecycle, and
 [docs/BACKEND_REWRITE_PLAN.md](../../docs/BACKEND_REWRITE_PLAN.md) for how
 it got here and why.
 

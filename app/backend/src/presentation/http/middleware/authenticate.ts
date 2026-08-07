@@ -18,7 +18,7 @@ const BEARER_PREFIX = 'Bearer '
  * dependencies and the composition root is the only place allowed to supply
  * them (docs/BACKEND_REWRITE_PLAN.md §3).
  *
- * Behavior note: the current middleware emits a different warn line per
+ * Behavior note: `middleware/auth.js` emitted a different warn line per
  * rejection reason ('Blacklisted token used', 'Invalid token payload',
  * 'Token too old', 'Authentication failed'). Those are consolidated into
  * one 'Authentication failed' line whose `error` field carries the specific

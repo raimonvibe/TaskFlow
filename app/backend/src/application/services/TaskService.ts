@@ -45,8 +45,8 @@ export interface TaskFilterInput {
  * The task use-cases: `taskController.js` with the HTTP taken out.
  *
  * What that removal exposes is the part worth testing. The controller's
- * update path currently reads the task, updates it, and compares the old
- * and new status to decide whether to adjust a Prometheus gauge - three
+ * update path read the task, updated it, and compared the old and new
+ * status to decide whether to adjust a Prometheus gauge - three
  * concerns interleaved in one function that could only be exercised by
  * mocking four modules. Here the read-then-write ordering is a service
  * rule, and the gauge is a subscriber's reaction to an event this service
@@ -183,7 +183,7 @@ function parseFilters(filters: TaskFilterInput): TaskFilters {
   }
 }
 
-/** Matches `description || null` in today's controller: an empty string and
+/** Matches `description || null` in the old controller: an empty string and
  * an omitted field both mean "no description". */
 function optionalText(value: string | null | undefined): string | null {
   if (value === undefined || value === null) return null

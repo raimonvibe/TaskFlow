@@ -65,8 +65,8 @@ describe('MetricsSubscriber', () => {
     await events.publish(new AuthAttemptFailedEvent('register', 'User already exists'))
     await events.publish(new AuthAttemptFailedEvent('login', 'Invalid credentials'))
 
-    // Same label pairs the inline authAttempts.inc() calls produce today,
-    // so auth_attempts_total keeps its existing series.
+    // Same label pairs the inline authAttempts.inc() calls produced, so
+    // auth_attempts_total keeps its existing series.
     expect(metrics.recorded).toEqual([
       { type: 'register', status: 'failure' },
       { type: 'login', status: 'failure' },
@@ -106,7 +106,7 @@ describe('AuditLogSubscriber', () => {
     new AuditLogSubscriber(logger).register(events)
   })
 
-  it('logs the same lines the controller emits today', async () => {
+  it('logs the same lines authController.js emitted', async () => {
     await events.publish(new UserRegisteredEvent(1, 'ada@example.com'))
     await events.publish(new UserAuthenticatedEvent(1, 'ada@example.com'))
     await events.publish(new UserLoggedOutEvent(1))
@@ -133,7 +133,7 @@ describe('AuditLogSubscriber', () => {
     expect(logger.lines[0]?.meta?.reason).toBe('Invalid credentials')
   })
 
-  it('logs the task lines taskController.js emits today', async () => {
+  it('logs the task lines taskController.js emitted', async () => {
     await events.publish(new TaskCreatedEvent(7, 42, 'todo'))
     await events.publish(new TaskUpdatedEvent(7, 42, 'todo', 'completed'))
     await events.publish(new TaskDeletedEvent(7, 42, 'completed'))

@@ -22,8 +22,8 @@ TaskFlow is a full-stack task management application designed to demonstrate mod
                          │ HTTP/REST
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Backend (Node.js/Express)                  │
-│  - RESTful API                                              │
+│              Backend (TypeScript / Node.js / Express)        │
+│  - RESTful API, clean architecture in four layers           │
 │  - JWT Authentication                                        │
 │  - Request validation                                        │
 │  - Prometheus metrics                                        │
@@ -100,62 +100,92 @@ frontend/src/
 ### Backend Layer
 
 **Technology Stack**:
+- TypeScript (strict), compiled to `dist/` for production
 - Node.js 22+
 - Express.js (Web framework)
-- PostgreSQL (Database)
+- PostgreSQL via `pg` and raw SQL (no ORM)
 - JWT (Authentication)
 - Winston (Logging)
 - prom-client (Metrics)
 
-**Architecture Pattern**: Layered Architecture
+**Architecture Pattern**: Clean (onion) architecture — four layers, with
+dependencies pointing **inward only**. The inner layers declare interfaces;
+the outer layers implement them. See
+[BACKEND_REWRITE_PLAN.md](BACKEND_REWRITE_PLAN.md) for how the codebase got
+here from the Controllers→Models→Database layering it started with, and the
+reasoning behind each pattern.
 
 ```
-Controllers (Route handlers)
-     ↓
-Models (Data access)
-     ↓
-Database (PostgreSQL)
+        presentation/          Express: controllers, routes, middleware, DTOs
+               ↓
+        application/           Use cases (services), ports, event subscribers
+               ↓
+          domain/              Entities, value objects, errors, events,
+                               repository interfaces — imports nothing
+
+        infrastructure/        Implements the interfaces the inner layers
+                               declare: Postgres, bcrypt, JWT, Winston,
+                               prom-client. Nothing depends on it except
+                               the composition root.
 ```
+
+The practical consequence: `TaskService` knows there is a `TaskRepository`
+that can store a `Task`, but not that PostgreSQL exists. Swapping the
+database, the hasher, or the token format means writing one new class in
+`infrastructure/` and changing one line in the composition root.
 
 **Directory Structure**:
 ```
 backend/src/
-├── config/           # Configuration
-│   ├── index.js      # App config
-│   └── database.js   # DB connection
-├── controllers/      # Business logic
-│   ├── authController.js
-│   └── taskController.js
-├── middleware/       # Express middleware
-│   ├── auth.js
-│   ├── errorHandler.js
-│   └── requestLogger.js
-├── models/           # Data models
-│   ├── User.js
-│   └── Task.js
-├── routes/           # API routes
-│   ├── authRoutes.js
-│   └── taskRoutes.js
-├── utils/            # Utilities
-│   ├── logger.js
-│   └── metrics.js
-├── app.js            # Express app
-└── server.js         # Server entry
+├── domain/                    # Innermost. No imports from other layers.
+│   ├── entities/              # User, Task
+│   ├── value-objects/         # Email, TaskStatus, TaskPriority
+│   ├── errors/                # AppError hierarchy (each carries its status code)
+│   ├── events/                # DomainEvent, AuthEvents, TaskEvents
+│   └── repositories/          # Interfaces only — no SQL
+├── application/               # Use cases; depends only on domain/
+│   ├── services/              # Auth, Task, Token, Health
+│   ├── ports/                 # Interfaces infrastructure must satisfy
+│   │                          #   (Logger, Clock, EventBus, PasswordHasher,
+│   │                          #    TokenProvider, metrics, DatabaseHealth)
+│   └── subscribers/           # Metrics + audit log, wired to domain events
+├── infrastructure/            # Concrete implementations
+│   ├── persistence/postgres/  # Repositories, connection pool
+│   ├── security/              # BcryptPasswordHasher, JwtTokenProvider
+│   ├── metrics/               # The only file that imports prom-client
+│   ├── config/Config.ts       # Validated, fail-fast configuration
+│   └── logging/, events/, clock/
+├── presentation/http/         # Express boundary
+│   ├── app.ts                 # Middleware stack + route mounting
+│   └── controllers/, routes/, middleware/, dto/, validators/
+├── composition/
+│   ├── container.ts           # The only file that does `new`
+│   └── scriptContext.ts       # Smaller root for the standalone scripts
+├── database/                  # initSchema.ts, seed.ts (own entrypoints)
+└── main.ts                    # Process entry (npm start → dist/main.js)
 ```
+
+**Dependency Injection**: `composition/container.ts` is the single place
+concrete implementations are chosen and constructed. Nothing else in the
+codebase does `new` on a dependency, and there are no module-level
+singletons — importing a module never opens a database pool. That is what
+lets the integration suite build a complete second application in the same
+process, and what lets unit tests hand services in-memory fakes instead of
+reaching for a mocking framework.
 
 **Request Lifecycle**:
 1. HTTP request arrives
-2. Request logger middleware
-3. Security middleware (helmet, CORS)
-4. Rate limiter
-5. Body parser
-6. Route handler
-7. Authentication middleware (if protected)
-8. Validation middleware
-9. Controller logic
-10. Model data access
-11. Response sent
-12. Metrics recorded
+2. Security headers (helmet), CORS
+3. Rate limiter (generic, `/api/` only)
+4. Body parsers, compression
+5. Request logger — logs both ends, records timing and in-flight count
+6. Route match; authentication middleware on protected routes
+7. Validation middleware (`express-validator`), throwing `ValidationError` on failure
+8. Controller: parse the request, call one service method, map the result to JSON
+9. Service: enforce the use case's rules, call repositories through their interfaces
+10. Repository: run parameterized SQL, translate driver errors into domain errors
+11. Service publishes a domain event; subscribers record metrics and audit lines
+12. Response sent; error handler maps any `AppError` to its status code
 
 ### Database Layer
 
@@ -261,34 +291,54 @@ backend/src/
 
 ### Creating a Task
 
+Each hop crosses one layer boundary, and each boundary is an interface the
+inner side owns:
+
 ```
-┌──────┐   1. POST /api/tasks      ┌─────────┐
-│ User │ ───────────────────────> │ Frontend│
-└──────┘                           └────┬────┘
-                                        │ 2. Validate input
-                                        │    Add JWT token
+┌──────┐   1. Submit form          ┌──────────┐
+│ User │ ────────────────────────> │ Frontend │
+└──────┘                           └────┬─────┘
+                                        │ 2. Axios interceptor adds the JWT
                                         ▼
-┌──────────┐   3. HTTP POST        ┌────────┐
-│ Backend  │ <─────────────────────│ Axios  │
-└────┬─────┘                       └────────┘
-     │ 4. Verify JWT
-     │ 5. Validate input
-     │ 6. Check permissions
-     ▼
-┌─────────┐   7. INSERT query      ┌──────────┐
-│ Model   │ ───────────────────> │PostgreSQL │
-└────┬────┘                       └──────────┘
-     │ 8. Return new task
-     ▼
-┌──────────┐   9. JSON response    ┌──────────┐
-│Controller│ ───────────────────> │ Frontend │
-└──────────┘                       └────┬─────┘
-                                        │ 10. Update UI
-                                        ▼
-                                   ┌─────────┐
-                                   │  User   │
-                                   └─────────┘
+                    ══════════ HTTP: POST /api/tasks ══════════
+                                        │
+┌───────────────────────────────────────▼─────────────────────┐
+│ presentation/                                                │
+│   authenticate      → verifies the token, sets req.user      │
+│   taskValidators    → rejects bad input as ValidationError   │
+│   TaskController    → reads the body, calls one service call │
+└───────────────────────────────────────┬─────────────────────┘
+                                        │ 3. createTask(userId, input)
+┌───────────────────────────────────────▼─────────────────────┐
+│ application/  TaskService                                    │
+│   Turns raw strings into TaskStatus / TaskPriority value     │
+│   objects (invalid values cannot get past this point), then  │
+│   calls the repository *interface* — it has never heard of   │
+│   PostgreSQL.                                                │
+└───────┬───────────────────────────────────────────┬─────────┘
+        │ 4. tasks.create(...)                      │ 6. publish
+┌───────▼──────────────────────┐            ┌───────▼─────────────────┐
+│ infrastructure/              │            │ TaskCreatedEvent        │
+│   PostgresTaskRepository     │            │   → MetricsSubscriber   │
+│   Parameterized INSERT;      │            │   → AuditLogSubscriber  │
+│   driver errors become       │            │                         │
+│   domain errors.             │            │ Side effects attach     │
+└───────┬──────────────────────┘            │ themselves here rather  │
+        │ 5. Task entity                    │ than the service        │
+        │                                   │ calling them.           │
+        ▼                                   └─────────────────────────┘
+   ┌──────────┐
+   │PostgreSQL│
+   └──────────┘
+
+        7. TaskController maps the Task entity through the taskResponse
+           DTO (snake_case, ISO dates) and returns 201.
 ```
+
+If the repository throws — a `ValidationError` for a too-long title, say —
+the controller does not catch it. The error carries its own status code, and
+the error-handling middleware turns it into a response. Controllers contain
+no error-mapping logic and no `try`/`catch` per branch.
 
 ## 🚀 Deployment Architectures
 
@@ -518,6 +568,24 @@ backend/src/
 - **Fast I/O**: Event-driven, non-blocking
 - **NPM ecosystem**: Huge package repository
 - **Easy to learn**: Gentle learning curve
+
+### Why TypeScript on the backend?
+- **The interfaces are the architecture**: layers that depend on interfaces
+  instead of concrete classes only hold together if something checks that
+  the implementations actually match. `tsc --noEmit` gates CI alongside lint.
+- **Value objects can be enforced**: `TaskStatus` is a closed union, so an
+  invalid status is a compile error rather than a 500 from Postgres rejecting
+  an enum cast.
+- **No runtime cost**: types are erased; the shipped image contains only
+  compiled JavaScript, no TypeScript and no build tooling.
+
+### Why raw SQL over an ORM?
+- **The Repository pattern already provides the seam** an ORM is usually
+  reached for — swapping implementations, faking in tests — without adding a
+  query language to learn on top of the one that already exists.
+- **Visible queries**: performance work means reading the SQL that runs, not
+  inferring it from a chain of method calls.
+- **Fewer moving parts** for two tables with one relationship between them.
 
 ### Why Docker?
 - **Consistency**: Same environment everywhere

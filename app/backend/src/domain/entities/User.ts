@@ -13,10 +13,10 @@ export interface UserProps {
 /**
  * A registered user.
  *
- * Replaces the plain row object `models/User.js` hands back today, where
- * "the user" is whatever columns the particular SELECT happened to include -
- * `findByEmail` returns `SELECT *` (password hash included), `findById`
- * returns four named columns. Callers had no way to tell which shape they
+ * Replaced the plain row object `models/User.js` handed back, where "the
+ * user" was whatever columns the particular SELECT happened to include -
+ * `findByEmail` returned `SELECT *` (password hash included), `findById`
+ * returned four named columns. Callers had no way to tell which shape they
  * were holding, which is how a password hash ends up somewhere it shouldn't.
  *
  * Here the hash is an explicitly optional property that only the login path

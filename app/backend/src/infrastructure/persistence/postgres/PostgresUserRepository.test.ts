@@ -64,7 +64,7 @@ describe('PostgresUserRepository', () => {
       await repository.create({ name: 'Ada', email, passwordHash: 'hash-value' })
 
       // The whole point of the repository boundary: Postgres's 23505 must
-      // not escape into the layers above, which is what forces today's
+      // not escape into the layers above, which is what forced the old
       // errorHandler.js to know what a Postgres error code is.
       const error = await repository
         .create({ name: 'Grace', email, passwordHash: 'other-hash' })

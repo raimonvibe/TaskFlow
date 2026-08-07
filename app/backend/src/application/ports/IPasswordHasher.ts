@@ -1,6 +1,6 @@
 /**
  * Password hashing port (Strategy - docs/BACKEND_REWRITE_PLAN.md §3).
- * bcrypt today via `BcryptPasswordHasher`; moving to argon2 later means a
+ * bcrypt for now, via `BcryptPasswordHasher`; moving to argon2 later means a
  * new implementation of this interface and one line in the composition
  * root, with no change to `AuthService`.
  *

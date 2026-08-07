@@ -95,7 +95,7 @@ describe('AuthService', () => {
       )
 
       // One failure event per failed attempt is what keeps
-      // auth_attempts_total{status="failure"} counting what it counts today.
+      // auth_attempts_total{status="failure"} counting what it always has.
       const failures = events.ofType(AuthAttemptFailedEvent)
       expect(failures).toHaveLength(1)
       expect(failures[0]?.type).toBe('register')
