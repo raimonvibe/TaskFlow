@@ -7,7 +7,18 @@ Status: **Phase 2 (domain foundations) done.**
 
 Nothing in `src/*.js` changed in either phase — **none of the new code is wired into the running app yet.** `src/server.js` still uses the pre-rewrite modules (`config/index.js`, `config/database.js`, `utils/logger.js`), and the new classes sit alongside them unused until Phase 3 cuts the auth slice over. The app boots and behaves exactly as before; `npm run typecheck`, `npm run lint`, `npm run build`, and the test suite are all green.
 
-Next up: Phase 3 (auth vertical slice) — the first phase where new code actually serves traffic.
+**Phase 3 (auth vertical slice) is code-complete but not yet serving traffic** — the full slice exists and is unit-tested (`IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `TokenService`, `AuthService`, `AuthController`, auth routes/validators/DTOs, `authenticate` + `errorHandler` middleware, `MetricsSubscriber`/`AuditLogSubscriber`, and a working composition root), but nothing routes to it yet.
+
+### The ordering problem this phase surfaced
+
+§7 sequences the entrypoint and deployment work into Phase 6, and phases 3–5 into "vertical slices [that keep] the app deployable." Those two can't both hold. `src/app.js` and `src/server.js` are JavaScript, `npm start` is plain `node src/server.js`, and **Node cannot import a `.ts` file at runtime**. So no amount of new TypeScript can serve a request until the entrypoint itself becomes TypeScript — which means `app.ts`, `main.ts`, the `dev`/`start`/`db:init` scripts, the Dockerfile build stage, and `render.yaml`'s `buildCommand` all have to move *together*, as one cutover, before any slice goes live.
+
+That work is listed under Phase 6 but is a prerequisite for Phase 3, not a follow-up to it. The plan was written assuming slices could go live incrementally; they can't. Two ways forward:
+
+1. **Cut over now** — do Phase 6's entrypoint/infra work as part of Phase 3, so the auth slice actually serves traffic and the integration suite proves it. Requires `allowJs` so `app.ts` can keep importing the not-yet-migrated task/health routes, and it touches the deploy path (Dockerfile, render.yaml), so a bad cutover breaks production rather than just CI.
+2. **Build phases 3–5 in full first, cut over once at the end** — the new code sits complete and unit-tested but dormant until a single cutover switches every route at once. Lower deploy risk (one cutover instead of one per slice, with nothing half-migrated in production), at the cost of the new code being unexercised end-to-end until then.
+
+Either way, §7's phase list needs correcting: the entrypoint/infra move is a phase boundary of its own, not a documentation catch-up task.
 
 Decisions already made (see rationale inline below):
 - **Scope**: backend only. Frontend (React) is untouched by this plan.
