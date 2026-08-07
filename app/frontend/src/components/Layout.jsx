@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
+import Footer from './Footer'
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth()
@@ -69,13 +70,7 @@ const Layout = ({ children }) => {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
 
-      <footer className="bg-primary-700 text-primary-100 border-t border-primary-800 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm">
-            TaskFlow · DevOps Learning Project · Built with React, Node.js, PostgreSQL
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
