@@ -1,10 +1,11 @@
+import type { ReactElement } from 'react'
 import { Link } from 'react-router'
 import { Compass, ShieldCheck, Lifebuoy } from '@phosphor-icons/react'
 import Layout from '../components/Layout'
 import CodeBlock from '../components/tour/CodeBlock'
 import { TOUR_PAGES, DEBUG_PROMPT_TEMPLATE } from '../data/tourContent'
 
-const TourOverview = () => {
+const TourOverview = (): ReactElement => {
   return (
     <Layout>
       <div className="space-y-6">
@@ -20,7 +21,7 @@ const TourOverview = () => {
             <p className="mt-1 max-w-2xl text-sm text-primary-500 dark:text-primary-300">
               TaskFlow doubles as a learning project for the tools around it, not just the app
               itself. Pick a tool below for real commands and a short walkthrough - all sourced
-              from the longer guides in this repo's docs/TOOL-GUIDES/ folder.
+              from the longer guides in this repo&apos;s docs/TOOL-GUIDES/ folder.
             </p>
           </div>
         </div>

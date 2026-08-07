@@ -1,4 +1,4 @@
-// Content for the "DevOps Tour" pages (src/pages/TourOverview.jsx, TourPage.jsx).
+// Content for the "DevOps Tour" pages (src/pages/TourOverview.tsx, TourPage.tsx).
 //
 // This is static, hand-written reference material - no live data, no fetches
 // to localhost or anywhere else. It's meant to be read, not executed by the
@@ -8,9 +8,50 @@
 //
 // Deliberately excluded: any real secret, key, or generated value. Where a
 // command needs one (e.g. the metrics key), it uses an obvious placeholder.
-import { Package, GitBranch, Hexagon, Stack, Robot, ChartLineUp } from '@phosphor-icons/react'
+import {
+  Package,
+  GitBranch,
+  Hexagon,
+  Stack,
+  Robot,
+  ChartLineUp,
+  type Icon,
+} from '@phosphor-icons/react'
 
-export const TOUR_PAGES = [
+export interface TourLink {
+  label: string
+  url: string
+}
+
+export interface TourCommand {
+  label?: string
+  code: string
+}
+
+export interface TourSection {
+  heading: string
+  body?: string
+  links?: TourLink[]
+  commands?: TourCommand[]
+}
+
+export interface TourQuickAccess {
+  label: string
+  value: string
+}
+
+export interface TourPageContent {
+  slug: string
+  title: string
+  icon: Icon
+  tagline: string
+  guidePath: string
+  quickAccess?: TourQuickAccess[]
+  sections: TourSection[]
+  security?: string[]
+}
+
+export const TOUR_PAGES: TourPageContent[] = [
   {
     slug: 'docker',
     title: 'Docker',
@@ -410,7 +451,8 @@ export const TOUR_PAGES = [
   },
 ]
 
-export const getTourPage = slug => TOUR_PAGES.find(page => page.slug === slug)
+export const getTourPage = (slug: string | undefined): TourPageContent | undefined =>
+  TOUR_PAGES.find(page => page.slug === slug)
 
 // Every machine is different (OS, Docker version, what else is already
 // running on a given port) - static docs can't cover every combination.

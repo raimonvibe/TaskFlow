@@ -1,8 +1,6 @@
 {
-  // Phase 1 of the frontend TypeScript adoption (docs/NEXT_STEPS.md Option B).
-  // allowJs stays on until every .js/.jsx under src/ is converted; then drop
-  // it the way the backend rewrite did in its Phase 5. typecheck only
-  // considers .ts/.tsx today so a half-migrated tree stays green.
+  // Frontend TypeScript is now the only language under src/ (docs/NEXT_STEPS.md
+  // Option B). allowJs was removed once the Tour slice finished the migration.
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -11,8 +9,6 @@
     "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "allowJs": true,
-    "checkJs": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,

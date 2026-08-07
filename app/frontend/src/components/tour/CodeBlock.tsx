@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, type ReactElement } from 'react'
 import { Copy, Check } from '@phosphor-icons/react'
+
+interface CodeBlockProps {
+  label?: string
+  code: string
+}
 
 // Renders a static command example with a copy-to-clipboard button.
 // Deliberately does nothing else: no execution, no network calls, no
 // fetching anything from the code shown. It's text the visitor can copy
 // and run themselves, on their own machine, on purpose.
-const CodeBlock = ({ label, code }) => {
+const CodeBlock = ({ label, code }: CodeBlockProps): ReactElement => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -28,7 +33,9 @@ const CodeBlock = ({ label, code }) => {
       <div className="relative bg-primary-900 dark:bg-primary-900">
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => {
+            void handleCopy()
+          }}
           aria-label="Copy command to clipboard"
           className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-primary-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300"
         >

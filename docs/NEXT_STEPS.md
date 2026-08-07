@@ -60,12 +60,10 @@ ESLint, Prettier, Vite.
 3. **Tasks vertical slice** — **done.** `api/tasks`, `TaskCard`,
    `TaskModal`, and `pages/Tasks` are TypeScript; list/mutate logic lives
    in `hooks/useTasks.ts` so the page is mostly composition.
-4. **Rest of UI** — **mostly done.** App shell, auth pages, Dashboard,
-   Layout/Footer/Social, theme, and StatCard are TypeScript. Remaining under
-   `allowJs`: Tour pages (`TourOverview`, `TourPage`, `CodeBlock`) and
-   `data/tourContent.js`. Drop `allowJs` once those are converted.
+4. **Rest of UI** — **done.** Entire `src/` is TypeScript; `allowJs`
+   removed from `tsconfig.json`.
 5. **Coverage floor** — same ratchet as the backend, after the new tests
-   land.
+   land. Still open.
 
 Do not start a big-bang rename. One slice green at a time, the way §7
 sequenced the backend.

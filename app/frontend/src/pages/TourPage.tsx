@@ -1,11 +1,12 @@
+import type { ReactElement } from 'react'
 import { useParams, Link, Navigate } from 'react-router'
 import { CaretLeft, ShieldWarning, ArrowSquareOut } from '@phosphor-icons/react'
 import Layout from '../components/Layout'
 import CodeBlock from '../components/tour/CodeBlock'
 import { getTourPage } from '../data/tourContent'
 
-const TourPage = () => {
-  const { slug } = useParams()
+const TourPage = (): ReactElement => {
+  const { slug } = useParams<{ slug: string }>()
   const page = getTourPage(slug)
 
   if (!page) {
@@ -102,7 +103,10 @@ const TourPage = () => {
 
         <p className="text-xs text-primary-400 dark:text-primary-400">
           Full guide: <code className="font-mono">{page.guidePath}</code> in the repo. Still stuck?{' '}
-          <Link to="/tour#stuck" className="font-medium text-primary-600 hover:underline dark:text-accent-300">
+          <Link
+            to="/tour#stuck"
+            className="font-medium text-primary-600 hover:underline dark:text-accent-300"
+          >
             Use the debug prompt
           </Link>{' '}
           on the Overview page.
