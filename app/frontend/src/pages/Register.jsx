@@ -134,9 +134,12 @@ const Register = () => {
                 {loading ? 'Creating account...' : 'Register'}
               </button>
 
-              <p className="text-center text-sm text-primary-500">
+              <p className="text-center text-sm text-primary-500 dark:text-primary-300">
                 Already have an account?{' '}
-                <Link to="/login" className="font-semibold text-primary-600 hover:text-accent-600">
+                <Link
+                  to="/login"
+                  className="font-semibold text-primary-600 hover:text-accent-600 dark:text-accent-300 dark:hover:text-accent-200"
+                >
                   Sign in
                 </Link>
               </p>
