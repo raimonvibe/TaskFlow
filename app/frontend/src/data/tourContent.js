@@ -81,6 +81,24 @@ export const TOUR_PAGES = [
           },
         ],
       },
+      {
+        heading: 'Troubleshooting',
+        body: 'Three real errors hit while building this project, in order of how often they show up:',
+        commands: [
+          {
+            label: 'Docker isn’t running (connection/socket error)',
+            code: '# Linux:  sudo systemctl start docker\n# Docker Desktop: open the app, wait for it to say "running"',
+          },
+          {
+            label: '"port is already allocated"',
+            code: '# find what has it:\nsudo lsof -i :8080\n# or just use a different port - add to .env:\nADMINER_PORT=8081',
+          },
+          {
+            label: '"Network ... needs to be recreated"',
+            code: 'docker-compose down\ndocker-compose up -d',
+          },
+        ],
+      },
     ],
     security: [
       'Never commit a real .env file - only .env.example with placeholder values belongs in git (already enforced by .gitignore in this repo).',
@@ -98,6 +116,10 @@ export const TOUR_PAGES = [
       {
         heading: 'Where this fits in TaskFlow',
         body: 'Every push to main triggers CI (lint, tests) and, on Render, an auto-deploy. Feature branches let you break things safely before they reach main.',
+      },
+      {
+        heading: 'Install Git',
+        links: [{ label: 'All platforms', url: 'https://git-scm.com/install/' }],
       },
       {
         heading: 'Everyday workflow',
@@ -140,7 +162,14 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Optional, more advanced path than Docker Compose - manifests live under kubernetes/ for a local Minikube cluster, a small K3s cluster (e.g. on Oracle Cloud’s free tier), or a hybrid setup. Not used by the Render deployment. The kubectl apply -f kubernetes/... commands below reference that folder directly, so run them from the repository root (same rule as the Docker page) - or swap in the full path if you’re elsewhere.',
+        body: 'Optional, more advanced path than Docker Compose - manifests live under kubernetes/ for a local Minikube cluster, a small K3s cluster (e.g. on Oracle Cloud’s free tier), or a hybrid setup. Not used by the Render deployment. Commands below reference that folder, so run them from the repository root.',
+      },
+      {
+        heading: 'Install kubectl and Minikube',
+        links: [
+          { label: 'kubectl', url: 'https://kubernetes.io/docs/tasks/tools/' },
+          { label: 'Minikube', url: 'https://minikube.sigs.k8s.io/docs/start/' },
+        ],
       },
       {
         heading: 'Deploy locally with Minikube',
@@ -198,7 +227,11 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Used for the more advanced "real infrastructure" learning paths - three independent variants live under infrastructure/: oracle-cloud (free tier), local-vms, and hybrid. Not part of the Render deployment, which needs no infrastructure provisioning at all. Every command below is shown for oracle-cloud - swap the directory name for whichever variant you’re actually using, and note each block cds there itself rather than assuming an earlier one already did.',
+        body: 'Used for the more advanced "real infrastructure" learning paths - three independent variants live under infrastructure/: oracle-cloud (free tier), local-vms, and hybrid. Not part of the Render deployment. Commands below are shown for oracle-cloud - swap the directory for whichever variant you’re using.',
+      },
+      {
+        heading: 'Install Terraform',
+        links: [{ label: 'All platforms', url: 'https://developer.hashicorp.com/terraform/install' }],
       },
       {
         heading: 'First-time setup',
@@ -248,7 +281,16 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Pairs with the Terraform path: Terraform provisions the server, Ansible playbooks (under configuration/) then install and configure everything on it - Docker, the app, monitoring. Optional and not used by the Render deployment. Every command below is relative to that folder (configuration/inventory/, configuration/playbooks/), so cd there first - it’s in every command block for that reason, not by habit.',
+        body: 'Pairs with the Terraform path: Terraform provisions the server, Ansible playbooks (under configuration/) then install and configure everything on it - Docker, the app, monitoring. Optional and not used by the Render deployment. Commands below are relative to configuration/, hence the cd.',
+      },
+      {
+        heading: 'Install Ansible',
+        links: [
+          {
+            label: 'All platforms',
+            url: 'https://docs.ansible.com/projects/ansible/latest/installation_guide/index.html',
+          },
+        ],
       },
       {
         heading: 'Before running anything',
