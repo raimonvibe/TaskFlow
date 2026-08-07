@@ -1,8 +1,8 @@
 /**
  * Idempotent database schema initializer.
  *
- * Intended to run as Render's `preDeployCommand` on every deploy. It only
- * applies app/database/schema.sql the first time (when the `users` table
+ * Intended to run before the server starts on Render (see render.yaml
+ * startCommand). It only applies app/database/schema.sql the first time (when the `users` table
  * doesn't exist yet), so it's safe to run repeatedly across redeploys.
  *
  * For real schema changes going forward, add a new guarded block below

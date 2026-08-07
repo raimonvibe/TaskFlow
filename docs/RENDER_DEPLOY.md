@@ -20,7 +20,7 @@ A GitHub Actions workflow (`.github/workflows/keepalive.yml`) pings the backend'
 1. In the Render Dashboard, go to **Blueprints → New Blueprint Instance**.
 2. Select this GitHub repo. Render detects `render.yaml` automatically.
 3. Review the three resources it lists (`taskflow-db`, `taskflow-backend`, `taskflow-frontend`) and click **Apply**.
-4. Render provisions the database first, then builds and deploys both services. First deploy takes a few minutes (the backend's `preDeployCommand` also applies the database schema automatically — see [Database schema](#database-schema-init) below).
+4. Render provisions the database first, then builds and deploys both services. First deploy takes a few minutes (the backend's `startCommand` also applies the database schema automatically on first boot — see [Database schema](#database-schema-init) below).
 
 Everything else — the database connection string, JWT secret, and CORS origin — is wired up automatically inside `render.yaml` via `fromDatabase` and `fromService` references, so there's nothing to fill in manually during setup.
 
@@ -34,7 +34,7 @@ Once the first deploy finishes, copy the backend's URL from its page in the Rend
 
 ## Database schema init
 
-`app/backend/src/database/init-schema.js` runs as the backend's `preDeployCommand` on every deploy. It checks whether the `users` table already exists; if not, it applies `app/database/schema.sql` once. This makes first-deploy setup automatic without risking errors from re-running non-idempotent `CREATE TYPE`/`CREATE TRIGGER` statements on later deploys.
+`app/backend/src/database/init-schema.js` runs in the backend's `startCommand` (`npm run db:init && npm start`) on every deploy. Render's free tier does not support `preDeployCommand`, so schema init runs at service start instead (when `DATABASE_URL` is available). It checks whether the `users` table already exists; if not, it applies `app/database/schema.sql` once. This makes first-deploy setup automatic without risking errors from re-running non-idempotent `CREATE TYPE`/`CREATE TRIGGER` statements on later deploys.
 
 If you need to change the schema later, either add a new guarded step to that script or switch to `node-pg-migrate` (already a dependency) for real migrations.
 

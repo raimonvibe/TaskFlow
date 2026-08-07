@@ -10,6 +10,9 @@
 # handled by a GitHub Actions scheduled workflow instead:
 # .github/workflows/keepalive.yml
 #
+# Free web services do not support preDeployCommand, so db:init runs in
+# startCommand before npm start (init-schema.js is idempotent).
+#
 # NOTE: Render's free Postgres plan is deleted 30 days after creation. For a
 # real "production" deployment, upgrade taskflow-db's plan (see docs/RENDER_DEPLOY.md).
 #
@@ -32,8 +35,7 @@ services:
     region: oregon
     rootDir: app/backend
     buildCommand: npm ci
-    preDeployCommand: npm run db:init
-    startCommand: npm start
+    startCommand: npm run db:init && npm start
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
@@ -72,7 +74,7 @@ services:
           name: taskflow-backend
           envVarKey: RENDER_EXTERNAL_URL
     routes:
-      # Client-side routing (react-router-dom) - serve index.html for all paths
+      # Client-side routing (react-router) - serve index.html for all paths
       - type: rewrite
         source: /*
         destination: /index.html
