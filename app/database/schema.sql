@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS tasks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Revoked JWTs (logout). Persisted here rather than kept in memory so a
+-- revoked token stays revoked across restarts (Render's free tier restarts
+-- often). Keyed by the token's own sha256 hash, not the raw token, so a
+-- database leak doesn't itself hand out valid bearer tokens. See
+-- src/models/TokenBlacklist.js.
+CREATE TABLE IF NOT EXISTS token_blacklist (
+    token_hash VARCHAR(64) PRIMARY KEY,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
@@ -52,6 +62,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at DESC);
+
+-- Token blacklist indexes
+CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at);
 
 -- =============================================================================
 -- TRIGGERS
@@ -98,5 +111,7 @@ COMMENT ON COLUMN tasks.description IS 'Detailed task description (optional)';
 COMMENT ON COLUMN tasks.status IS 'Current status of the task';
 COMMENT ON COLUMN tasks.priority IS 'Priority level of the task';
 COMMENT ON COLUMN tasks.due_date IS 'When the task is due (optional)';
+
+COMMENT ON TABLE token_blacklist IS 'Revoked JWTs (logout), keyed by token hash, until their own expiry';
 
 COMMENT ON FUNCTION update_updated_at_column() IS 'Automatically updates the updated_at column on row update';
