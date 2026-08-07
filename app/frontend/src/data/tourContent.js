@@ -67,9 +67,14 @@ export const TOUR_PAGES = [
       },
       {
         heading: 'Rebuilding after a code change',
+        body: 'The backend image deliberately has npm removed at build time (hardening step, cuts Trivy findings), and only ever installs production dependencies - so anything needing npm or a dev dependency (like running tests) has to happen on your host, not inside the container.',
         commands: [
           {
-            code: 'docker-compose up --build\ndocker-compose exec backend npm test\ndocker-compose exec postgres psql -U taskflow_user -d taskflow',
+            code: 'docker-compose up --build\ndocker-compose exec backend node src/database/seed.js   # seed demo data\ndocker-compose exec postgres psql -U taskflow_user -d taskflow',
+          },
+          {
+            label: 'Run tests (on your host, not in the container)',
+            code: 'cd app/backend && npm test\ncd app/frontend && npm test',
           },
         ],
       },
@@ -83,8 +88,12 @@ export const TOUR_PAGES = [
       },
       {
         heading: 'Troubleshooting',
-        body: 'Three real errors hit while building this project, in order of how often they show up:',
+        body: 'If ./scripts/setup.sh or docker-compose up fails partway through anything, run the stop command below before retrying - a half-started stack is what causes most of the errors below in the first place. Then the three real ones hit while building this project, in order of how often they show up:',
         commands: [
+          {
+            label: 'Something failed partway through',
+            code: 'docker-compose down',
+          },
           {
             label: 'Docker isn’t running (connection/socket error)',
             code: '# Linux:  sudo systemctl start docker\n# Docker Desktop: open the app, wait for it to say "running"',

@@ -56,11 +56,9 @@ docker-compose logs -f
 ### Seed Database (Optional)
 
 ```bash
-# Enter backend container
-docker-compose exec backend sh
-
-# Run seed script
-npm run seed
+# npm is intentionally removed from the backend container at build time
+# (hardening step, cuts Trivy findings) - run the script with node directly
+docker-compose exec backend node src/database/seed.js
 
 # Demo credentials will be displayed:
 # Email: demo@taskflow.com
