@@ -35,7 +35,7 @@ TaskFlow is a full-stack task management application designed to demonstrate mod
 │  PostgreSQL        │    │   Redis (Optional)    │
 │  - User data       │    │   - Session cache     │
 │  - Task data       │    │   - Rate limiting     │
-│  - Migrations      │    └──────────────────────┘
+│  - Revoked tokens  │    └──────────────────────┘
 └────────────────────┘
              │
              ▼

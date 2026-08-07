@@ -60,9 +60,9 @@ JWT_SECRET=your_random_secret_string
 psql -U postgres -c "CREATE DATABASE taskflow;"
 ```
 
-5. Run migrations:
+5. Apply the schema:
 ```bash
-npm run migrate:up
+psql -U postgres -d taskflow -f ../database/schema.sql
 ```
 
 6. (Optional) Seed database:
@@ -88,10 +88,7 @@ The API will be available at `http://localhost:3000`
 - `npm run test:ui` - Run tests with Vitest UI
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
-- `npm run migrate:up` - Run database migrations
-- `npm run migrate:down` - Rollback last migration
-- `npm run migrate:create <name>` - Create new migration
-- `npm run db:init` - Apply `database/schema.sql` if the schema is missing (idempotent; runs on deploy)
+- `npm run db:init` - Apply `database/schema.sql` (idempotent; runs on every deploy)
 - `npm run seed` - Seed the database with sample data (runs `dist/`, so build first)
 - `npm run seed:dev` - Same, straight from the TypeScript source via tsx
 
@@ -181,24 +178,19 @@ docker compose up -d --force-recreate -V backend
 | `JWT_EXPIRE` | JWT expiration | `7d` |
 | `CORS_ORIGIN` | Allowed origins | `http://localhost:5173` |
 
-## Database Migrations
+## Database Schema
 
-Migrations are managed with `node-pg-migrate`.
+There is no migration tool. `app/database/schema.sql` is the single source
+of truth, and it is idempotent — `npm run db:init` applies the whole file on
+every deploy, which is a no-op against a database that already matches it.
 
-Create a new migration:
-```bash
-npm run migrate:create add_users_table
-```
+To change the schema, edit that file and keep it re-appliable. Adding a table
+or an index converges on its own. Anything destructive or transforming (drop
+a column, rename one, narrow a type, backfill) cannot be expressed this way
+and is the signal to adopt a real migration tool.
 
-Run migrations:
-```bash
-npm run migrate:up
-```
-
-Rollback:
-```bash
-npm run migrate:down
-```
+See [the database README](../database/README.md) for the full picture,
+including everywhere the file gets applied.
 
 ## Testing
 

@@ -4,11 +4,13 @@ node_modules/
 .pnp.js
 
 # Testing
-/coverage
+# Unanchored, so these match app/backend/coverage and app/frontend/dist too -
+# a leading slash would only ever match the repo root.
+coverage/
 
 # Production
-/dist
-/build
+dist/
+build/
 
 # Environment files
 .env
@@ -59,6 +61,10 @@ secrets.yml
 
 # Docker
 .dockerignore
+
+# Claude Code — personal, machine-local settings (settings.json is the
+# shared one and stays tracked)
+.claude/settings.local.json
 
 # Misc
 tmp/

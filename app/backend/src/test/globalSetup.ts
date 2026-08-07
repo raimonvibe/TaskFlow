@@ -1,8 +1,9 @@
 /**
- * Vitest globalSetup: ensures the test database has the users and tasks
- * tables. Runs once before any test file; applies app/database/schema.sql
- * if needed. Works in CI (postgres service) and locally (taskflow_test or
- * taskflow).
+ * Vitest globalSetup: brings the test database up to the current schema.
+ * Runs once before any test file; applies app/database/schema.sql, which is
+ * idempotent, so this works the same on an empty database and on one left
+ * over from a previous run. Works in CI (postgres service) and locally
+ * (taskflow_test or taskflow).
  *
  * Talks to `pg` directly rather than going through `PostgresConnection`,
  * because it has to work on a database that may not have a schema yet -
@@ -26,29 +27,14 @@ export default async function globalSetup(): Promise<void> {
   })
 
   try {
-    const check = await pool.query<{ users_exist: string | null }>(
-      "SELECT to_regclass('public.users') AS users_exist"
-    )
-
-    if (check.rows[0]?.users_exist == null) {
-      const schemaPath = join(currentDir, '../../../database/schema.sql')
-      await pool.query(readFileSync(schemaPath, 'utf8'))
-    }
-
-    // Guarded, idempotent, and run unconditionally (mirrors
-    // database/initSchema.ts's own ensureTokenBlacklistTable) so a test DB
-    // that was already initialized before token_blacklist was added to
-    // schema.sql still ends up with it, instead of every auth test that
-    // touches logout/revocation failing with "relation does not exist".
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS token_blacklist (
-        token_hash VARCHAR(64) PRIMARY KEY,
-        expires_at TIMESTAMP WITH TIME ZONE NOT NULL
-      )
-    `)
-    await pool.query(
-      'CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at)'
-    )
+    // Unconditional, which is what keeps a long-lived local test database
+    // in step with schema.sql as tables are added to it. This file used to
+    // apply the schema only when `users` was missing, and then re-declare
+    // token_blacklist inline to cover the databases that predated it -
+    // a second copy of that table's DDL, in the test harness. Applying the
+    // whole schema every time removes the need for the copy.
+    const schemaPath = join(currentDir, '../../../database/schema.sql')
+    await pool.query(readFileSync(schemaPath, 'utf8'))
 
     // Sweep leftovers from a previous run that crashed before its own
     // afterAll cleanup could run. This is the *only* place allowed to delete

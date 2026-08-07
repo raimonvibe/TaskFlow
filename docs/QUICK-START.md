@@ -279,7 +279,7 @@ docker system df
 
 - [Frontend README](../app/frontend/README.md) - React app details
 - [Backend README](../app/backend/README.md) - API documentation
-- [Database README](../app/database/README.md) - Schema and migrations
+- [Database README](../app/database/README.md) - Schema, and how it gets applied
 
 ### DevOps
 

@@ -80,7 +80,7 @@ TaskFlow/
 ├── app/
 │   ├── frontend/              ✅ React application (Vite + Tailwind)
 │   ├── backend/               ✅ Node.js/Express API
-│   └── database/              ✅ PostgreSQL schema and migrations
+│   └── database/              ✅ PostgreSQL schema
 ├── infrastructure/            ✅ Terraform configurations
 │   ├── oracle-cloud/          - Oracle Cloud Always Free tier
 │   ├── local-vms/             - VirtualBox VMs with Vagrant
@@ -156,7 +156,7 @@ TaskFlow is designed for progressive learning:
 
 - [Frontend README](app/frontend/README.md) - React application details
 - [Backend README](app/backend/README.md) - API documentation
-- [Database README](app/database/README.md) - Schema and migrations
+- [Database README](app/database/README.md) - Schema, and how it gets applied
 
 ### Comprehensive Guides (Coming Soon)
 - **FREE-DEPLOYMENT-OPTIONS.md** - All free deployment options compared
@@ -209,9 +209,9 @@ cd app/backend
 npm install
 cp .env.example .env
 
-# Create database
+# Create database and apply the schema
 createdb taskflow
-npm run migrate:up
+psql -d taskflow -f ../database/schema.sql
 
 # Start server
 npm run dev

@@ -64,7 +64,7 @@ docker logs -f backend  # Follow logs
 
 # Execute command in container
 docker exec -it backend sh
-docker exec backend npm run migrate
+docker exec backend npm run db:init
 ```
 
 ### Docker Compose

@@ -145,12 +145,12 @@ resource "supabase_project" "taskflow_db" {
 resource "supabase_migration" "taskflow_schema" {
   project_id = supabase_project.taskflow_db.id
   
-  # SQL migration files
+  # schema.sql is the whole schema and the only source of truth for it, so
+  # this is the complete list. It used to also name the three files under
+  # app/database/migrations/, which re-created what schema.sql had just
+  # created and so could not apply cleanly; that directory is gone.
   sql_files = [
-    "${path.module}/../app/database/schema.sql",
-    "${path.module}/../app/database/migrations/1_create_users_table.sql",
-    "${path.module}/../app/database/migrations/2_create_tasks_table.sql",
-    "${path.module}/../app/database/migrations/3_create_updated_at_trigger.sql"
+    "${path.module}/../app/database/schema.sql"
   ]
   
   depends_on = [supabase_project.taskflow_db]

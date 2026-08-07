@@ -81,7 +81,7 @@ This deployment strategy uses managed services for frontend and database, while 
 
 1. Go to [supabase.com](https://supabase.com)
 2. Create new project
-3. Run database migrations:
+3. Apply the schema:
    ```sql
    -- Copy contents from app/database/schema.sql
    -- Execute in Supabase SQL Editor

@@ -2,7 +2,7 @@
 
 Status: **Complete.** All six phases are done, plus the optional stretch work in §7's seventh item. `src/` is TypeScript end to end, no pre-rewrite file remains, and the documentation describes the architecture the code actually has.
 
-What is *not* covered by that: the schema still has three competing sources of truth, one of which is missing a table. That and three smaller items are written up in **§10**, along with what to run on a fresh machine. Nothing there is architectural.
+What is *not* covered by that: three smaller items, written up in **§10**, along with what to run on a fresh machine. Nothing there is architectural. §10's one real defect — the schema's three competing sources of truth, one of which was missing a table — has since been closed; the entry records how.
 
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
@@ -354,13 +354,27 @@ The rewrite itself is finished — every phase in §7 is done, and the architect
 
 Ordered by whether they are actually defects.
 
-**1. The schema has three sources of truth, and they disagree.** This is the only item here worth calling a defect, and it is the one open question from §9 that was never closed.
+**1. The schema had three sources of truth, and they disagreed. Closed — `schema.sql` won, the other two are deleted.**
 
-- `app/database/schema.sql` — three tables, `token_blacklist` among them. This one is live: `initSchema.ts` runs it, via `npm run db:init`.
-- `app/database/migrations/` — three numbered `.sql` files covering `users`, `tasks`, and the `updated_at` trigger. **`token_blacklist` is not there.**
-- `node-pg-migrate` — still a devDependency, still exposed as `migrate:up`/`migrate:down`, but those files are not in its format and no config points at that directory, so the scripts do not drive it.
+This was the only item here worth calling a defect, and the one open question from §9 that had never been closed. What was there:
 
-The practical risk is not a live outage — nothing in deployment replays that directory. It is that the directory *looks* authoritative. Someone rebuilding a database from it gets one where `POST /api/auth/logout` fails on a missing table, and nothing in the repo tells them that directory is stale. Closing this means picking one mechanism and **deleting the other two**, which is the part that matters: the gap exists because three were left standing, so a fix that adds a fourth has not fixed anything. If the choice is `node-pg-migrate`, note §9's warning that it also touches `scripts/setup.sh`, the Compose Postgres init, and CI. If the choice is `schema.sql`, it is mostly deletion.
+- `app/database/schema.sql` — three tables, `token_blacklist` among them. This one was live: `initSchema.ts` ran it, via `npm run db:init`.
+- `app/database/migrations/` — three numbered `.sql` files covering `users`, `tasks`, and the `updated_at` trigger. **`token_blacklist` was not there.**
+- `node-pg-migrate` — a devDependency exposed as `migrate:up`/`migrate:down`, but those files were not in its format and no config pointed at that directory, so the scripts did not drive it.
+
+`schema.sql` was the choice because it was the only one anything actually ran: Render's `startCommand`, both Compose files, CI's test job, and `globalSetup.ts` all applied it, and `node-pg-migrate` had never run anywhere. Picking the tool nothing used would have meant rewriting all five of those call sites to adopt a mechanism with no track record in this repo; picking the file they already used meant deleting the two that were fiction.
+
+Two things the write-up above got wrong, both found while doing it:
+
+**The stale directory was not inert.** The claim "nothing in deployment replays that directory" was false. `infrastructure/hybrid/main.tf` fed `schema.sql` **and** all three migration files to a `supabase_migration` resource, in that order — which cannot succeed regardless of the missing table, because `schema.sql` has already created `task_status` by the time `2_create_tasks_table.sql` issues a bare `CREATE TYPE`, and `1_create_users_table.sql`'s `CREATE INDEX idx_users_email` has no `IF NOT EXISTS` either. That resource has presumably never been applied. Its `sql_files` list is now just `schema.sql`.
+
+**There were five sources of truth, not three.** `token_blacklist`'s DDL was also written out longhand in `initSchema.ts` (`ensureTokenBlacklistTable`) and again in `globalSetup.ts` — both there because a database created before that table existed would otherwise never get it, and both a verbatim second copy of what `schema.sql` already said. Deleting the migrations directory alone would have left those standing.
+
+The fix for that is what changed most: **`schema.sql` is now idempotent in full, and is applied unconditionally rather than only when `users` is missing.** The two `CREATE TYPE` statements are wrapped in `DO` blocks that swallow `duplicate_object` — the only statements in the file that were not already `IF NOT EXISTS`, `OR REPLACE`, or `DROP ... IF EXISTS`. That single change is what lets both hand-patched blocks go: `CREATE TABLE IF NOT EXISTS` adds a newly-introduced table to an existing database and leaves everything else alone, which is exactly what `ensureTokenBlacklistTable` was hand-rolling. `initSchema.ts` is now a five-line read-and-apply with no existence check, and `globalSetup.ts` lost its check and its copy of the DDL. The file runs as one implicit transaction, so a failure part-way rolls back instead of half-applying.
+
+Also removed: the three `migrate:*` scripts and the `node-pg-migrate` devDependency, plus the now-orphaned `glob` entry in `overrides` — `node-pg-migrate` was its last remaining consumer, the same reason Phase 6 dropped jest's five. `npm audit` still reports zero vulnerabilities.
+
+**What this arrangement cannot do, stated plainly because it is the cost of the choice:** it converges for *additive* changes only — a new table, a new index, a new column via `ADD COLUMN IF NOT EXISTS`. It cannot express dropping a column, renaming one, narrowing a type, or backfilling data, because nothing records which databases have already been changed. Reaching that point is the signal to adopt a real migration tool, deliberately, *replacing* `schema.sql` rather than sitting alongside it. The note is in the file's own header and in `app/database/README.md`, because a fourth mechanism added quietly beside the third is how this defect happened in the first place.
 
 **2. No coverage thresholds.** `vitest.config.ts` collects coverage but sets no floor, so today's 93.9% statements / 81.9% branches can rot with nothing failing CI. The weak spots are all error paths — `PostgresConnection` 25% branches, `JwtTokenProvider` 50%, `currentUser.ts` 66% — which is the usual shape, and the usual reason a regression there goes unnoticed. Cheap insurance: set the floor at roughly what is already true, so it ratchets rather than demanding new tests today.
 

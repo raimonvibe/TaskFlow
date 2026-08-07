@@ -188,28 +188,28 @@ tar -tzf /var/backups/taskflow/taskflow_backup_*.tar.gz
 
 ---
 
-### Step 3: Database Migration (15 minutes)
+### Step 3: Apply the Schema (15 minutes)
+
+There is no migration tool and no version table — `app/database/schema.sql`
+is the whole schema and is idempotent, so applying it is safe whether or not
+the database has been initialized before.
 
 ```bash
-# Connect to database pod
-kubectl exec -it postgres-0 -n taskflow -- psql -U taskflow_user -d taskflow
+# Record what's there now, to compare against afterwards
+kubectl exec -it postgres-0 -n taskflow -- psql -U taskflow_user -d taskflow -c "\dt"
 
-# Check current schema version
-SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1;
+# Apply the schema
+kubectl exec -i postgres-0 -n taskflow -- \
+  psql -U taskflow_user -d taskflow < app/database/schema.sql
 
-# Exit and run migrations
-cd app/database
-npm run migrate:up
-
-# Verify migrations
+# Verify
 kubectl exec -it postgres-0 -n taskflow -- psql -U taskflow_user -d taskflow -c "\dt"
 ```
 
 - [ ] Database backed up
-- [ ] Current schema version recorded
-- [ ] Migrations executed successfully
-- [ ] Schema changes verified
-- [ ] No migration errors
+- [ ] Table list recorded before applying
+- [ ] Schema applied without errors
+- [ ] Table list verified afterwards
 
 ---
 

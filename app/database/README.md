@@ -1,14 +1,43 @@
 # TaskFlow Database
 
-PostgreSQL database schema and migrations for TaskFlow.
+PostgreSQL database schema for TaskFlow.
 
 ## Overview
 
 This directory contains:
-- **schema.sql**: Complete database schema
-- **migrations/**: Individual migration files
-- **init.sql**: Docker initialization script
-- **seed.js**: Sample data for development/testing
+- **schema.sql**: the complete schema, and the only source of truth for it
+- **init.sql**: Docker initialization script (creates the role and database)
+- **security-schema.sql**: optional production hardening — roles, RLS, audit
+  logging. Applied on top of `schema.sql`, and only by
+  `docker-compose.secure.yml`.
+
+Seed data lives in the backend (`app/backend/src/database/seed.ts`).
+
+## How the schema gets applied
+
+There is no migration tool. `schema.sql` is written to be idempotent — every
+statement is `IF NOT EXISTS`, `OR REPLACE`, or guarded — so everything that
+needs a schema just applies the whole file, and re-applying it is a no-op:
+
+| Where | How |
+|---|---|
+| Render (production) | `npm run db:init` in the `startCommand`, on every deploy |
+| Docker Compose | mounted into `docker-entrypoint-initdb.d`, on first init |
+| CI | `psql -f schema.sql` before the test job |
+| Tests | `src/test/globalSetup.ts`, once per run |
+| Terraform (hybrid) | `supabase_migration.taskflow_schema` |
+
+**Changing the schema** means editing `schema.sql`, and keeping it
+idempotent. Adding a table or an index converges on its own — existing
+databases pick it up the next time the file is applied.
+
+What this cannot do is change something that already exists: dropping or
+renaming a column, narrowing a type, or backfilling data, because nothing
+records which databases have already been changed. That is the point at
+which to adopt a real migration tool — deliberately, replacing this file
+rather than running alongside it. Three sources of truth is how the
+`token_blacklist` table came to be missing from a directory that looked
+authoritative.
 
 ## Database Schema
 
@@ -39,6 +68,17 @@ Stores user tasks and to-dos.
 | created_at | TIMESTAMP | DEFAULT NOW() | Task creation time |
 | updated_at | TIMESTAMP | DEFAULT NOW() | Last update time |
 
+### Token Blacklist Table
+Revoked JWTs, so a logout survives a restart.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| token_hash | VARCHAR(64) | PRIMARY KEY | SHA-256 of the token, not the token itself |
+| expires_at | TIMESTAMP | NOT NULL | The token's own expiry; rows are swept after it |
+
+Storing the hash rather than the raw token means a database leak does not
+hand out usable bearer tokens.
+
 ### Indexes
 
 Performance-optimized indexes:
@@ -48,10 +88,11 @@ Performance-optimized indexes:
 - `idx_tasks_priority` - Filter tasks by priority
 - `idx_tasks_due_date` - Sort/filter by due date
 - `idx_tasks_created_at` - Sort by creation date
+- `idx_token_blacklist_expires_at` - Sweep expired revocations
 
 ## Setup Instructions
 
-### Option 1: Using schema.sql (Quick Setup)
+### Option 1: Using psql directly
 
 For local development:
 
@@ -64,24 +105,17 @@ psql -d taskflow -f schema.sql
 
 # Run seed data (optional)
 cd ../backend
-npm run seed
+npm run seed:dev
 ```
 
-### Option 2: Using Migrations (Recommended for Production)
+### Option 2: Using the backend's own initializer
 
-The backend uses `node-pg-migrate` for migration management.
+Same file, applied by the same code path production uses — so if it works
+here it works on deploy:
 
 ```bash
 cd ../backend
-
-# Run all migrations
-npm run migrate:up
-
-# Rollback last migration
-npm run migrate:down
-
-# Create new migration
-npm run migrate:create add_new_feature
+npm run build && npm run db:init
 ```
 
 ### Option 3: Using Docker (Easiest)
@@ -101,7 +135,8 @@ To populate the database with sample data:
 
 ```bash
 cd ../backend
-npm run seed
+npm run seed:dev     # straight from the TypeScript source
+# or: npm run build && npm run seed
 ```
 
 This creates:
@@ -109,14 +144,6 @@ This creates:
   - Email: `demo@taskflow.com`
   - Password: `demo123`
 - 10 sample tasks with various statuses and priorities
-
-## Migration Files
-
-Migrations are located in `migrations/`:
-
-1. `1_create_users_table.sql` - Creates users table
-2. `2_create_tasks_table.sql` - Creates tasks table with enums
-3. `3_create_updated_at_trigger.sql` - Auto-update timestamps
 
 ## Maintenance
 
@@ -208,14 +235,17 @@ psql -d taskflow -c "SELECT 1;"
 psql -d taskflow -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO taskflow_user;"
 ```
 
-### Migration Errors
+### Schema Errors
+
+`schema.sql` must stay re-appliable — `npm run db:init` runs it on every
+deploy. If a change to it fails on the second run but not the first, the new
+statement is not idempotent. `CREATE TYPE` is the usual culprit, since it has
+no `IF NOT EXISTS`; the two enums in the file show the `DO`-block form that
+works around it.
 
 ```bash
-# Check migration status
-npm run migrate:status
-
-# Force unlock (if stuck)
-# Manually delete row from pgmigrations table
+# Prove a change is idempotent before shipping it
+psql -d taskflow -f schema.sql && psql -d taskflow -f schema.sql
 ```
 
 ## Future Enhancements

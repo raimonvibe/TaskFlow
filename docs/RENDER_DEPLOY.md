@@ -36,9 +36,9 @@ Once the first deploy finishes, copy the backend's URL from its page in the Rend
 
 ## Database schema init
 
-`app/backend/src/database/initSchema.ts` (compiled to `dist/database/initSchema.js`) runs in the backend's `startCommand` (`npm run db:init && npm start`) on every deploy. Render's free tier does not support `preDeployCommand`, so schema init runs at service start instead (when `DATABASE_URL` is available). It checks whether the `users` table already exists; if not, it applies `app/database/schema.sql` once. This makes first-deploy setup automatic without risking errors from re-running non-idempotent `CREATE TYPE`/`CREATE TRIGGER` statements on later deploys.
+`app/backend/src/database/initSchema.ts` (compiled to `dist/database/initSchema.js`) runs in the backend's `startCommand` (`npm run db:init && npm start`) on every deploy. Render's free tier does not support `preDeployCommand`, so schema init runs at service start instead (when `DATABASE_URL` is available). It applies `app/database/schema.sql` in full, every time. That file is idempotent by construction — the `CREATE TYPE` statements are wrapped in `DO` blocks that swallow `duplicate_object`, the triggers are `DROP ... IF EXISTS` then create, and everything else is `IF NOT EXISTS` or `OR REPLACE` — so re-applying it against an already-initialized database is a no-op. It runs as one implicit transaction, so a failure rolls back rather than half-applying.
 
-If you need to change the schema later, either add a new guarded step to that script or switch to `node-pg-migrate` (already a dependency) for real migrations.
+Applying the whole file unconditionally is also what makes an *added* table reach an existing database: the next deploy creates it. To change the schema, edit `schema.sql` and keep it re-appliable. A destructive or transforming change (dropping a column, narrowing a type, backfilling) cannot be expressed this way and needs a real migration tool — see [the database README](../app/database/README.md).
 
 ## Free Postgres expires after 30 days
 

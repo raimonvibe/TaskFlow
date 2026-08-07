@@ -1,9 +1,29 @@
 -- TaskFlow Database Schema
 -- PostgreSQL 13+
 --
--- This file contains the complete database schema for TaskFlow.
--- Run migrations individually for version control, or use this file
--- for quick setup in development.
+-- THE single source of truth for the schema. Everything that creates a
+-- database applies this file and only this file: src/database/initSchema.ts
+-- (Render's startCommand, via `npm run db:init`), src/test/globalSetup.ts,
+-- both Compose files' docker-entrypoint-initdb.d mounts, CI's test job, and
+-- the Supabase migration in infrastructure/hybrid. There is no migration
+-- tool and no second copy of any table's DDL - see the note below before
+-- adding one.
+--
+-- EVERY statement here must be idempotent, because this file is applied on
+-- every boot rather than once. That is what lets an existing database pick
+-- up a newly added table without a migration step: CREATE TABLE IF NOT
+-- EXISTS adds what is missing and leaves what is already there alone. The
+-- whole file runs as one implicit transaction, so a failure part-way rolls
+-- back rather than leaving a half-applied schema.
+--
+-- What this arrangement can and cannot do: it converges for *additive*
+-- changes - a new table, a new index, a new nullable column added with
+-- ALTER TABLE ... ADD COLUMN IF NOT EXISTS. It cannot express a destructive
+-- or transforming one, because there is no record of which databases have
+-- already been changed. Dropping a column, renaming one, narrowing a type,
+-- or backfilling data needs a real migration tool. Reaching that point is
+-- the signal to adopt one - deliberately, replacing this file rather than
+-- sitting alongside it.
 
 -- Enable UUID extension (optional, for future use)
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -22,9 +42,25 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Task status and priority enums
-CREATE TYPE task_status AS ENUM ('todo', 'in_progress', 'completed');
-CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high');
+-- Task status and priority enums.
+-- CREATE TYPE has no IF NOT EXISTS, so each one is wrapped in a DO block
+-- that swallows duplicate_object. Without this the second application of
+-- this file would abort here and roll back the whole transaction.
+DO $$
+BEGIN
+    CREATE TYPE task_status AS ENUM ('todo', 'in_progress', 'completed');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$$;
+
+DO $$
+BEGIN
+    CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$$;
 
 -- Tasks table
 CREATE TABLE IF NOT EXISTS tasks (
@@ -43,7 +79,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- revoked token stays revoked across restarts (Render's free tier restarts
 -- often). Keyed by the token's own sha256 hash, not the raw token, so a
 -- database leak doesn't itself hand out valid bearer tokens. See
--- src/models/TokenBlacklist.js.
+-- src/infrastructure/persistence/postgres/PostgresTokenBlacklistRepository.ts.
 CREATE TABLE IF NOT EXISTS token_blacklist (
     token_hash VARCHAR(64) PRIMARY KEY,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL
