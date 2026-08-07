@@ -1,0 +1,33 @@
+name: Keep Render backend awake
+
+# Render's free web service plan spins the backend down after ~15 min of
+# inactivity (cold start takes ~30-60s on the next request). Render's own
+# Cron Jobs aren't free (min $1/mo), so this free GitHub Actions schedule
+# pings the health endpoint often enough to keep the free instance warm.
+#
+# Setup (one-time, after the first Render deploy):
+#   Repo Settings -> Secrets and variables -> Actions -> Variables tab
+#   -> New repository variable
+#     Name:  RENDER_BACKEND_URL
+#     Value: https://taskflow-backend.onrender.com   (your actual Render URL)
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub may delay scheduled runs by a few minutes
+    # under load, which is fine here since the sleep window is ~15 min.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        env:
+          BACKEND_URL: ${{ vars.RENDER_BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::error::RENDER_BACKEND_URL repository variable is not set. See workflow comments for setup steps."
+            exit 1
+          fi
+          curl -sf --max-time 30 "$BACKEND_URL/health" && echo "Backend is awake."
