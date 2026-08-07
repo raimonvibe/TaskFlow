@@ -22,7 +22,7 @@ const Layout = ({ children }) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
               <div className="flex items-baseline gap-2">
-                <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+                <h1 className="font-serif text-2xl font-bold tracking-tight text-white">
                   TaskFlow
                 </h1>
                 <span className="hidden sm:inline text-xs uppercase tracking-widest text-accent-300">

@@ -15,7 +15,7 @@ const StatCard = ({ title, value, icon, color = 'primary' }) => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-primary-500 mb-1">{title}</p>
-          <p className="font-display text-3xl font-bold text-ink">{value}</p>
+          <p className="font-serif text-3xl font-bold text-ink">{value}</p>
         </div>
         <div className={`p-3 rounded-md ${colorClasses[color] || colorClasses.primary}`}>
           <span className="text-2xl">{icon}</span>

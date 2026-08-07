@@ -46,14 +46,14 @@ const Register = () => {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-300 mb-3">
               Student portal
             </p>
-            <h1 className="font-display text-5xl font-bold text-white tracking-tight">TaskFlow</h1>
+            <h1 className="font-serif text-5xl font-bold text-white tracking-tight">TaskFlow</h1>
             <p className="mt-3 text-primary-100 text-base">
               Create your account to join the DevOps learning lab.
             </p>
           </div>
 
           <div className="bg-campus border border-accent-400/40 rounded-md p-8 shadow-none">
-            <h2 className="font-display text-2xl font-semibold text-ink mb-6">Create account</h2>
+            <h2 className="font-serif text-2xl font-semibold text-ink mb-6">Create account</h2>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {error && (
