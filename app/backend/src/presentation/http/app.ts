@@ -15,13 +15,20 @@ import type { Container } from '../../composition/container.js'
  * `app.js` this replaces, which built its middleware stack against
  * module-level singletons at import time.
  *
- * Middleware order is unchanged from app.js and matters: helmet before
- * anything can respond, the generic rate limiter before body parsing (so a
- * flood costs as little as possible), and the error handler last.
+ * Middleware order matters: the correlation ID first so every response and
+ * every log line carries one, helmet before anything can respond, the
+ * generic rate limiter before body parsing (so a flood costs as little as
+ * possible), and the error handler last. Everything from helmet onwards is
+ * in the order app.js used.
  */
 export function createApp(container: Container): Express {
   const app = express()
   const { config } = container
+
+  // Ahead of the rate limiter deliberately: a request rejected with a 429
+  // is exactly the kind someone will ask about later, and it should have an
+  // ID to quote.
+  app.use(container.correlationId)
 
   app.use(helmet())
   app.use(cors(config.cors))

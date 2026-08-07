@@ -1,12 +1,14 @@
 import express, { type RequestHandler, type Router } from 'express'
 import rateLimit from 'express-rate-limit'
+import type { PasswordPolicy } from '../../../domain/policies/PasswordPolicy.js'
 import type { AuthController } from '../controllers/AuthController.js'
 import { validateRequest } from '../middleware/validateRequest.js'
-import { loginValidation, registerValidation } from '../validators/authValidators.js'
+import { createRegisterValidation, loginValidation } from '../validators/authValidators.js'
 
 export interface AuthRoutesDependencies {
   readonly controller: AuthController
   readonly authenticate: RequestHandler
+  readonly passwordPolicy: PasswordPolicy
   readonly rateLimit: {
     readonly windowMs: number
     readonly max: number
@@ -38,7 +40,7 @@ export function createAuthRouter(deps: AuthRoutesDependencies): Router {
   router.post(
     '/register',
     authLimiter,
-    registerValidation,
+    createRegisterValidation(deps.passwordPolicy),
     validateRequest,
     deps.controller.register
   )

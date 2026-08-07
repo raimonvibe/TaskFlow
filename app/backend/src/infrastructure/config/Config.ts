@@ -51,6 +51,11 @@ export interface RateLimitConfig {
   readonly authMax: number
 }
 
+/** Which `PasswordPolicy` strategy is in force. Named here rather than in
+ * the domain so the domain does not have to know it is selectable by
+ * environment variable; the composition root maps this to an instance. */
+export type PasswordPolicyName = 'length' | 'strong'
+
 export class Config {
   readonly env: string
   readonly port: number
@@ -61,6 +66,7 @@ export class Config {
   readonly rateLimit: RateLimitConfig
   readonly log: { readonly level: string }
   readonly metrics: { readonly key: string | null }
+  readonly password: { readonly policy: PasswordPolicyName }
 
   private static instance: Config | undefined
 
@@ -105,6 +111,13 @@ export class Config {
     this.log = { level: env.LOG_LEVEL || 'info' }
 
     this.metrics = { key: env.METRICS_KEY || null }
+
+    // Defaults to the rule this app has always enforced. An unrecognized
+    // value falls back rather than throwing: getting a typo'd
+    // PASSWORD_POLICY wrong should not take a deployment down, and the
+    // fallback is the safe direction (it never silently weakens 'strong'
+    // into nothing, it only declines to strengthen).
+    this.password = { policy: env.PASSWORD_POLICY === 'strong' ? 'strong' : 'length' }
   }
 
   /** Require an explicit JWT_SECRET in production - refuses to boot with

@@ -9,6 +9,7 @@ import {
   UserRegisteredEvent,
 } from '../../domain/events/AuthEvents.js'
 import type { User } from '../../domain/entities/User.js'
+import type { PasswordPolicy } from '../../domain/policies/PasswordPolicy.js'
 import type { UserRepository } from '../../domain/repositories/IUserRepository.js'
 import { Email } from '../../domain/value-objects/Email.js'
 import type { Clock } from '../ports/IClock.js'
@@ -46,12 +47,18 @@ export class AuthService {
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
     private readonly events: EventBus,
-    private readonly clock: Clock
+    private readonly clock: Clock,
+    private readonly passwordPolicy: PasswordPolicy
   ) {}
 
   async register(name: string, rawEmail: string, plainPassword: string): Promise<AuthResult> {
     try {
       const email = Email.create(rawEmail)
+      // Same belt-and-braces reasoning as Email: the route rejects a weak
+      // password first and produces the nicer field-level 400, but the rule
+      // belongs to the use case, not to one HTTP endpoint. Any future caller
+      // - a CLI, an admin import, a second transport - gets it too.
+      this.enforcePasswordPolicy(plainPassword)
 
       const existing = await this.users.findByEmail(email)
       if (existing) {
@@ -154,5 +161,18 @@ export class AuthService {
   ): Promise<void> {
     const reason = error instanceof Error ? error.message : String(error)
     await this.events.publish(new AuthAttemptFailedEvent(type, reason, email, this.clock.now()))
+  }
+
+  /** Carries the field name so the HTTP layer produces the same
+   * `errors: [{ field: 'password' }]` body it does when the route validator
+   * is the one that rejects. */
+  private enforcePasswordPolicy(plainPassword: string): void {
+    const violations = this.passwordPolicy.violations(plainPassword)
+    if (violations.length === 0) return
+
+    throw new ValidationError(
+      'Validation failed',
+      violations.map(message => ({ field: 'password', message }))
+    )
   }
 }

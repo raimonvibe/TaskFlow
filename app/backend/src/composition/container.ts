@@ -8,9 +8,17 @@ import { AuditLogSubscriber } from '../application/subscribers/AuditLogSubscribe
 import { MetricsSubscriber } from '../application/subscribers/MetricsSubscriber.js'
 import type { Clock } from '../application/ports/IClock.js'
 import type { Logger } from '../application/ports/ILogger.js'
+import type { RequestContext } from '../application/ports/IRequestContext.js'
+import {
+  LengthPasswordPolicy,
+  StrongPasswordPolicy,
+  type PasswordPolicy,
+} from '../domain/policies/PasswordPolicy.js'
 import { SystemClock } from '../infrastructure/clock/SystemClock.js'
 import { Config } from '../infrastructure/config/Config.js'
+import { AsyncLocalRequestContext } from '../infrastructure/context/AsyncLocalRequestContext.js'
 import { InMemoryEventBus } from '../infrastructure/events/InMemoryEventBus.js'
+import { CorrelatingLogger } from '../infrastructure/logging/CorrelatingLogger.js'
 import { WinstonLogger } from '../infrastructure/logging/WinstonLogger.js'
 import { PrometheusMetricsRegistry } from '../infrastructure/metrics/PrometheusMetricsRegistry.js'
 import { PostgresConnection } from '../infrastructure/persistence/postgres/PostgresConnection.js'
@@ -22,8 +30,11 @@ import { JwtTokenProvider } from '../infrastructure/security/JwtTokenProvider.js
 import { AuthController } from '../presentation/http/controllers/AuthController.js'
 import { HealthController } from '../presentation/http/controllers/HealthController.js'
 import { MetricsController } from '../presentation/http/controllers/MetricsController.js'
+import { OpenApiController } from '../presentation/http/controllers/OpenApiController.js'
 import { TaskController } from '../presentation/http/controllers/TaskController.js'
+import { buildOpenApiDocument } from '../presentation/http/openapi/document.js'
 import { createAuthenticate } from '../presentation/http/middleware/authenticate.js'
+import { createCorrelationId } from '../presentation/http/middleware/correlationId.js'
 import { createErrorHandler, notFound } from '../presentation/http/middleware/errorHandler.js'
 import { createRequestLogger } from '../presentation/http/middleware/requestLogger.js'
 import { createAuthRouter } from '../presentation/http/routes/authRoutes.js'
@@ -35,16 +46,19 @@ export interface ContainerOverrides {
   readonly logger?: Logger
   readonly clock?: Clock
   readonly db?: PostgresConnection
+  readonly requestContext?: RequestContext
 }
 
 export interface Container {
   readonly config: Config
   readonly logger: Logger
+  readonly requestContext: RequestContext
   readonly db: PostgresConnection
   readonly authRouter: Router
   readonly taskRouter: Router
   readonly healthRouter: Router
   readonly authenticate: RequestHandler
+  readonly correlationId: RequestHandler
   readonly requestLogger: RequestHandler
   readonly errorHandler: ErrorRequestHandler
   readonly notFound: RequestHandler
@@ -67,7 +81,14 @@ export interface Container {
  */
 export function createContainer(overrides: ContainerOverrides = {}): Container {
   const config = overrides.config ?? Config.getInstance()
-  const logger = overrides.logger ?? createDefaultLogger(config)
+  const requestContext = overrides.requestContext ?? new AsyncLocalRequestContext()
+  // Decorated once, here, so every consumer below gets correlation IDs for
+  // free - including the ones that were written before the feature existed
+  // and ask for nothing but a `Logger`.
+  const logger = new CorrelatingLogger(
+    overrides.logger ?? createDefaultLogger(config),
+    requestContext
+  )
   const clock = overrides.clock ?? new SystemClock()
   const db = overrides.db ?? new PostgresConnection(config.database, logger)
 
@@ -76,6 +97,7 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   const tasks = new PostgresTaskRepository(db)
   const tokenBlacklist = new PostgresTokenBlacklistRepository(db)
   const passwordHasher = new BcryptPasswordHasher()
+  const passwordPolicy = selectPasswordPolicy(config)
   const tokenProvider = new JwtTokenProvider({
     secret: config.jwt.secret,
     expiresIn: config.jwt.expiresIn,
@@ -88,7 +110,14 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
 
   // Application
   const tokenService = new TokenService(tokenProvider, tokenBlacklist, clock, logger)
-  const authService = new AuthService(users, passwordHasher, tokenService, events, clock)
+  const authService = new AuthService(
+    users,
+    passwordHasher,
+    tokenService,
+    events,
+    clock,
+    passwordPolicy
+  )
   const taskService = new TaskService(tasks, events, clock)
   const healthService = new HealthService(db, clock, logger)
 
@@ -99,10 +128,12 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
 
   // Presentation
   const authenticate = createAuthenticate(tokenService, logger)
+  const correlationId = createCorrelationId(requestContext)
   const requestLogger = createRequestLogger(logger, metrics)
   const authRouter = createAuthRouter({
     controller: new AuthController(authService),
     authenticate,
+    passwordPolicy,
     rateLimit: { windowMs: config.rateLimit.authWindowMs, max: config.rateLimit.authMax },
   })
   const taskRouter = createTaskRouter({
@@ -112,6 +143,9 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   const healthRouter = createHealthRouter({
     health: new HealthController(healthService),
     metrics: new MetricsController(metrics, db, { key: config.metrics.key }, logger),
+    // Built from the same policy instance the router and service enforce, so
+    // the documented password rule is necessarily the one in force.
+    openApi: new OpenApiController(buildOpenApiDocument(passwordPolicy)),
   })
 
   const errorHandler = createErrorHandler(logger, {
@@ -122,14 +156,31 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   return {
     config,
     logger,
+    requestContext,
     db,
     authRouter,
     taskRouter,
     healthRouter,
     authenticate,
+    correlationId,
     requestLogger,
     errorHandler,
     notFound,
+  }
+}
+
+/**
+ * The Strategy selection: one switch, in the one place that is allowed to
+ * choose implementations. Adding a policy means a new class in
+ * `domain/policies/` and one more case here - no route, controller, or
+ * service changes, which is the property the pattern is bought for.
+ */
+function selectPasswordPolicy(config: Config): PasswordPolicy {
+  switch (config.password.policy) {
+    case 'strong':
+      return new StrongPasswordPolicy()
+    case 'length':
+      return new LengthPasswordPolicy()
   }
 }
 

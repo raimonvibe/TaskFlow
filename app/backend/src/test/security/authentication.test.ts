@@ -21,7 +21,13 @@ describe('Security: Authentication', () => {
         .send({ name: 'Test', email: uniqueEmail('short-pw'), password: 'short1' })
 
       expect(res.status).toBe(400)
-      expect(res.body.errors.some((e: { field: string }) => e.field === 'password')).toBe(true)
+      // Asserting the message, not just the field: the rule moved out of the
+      // route and into a PasswordPolicy, and the whole point of that move
+      // was that it changed nothing a client can see.
+      expect(res.body.errors).toContainEqual({
+        field: 'password',
+        message: 'Password must be between 8 and 128 characters',
+      })
     })
 
     it('rejects an invalid email format', async () => {

@@ -4,6 +4,8 @@ import { TokenService } from './TokenService.js'
 import { ConflictError } from '../../domain/errors/ConflictError.js'
 import { NotFoundError } from '../../domain/errors/NotFoundError.js'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError.js'
+import { ValidationError } from '../../domain/errors/ValidationError.js'
+import { LengthPasswordPolicy, StrongPasswordPolicy } from '../../domain/policies/PasswordPolicy.js'
 import {
   AuthAttemptFailedEvent,
   UserAuthenticatedEvent,
@@ -46,7 +48,14 @@ describe('AuthService', () => {
       new RecordingLogger()
     )
 
-    service = new AuthService(users, new FakePasswordHasher(), tokenService, events, clock)
+    service = new AuthService(
+      users,
+      new FakePasswordHasher(),
+      tokenService,
+      events,
+      clock,
+      new LengthPasswordPolicy()
+    )
   })
 
   describe('register', () => {
@@ -100,6 +109,42 @@ describe('AuthService', () => {
       expect(failures).toHaveLength(1)
       expect(failures[0]?.type).toBe('register')
       expect(failures[0]?.reason).toBe('User already exists')
+    })
+
+    it('enforces the password policy itself, not just at the route', async () => {
+      // The HTTP validator rejects this first in practice. This asserts the
+      // rule survives a caller that is not HTTP at all - the reason it was
+      // moved off the route in the first place.
+      const error = await service.register('Ada', 'ada@example.com', 'short').catch(e => e)
+
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).details).toEqual([
+        { field: 'password', message: 'Password must be between 8 and 128 characters' },
+      ])
+      expect(await users.findByEmail(Email.create('ada@example.com'))).toBeNull()
+    })
+
+    it('enforces whichever policy it was given', async () => {
+      const strict = new AuthService(
+        users,
+        new FakePasswordHasher(),
+        new TokenService(
+          new FakeTokenProvider(),
+          new InMemoryTokenBlacklistRepository(() => NOW),
+          new FixedClock(NOW),
+          new RecordingLogger()
+        ),
+        events,
+        new FixedClock(NOW),
+        new StrongPasswordPolicy()
+      )
+
+      // Accepted by the default policy, rejected by this one - swapping the
+      // strategy is the only thing that changed.
+      await expect(service.register('Ada', 'ada@example.com', 'password')).resolves.toBeDefined()
+      await expect(strict.register('Grace', 'grace@example.com', 'password')).rejects.toThrow(
+        ValidationError
+      )
     })
 
     it('treats a differently-cased duplicate as the same user', async () => {
