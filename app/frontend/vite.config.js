@@ -19,7 +19,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (
-            /[/\\]node_modules[/\\](?:react|react-dom|react-router-dom)(?:[/\\]|$)/.test(
+            /[/\\]node_modules[/\\](?:react|react-dom|react-router)(?:[/\\]|$)/.test(
               id
             )
           ) {

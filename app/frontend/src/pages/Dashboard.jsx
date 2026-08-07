@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
 import { tasksAPI } from '../api/tasks'
