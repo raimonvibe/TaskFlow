@@ -60,6 +60,12 @@ services:
         value: "100"
       - key: LOG_LEVEL
         value: info
+      # Locks /metrics behind an X-Metrics-Key header (see healthRoutes.js).
+      # Grab the generated value from the Render dashboard's env vars tab to
+      # scrape metrics yourself, e.g.:
+      #   curl -H "X-Metrics-Key: <value>" https://<backend-url>/metrics
+      - key: METRICS_KEY
+        generateValue: true
 
   # --- Frontend static site --------------------------------------------------
   # Static sites are free on Render; the `plan` field does not apply (omit it).

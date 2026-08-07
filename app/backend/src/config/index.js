@@ -60,11 +60,21 @@ const config = {
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    // Tighter limit for /api/auth/register and /api/auth/login specifically -
+    // the generic limit above is too loose to slow down credential stuffing.
+    authWindowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+    authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS || '10', 10),
   },
 
   // Logging
   log: {
     level: process.env.LOG_LEVEL || 'info',
+  },
+
+  // Metrics endpoint protection. If set, /metrics requires a matching
+  // X-Metrics-Key header; if unset, /metrics stays open (local/dev default).
+  metrics: {
+    key: process.env.METRICS_KEY || null,
   },
 }
 

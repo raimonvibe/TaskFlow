@@ -1,6 +1,7 @@
 import express from 'express'
 import { query, getPoolStats } from '../config/database.js'
 import metricsRegister from '../utils/metrics.js'
+import config from '../config/index.js'
 
 const router = express.Router()
 
@@ -29,8 +30,16 @@ router.get('/health', async (req, res) => {
   }
 })
 
-// Metrics endpoint for Prometheus
+// Metrics endpoint for Prometheus. Locked behind a shared-secret header when
+// METRICS_KEY is set (Render prod) - previously this leaked auth-attempt
+// counts, task-status gauges, and DB pool stats to anyone with the URL.
+// Returns 404 (not 401) on a mismatch so the endpoint's existence isn't
+// confirmed to an unauthenticated caller.
 router.get('/metrics', async (req, res) => {
+  if (config.metrics.key && req.get('X-Metrics-Key') !== config.metrics.key) {
+    return res.status(404).json({ message: 'Not found' })
+  }
+
   try {
     res.set('Content-Type', metricsRegister.contentType)
     const metrics = await metricsRegister.metrics()
