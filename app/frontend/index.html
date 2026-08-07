@@ -2,9 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+
+    <!-- Home screen icon (iOS "Add to Home Screen") + PWA manifest (Android/Chrome) -->
+    <link rel="apple-touch-icon" href="/social.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b1f3a" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="TaskFlow - DevOps Learning Project" />
+
+    <!-- Social share preview (Open Graph) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TaskFlow - Task Management" />
+    <meta property="og:description" content="TaskFlow - DevOps Learning Project" />
+    <meta property="og:image" content="https://taskflow-frontend-a4e8.onrender.com/social-share.png" />
+    <meta property="og:url" content="https://taskflow-frontend-a4e8.onrender.com/" />
+
+    <!-- Social share preview (Twitter/X card) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TaskFlow - Task Management" />
+    <meta name="twitter:description" content="TaskFlow - DevOps Learning Project" />
+    <meta name="twitter:image" content="https://taskflow-frontend-a4e8.onrender.com/social-share.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

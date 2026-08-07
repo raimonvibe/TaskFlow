@@ -1,0 +1,18 @@
+{
+  "name": "TaskFlow",
+  "short_name": "TaskFlow",
+  "description": "TaskFlow - DevOps Learning Project task manager",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1f3a",
+  "theme_color": "#0b1f3a",
+  "icons": [
+    {
+      "src": "/social.png",
+      "sizes": "481x518",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
