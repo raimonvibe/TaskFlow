@@ -2,8 +2,10 @@ import type { RequestHandler } from 'express'
 import type { ErrorRequestHandler, Router } from 'express'
 import { AuthService } from '../application/services/AuthService.js'
 import { HealthService } from '../application/services/HealthService.js'
+import { RefreshTokenService } from '../application/services/RefreshTokenService.js'
 import { TaskService } from '../application/services/TaskService.js'
 import { TokenService } from '../application/services/TokenService.js'
+import { parseDurationToSeconds } from '../infrastructure/time/parseDuration.js'
 import { AuditLogSubscriber } from '../application/subscribers/AuditLogSubscriber.js'
 import { MetricsSubscriber } from '../application/subscribers/MetricsSubscriber.js'
 import type { Clock } from '../application/ports/IClock.js'
@@ -22,6 +24,7 @@ import { CorrelatingLogger } from '../infrastructure/logging/CorrelatingLogger.j
 import { WinstonLogger } from '../infrastructure/logging/WinstonLogger.js'
 import { PrometheusMetricsRegistry } from '../infrastructure/metrics/PrometheusMetricsRegistry.js'
 import { PostgresConnection } from '../infrastructure/persistence/postgres/PostgresConnection.js'
+import { PostgresRefreshTokenRepository } from '../infrastructure/persistence/postgres/PostgresRefreshTokenRepository.js'
 import { PostgresTaskRepository } from '../infrastructure/persistence/postgres/PostgresTaskRepository.js'
 import { PostgresTokenBlacklistRepository } from '../infrastructure/persistence/postgres/PostgresTokenBlacklistRepository.js'
 import { PostgresUserRepository } from '../infrastructure/persistence/postgres/PostgresUserRepository.js'
@@ -96,6 +99,7 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   const users = new PostgresUserRepository(db)
   const tasks = new PostgresTaskRepository(db)
   const tokenBlacklist = new PostgresTokenBlacklistRepository(db)
+  const refreshTokenStore = new PostgresRefreshTokenRepository(db)
   const passwordHasher = new BcryptPasswordHasher()
   const passwordPolicy = selectPasswordPolicy(config)
   const tokenProvider = new JwtTokenProvider({
@@ -109,11 +113,21 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   const metrics = new PrometheusMetricsRegistry()
 
   // Application
-  const tokenService = new TokenService(tokenProvider, tokenBlacklist, clock, logger)
+  const tokenService = new TokenService(tokenProvider, tokenBlacklist, clock, logger, {
+    maxAgeSeconds: parseDurationToSeconds(config.jwt.expiresIn),
+  })
+  const refreshTokenService = new RefreshTokenService(
+    refreshTokenStore,
+    config.jwt.refreshSecret,
+    config.jwt.refreshExpiresIn,
+    clock,
+    logger
+  )
   const authService = new AuthService(
     users,
     passwordHasher,
     tokenService,
+    refreshTokenService,
     events,
     clock,
     passwordPolicy

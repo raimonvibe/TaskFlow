@@ -17,8 +17,9 @@ describe('Config', () => {
       expect(config.database.port).toBe(5432)
       expect(config.database.database).toBe('taskflow')
       expect(config.database.ssl).toBe(false)
-      expect(config.jwt.expiresIn).toBe('7d')
-      expect(config.jwt.refreshSecret).toBeUndefined()
+      expect(config.jwt.expiresIn).toBe('15m')
+      expect(config.jwt.refreshSecret).toBe('default_refresh_secret_change_in_production')
+      expect(config.jwt.refreshExpiresIn).toBe('7d')
       expect(config.cors.origin).toEqual(['http://localhost:5173', 'http://localhost:3000'])
       expect(config.rateLimit.windowMs).toBe(900000)
       expect(config.rateLimit.max).toBe(100)
@@ -43,6 +44,7 @@ describe('Config', () => {
         JWT_SECRET: 'a-real-secret',
         JWT_EXPIRE: '1h',
         JWT_REFRESH_SECRET: 'a-refresh-secret',
+        JWT_REFRESH_EXPIRE: '30d',
         CORS_ORIGIN: 'https://a.example.com,https://b.example.com',
         RATE_LIMIT_MAX_REQUESTS: '50',
         AUTH_RATE_LIMIT_MAX_REQUESTS: '5',
@@ -59,6 +61,7 @@ describe('Config', () => {
       expect(config.jwt.secret).toBe('a-real-secret')
       expect(config.jwt.expiresIn).toBe('1h')
       expect(config.jwt.refreshSecret).toBe('a-refresh-secret')
+      expect(config.jwt.refreshExpiresIn).toBe('30d')
       expect(config.cors.origin).toEqual(['https://a.example.com', 'https://b.example.com'])
       expect(config.rateLimit.max).toBe(50)
       expect(config.rateLimit.authMax).toBe(5)
@@ -96,9 +99,35 @@ describe('Config', () => {
       ).toThrow(/FATAL: JWT_SECRET/)
     })
 
-    it('boots fine in production with a real JWT_SECRET set', () => {
-      const config = new Config({ NODE_ENV: 'production', JWT_SECRET: 'a-real-strong-secret' })
+    it('boots fine in production with distinct JWT_SECRET and JWT_REFRESH_SECRET', () => {
+      const config = new Config({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-real-strong-secret',
+        JWT_REFRESH_SECRET: 'a-different-refresh-secret',
+      })
       expect(config.jwt.secret).toBe('a-real-strong-secret')
+      expect(config.jwt.refreshSecret).toBe('a-different-refresh-secret')
+    })
+
+    it('throws in production when JWT_REFRESH_SECRET is missing', () => {
+      expect(
+        () =>
+          new Config({
+            NODE_ENV: 'production',
+            JWT_SECRET: 'a-real-strong-secret',
+          })
+      ).toThrow(/FATAL: JWT_REFRESH_SECRET/)
+    })
+
+    it('throws in production when JWT_REFRESH_SECRET equals JWT_SECRET', () => {
+      expect(
+        () =>
+          new Config({
+            NODE_ENV: 'production',
+            JWT_SECRET: 'same-secret',
+            JWT_REFRESH_SECRET: 'same-secret',
+          })
+      ).toThrow(/FATAL: JWT_REFRESH_SECRET/)
     })
 
     it('does not throw outside production even without JWT_SECRET', () => {

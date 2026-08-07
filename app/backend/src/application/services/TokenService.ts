@@ -4,12 +4,17 @@ import type { Clock } from '../ports/IClock.js'
 import type { Logger } from '../ports/ILogger.js'
 import type { TokenClaims, TokenProvider, TokenSubject } from '../ports/ITokenProvider.js'
 
-/** Mirrors middleware/auth.js's current `maxTokenAge` check exactly. */
-const MAX_TOKEN_AGE_SECONDS = 7 * 24 * 60 * 60
+/** Default matches Config's JWT_EXPIRE default (`15m`). Overridable so
+ * tests and alternate configs stay aligned with the signed lifetime. */
+const DEFAULT_MAX_TOKEN_AGE_SECONDS = 15 * 60
 
-/** Fallback revocation window when a token carries no `exp` claim - same
- * 7 days middleware/auth.js's `blacklistToken` falls back to. */
-const DEFAULT_REVOCATION_MS = 7 * 24 * 60 * 60 * 1000
+/** Fallback revocation window when a token carries no `exp` claim. */
+const DEFAULT_REVOCATION_MS = DEFAULT_MAX_TOKEN_AGE_SECONDS * 1000
+
+export interface TokenServiceOptions {
+  /** Hard ceiling on access-token age, independent of the JWT `exp` claim. */
+  readonly maxAgeSeconds?: number
+}
 
 /**
  * Everything about the lifecycle of an access token: issue it, verify it
@@ -20,16 +25,21 @@ const DEFAULT_REVOCATION_MS = 7 * 24 * 60 * 60 * 1000
  * `TokenBlacklist` model. Pulled into a class with injected
  * dependencies, the revocation and token-age rules become testable without
  * a database, a real JWT secret, or the passage of time - a `FixedClock`
- * makes the 7-day age check a synchronous assertion instead of something
+ * makes the age check a synchronous assertion instead of something
  * you can only exercise by mocking timers.
  */
 export class TokenService {
+  private readonly maxAgeSeconds: number
+
   constructor(
     private readonly tokenProvider: TokenProvider,
     private readonly blacklist: TokenBlacklistRepository,
     private readonly clock: Clock,
-    private readonly logger: Logger
-  ) {}
+    private readonly logger: Logger,
+    options: TokenServiceOptions = {}
+  ) {
+    this.maxAgeSeconds = options.maxAgeSeconds ?? DEFAULT_MAX_TOKEN_AGE_SECONDS
+  }
 
   issue(subject: TokenSubject): string {
     return this.tokenProvider.sign(subject)
@@ -60,7 +70,7 @@ export class TokenService {
 
     if (claims.iat !== undefined) {
       const tokenAgeSeconds = this.clock.now().getTime() / 1000 - claims.iat
-      if (tokenAgeSeconds > MAX_TOKEN_AGE_SECONDS) {
+      if (tokenAgeSeconds > this.maxAgeSeconds) {
         throw new UnauthorizedError('Token expired, please login again')
       }
     }

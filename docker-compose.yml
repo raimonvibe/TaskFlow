@@ -71,6 +71,9 @@ services:
       DB_USER: taskflow_user
       DB_PASSWORD: taskflow_password
       JWT_SECRET: dev_secret_change_in_production
+      JWT_EXPIRE: 15m
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
+      JWT_REFRESH_EXPIRE: 7d
       CORS_ORIGIN: http://localhost:5173,http://localhost:3000
     ports:
       - "127.0.0.1:${BACKEND_PORT:-3000}:3000"

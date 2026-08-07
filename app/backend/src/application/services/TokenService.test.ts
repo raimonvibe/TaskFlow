@@ -8,7 +8,7 @@ import { RecordingLogger } from '../../test/fakes/RecordingLogger.js'
 
 const NOW = new Date('2026-06-01T12:00:00.000Z')
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000)
-const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60
+const ACCESS_MAX_AGE_SECONDS = 15 * 60
 
 describe('TokenService', () => {
   let provider: FakeTokenProvider
@@ -20,7 +20,9 @@ describe('TokenService', () => {
     provider = new FakeTokenProvider()
     blacklist = new InMemoryTokenBlacklistRepository(() => NOW)
     logger = new RecordingLogger()
-    service = new TokenService(provider, blacklist, new FixedClock(NOW), logger)
+    service = new TokenService(provider, blacklist, new FixedClock(NOW), logger, {
+      maxAgeSeconds: ACCESS_MAX_AGE_SECONDS,
+    })
   })
 
   describe('verify', () => {
@@ -59,9 +61,9 @@ describe('TokenService', () => {
       )
     })
 
-    it('rejects a token older than the 7-day maximum age', async () => {
+    it('rejects a token older than the access-token maximum age', async () => {
       const token = provider
-        .issueAt(NOW_SECONDS - SEVEN_DAYS_SECONDS - 60)
+        .issueAt(NOW_SECONDS - ACCESS_MAX_AGE_SECONDS - 60)
         .sign({ id: 7, email: 'ada@example.com' })
 
       // A fixed clock makes this a plain assertion. The equivalent test
@@ -73,7 +75,7 @@ describe('TokenService', () => {
 
     it('accepts a token issued exactly at the age limit', async () => {
       const token = provider
-        .issueAt(NOW_SECONDS - SEVEN_DAYS_SECONDS)
+        .issueAt(NOW_SECONDS - ACCESS_MAX_AGE_SECONDS)
         .sign({ id: 7, email: 'ada@example.com' })
 
       await expect(service.verify(token)).resolves.toBeDefined()
@@ -113,19 +115,20 @@ describe('TokenService', () => {
       expect(expired.size).toBe(0)
     })
 
-    it('falls back to a 7-day window for a token with no exp claim', async () => {
+    it('falls back to the access-token window for a token with no exp claim', async () => {
       const token = provider.sign({ id: 7, email: 'ada@example.com' })
 
       await service.revoke(token)
 
       const justBeforeFallback = new InMemoryTokenBlacklistRepository(
-        () => new Date(NOW.getTime() + SEVEN_DAYS_SECONDS * 1000 - 1000)
+        () => new Date(NOW.getTime() + ACCESS_MAX_AGE_SECONDS * 1000 - 1000)
       )
       const fallbackService = new TokenService(
         provider,
         justBeforeFallback,
         new FixedClock(NOW),
-        logger
+        logger,
+        { maxAgeSeconds: ACCESS_MAX_AGE_SECONDS }
       )
       await fallbackService.revoke(token)
       await justBeforeFallback.deleteExpired()

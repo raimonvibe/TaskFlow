@@ -3,7 +3,11 @@ import rateLimit from 'express-rate-limit'
 import type { PasswordPolicy } from '../../../domain/policies/PasswordPolicy.js'
 import type { AuthController } from '../controllers/AuthController.js'
 import { validateRequest } from '../middleware/validateRequest.js'
-import { createRegisterValidation, loginValidation } from '../validators/authValidators.js'
+import {
+  createRegisterValidation,
+  loginValidation,
+  refreshValidation,
+} from '../validators/authValidators.js'
 
 export interface AuthRoutesDependencies {
   readonly controller: AuthController
@@ -45,6 +49,7 @@ export function createAuthRouter(deps: AuthRoutesDependencies): Router {
     deps.controller.register
   )
   router.post('/login', authLimiter, loginValidation, validateRequest, deps.controller.login)
+  router.post('/refresh', authLimiter, refreshValidation, validateRequest, deps.controller.refresh)
   router.get('/me', deps.authenticate, deps.controller.getCurrentUser)
   router.post('/logout', deps.authenticate, deps.controller.logout)
 

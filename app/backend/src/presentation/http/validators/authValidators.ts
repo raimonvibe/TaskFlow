@@ -39,3 +39,7 @@ export const loginValidation: ValidationChain[] = [
   emailField(),
   body('password').notEmpty().withMessage('Password is required'),
 ]
+
+export const refreshValidation: ValidationChain[] = [
+  body('refresh_token').notEmpty().withMessage('Refresh token is required'),
+]

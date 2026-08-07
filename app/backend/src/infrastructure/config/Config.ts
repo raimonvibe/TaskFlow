@@ -35,8 +35,13 @@ export interface DatabaseConfig {
 
 export interface JwtConfig {
   readonly secret: string
+  /** Access-token lifetime (jsonwebtoken form, e.g. `15m`). Short on purpose
+   * once refresh-token rotation is in place. */
   readonly expiresIn: string
-  readonly refreshSecret?: string
+  /** HMAC key for hashing opaque refresh tokens before persistence. */
+  readonly refreshSecret: string
+  /** Refresh-token lifetime (e.g. `7d`). */
+  readonly refreshExpiresIn: string
 }
 
 export interface CorsConfig {
@@ -90,8 +95,10 @@ export class Config {
 
     this.jwt = {
       secret: this.resolveJwtSecret(env),
-      expiresIn: env.JWT_EXPIRE || '7d',
-      refreshSecret: env.JWT_REFRESH_SECRET || undefined,
+      // Short access token: the refresh token is what keeps the session alive.
+      expiresIn: env.JWT_EXPIRE || '15m',
+      refreshSecret: this.resolveRefreshSecret(env),
+      refreshExpiresIn: env.JWT_REFRESH_EXPIRE || '7d',
     }
 
     this.cors = {
@@ -137,6 +144,24 @@ export class Config {
     }
 
     return secret || 'default_secret_change_in_production'
+  }
+
+  /** Same fail-fast rule as `JWT_SECRET`: in production the refresh HMAC
+   * key must be set and must not equal the access-token secret. */
+  private resolveRefreshSecret(env: NodeJS.ProcessEnv): string {
+    const secret = env.JWT_REFRESH_SECRET
+    const accessSecret = this.resolveJwtSecret(env)
+    const isProduction = env.NODE_ENV === 'production'
+    const isMissing = !secret
+    const matchesAccess = secret === accessSecret
+
+    if (isProduction && (isMissing || matchesAccess)) {
+      throw new Error(
+        'FATAL: JWT_REFRESH_SECRET must be set to a strong random value distinct from JWT_SECRET in production.'
+      )
+    }
+
+    return secret || 'default_refresh_secret_change_in_production'
   }
 
   static getInstance(env?: NodeJS.ProcessEnv): Config {

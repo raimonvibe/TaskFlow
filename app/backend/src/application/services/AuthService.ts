@@ -15,15 +15,22 @@ import { Email } from '../../domain/value-objects/Email.js'
 import type { Clock } from '../ports/IClock.js'
 import type { EventBus } from '../ports/IEventBus.js'
 import type { PasswordHasher } from '../ports/IPasswordHasher.js'
+import type { RefreshTokenService } from './RefreshTokenService.js'
 import type { TokenService } from './TokenService.js'
 
 export interface AuthResult {
   readonly user: User
   readonly token: string
+  readonly refreshToken: string
+}
+
+export interface RefreshResult {
+  readonly token: string
+  readonly refreshToken: string
 }
 
 /**
- * The register / login / logout / "who am I" use-cases.
+ * The register / login / logout / refresh / "who am I" use-cases.
  *
  * This is `authController.js` with the HTTP removed. What is left is the
  * part that was previously impossible to test without spinning up Express:
@@ -46,6 +53,7 @@ export class AuthService {
     private readonly users: UserRepository,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly refreshTokens: RefreshTokenService,
     private readonly events: EventBus,
     private readonly clock: Clock,
     private readonly passwordPolicy: PasswordPolicy
@@ -71,13 +79,13 @@ export class AuthService {
       // problem - it just makes the common case a cheaper error path.
       const user = await this.users.create({ name, email, passwordHash })
 
-      const token = this.tokenService.issue({ id: user.id, email: user.email.value })
+      const tokens = await this.issueTokenPair(user)
 
       await this.events.publish(
         new UserRegisteredEvent(user.id, user.email.value, this.clock.now())
       )
 
-      return { user, token }
+      return { user, ...tokens }
     } catch (error) {
       await this.publishFailure('register', error, rawEmail)
       throw error
@@ -102,18 +110,35 @@ export class AuthService {
         throw new UnauthorizedError('Invalid credentials')
       }
 
-      const token = this.tokenService.issue({ id: user.id, email: user.email.value })
+      const safeUser = user.withoutCredentials()
+      const tokens = await this.issueTokenPair(safeUser)
 
       await this.events.publish(
-        new UserAuthenticatedEvent(user.id, user.email.value, this.clock.now())
+        new UserAuthenticatedEvent(safeUser.id, safeUser.email.value, this.clock.now())
       )
 
       // The hash was needed to verify the password and for nothing else.
-      return { user: user.withoutCredentials(), token }
+      return { user: safeUser, ...tokens }
     } catch (error) {
       await this.publishFailure('login', error, rawEmail)
       throw error
     }
+  }
+
+  /**
+   * Exchange a refresh token for a new access + refresh pair. Rotation is
+   * mandatory: the presented refresh token is consumed. Reuse of an
+   * already-rotated token invalidates the whole family.
+   */
+  async refresh(refreshToken: string): Promise<RefreshResult> {
+    const rotated = await this.refreshTokens.rotate(refreshToken)
+    const user = await this.users.findById(rotated.userId)
+    if (!user) {
+      throw new UnauthorizedError('Invalid refresh token')
+    }
+
+    const token = this.tokenService.issue({ id: user.id, email: user.email.value })
+    return { token, refreshToken: rotated.refreshToken }
   }
 
   async getCurrentUser(userId: number): Promise<User> {
@@ -126,7 +151,14 @@ export class AuthService {
 
   async logout(token: string, userId: number): Promise<void> {
     await this.tokenService.revoke(token)
+    await this.refreshTokens.revokeAllForUser(userId)
     await this.events.publish(new UserLoggedOutEvent(userId, this.clock.now()))
+  }
+
+  private async issueTokenPair(user: User): Promise<{ token: string; refreshToken: string }> {
+    const token = this.tokenService.issue({ id: user.id, email: user.email.value })
+    const refresh = await this.refreshTokens.issue(user.id)
+    return { token, refreshToken: refresh.token }
   }
 
   /**

@@ -11,6 +11,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      // Floors sit a point or two under the measured baseline after the
+      // empty-due-date tests landed (docs/NEXT_STEPS.md item 2). Raise when
+      // coverage grows; do not set above current reality.
+      thresholds: {
+        statements: 93,
+        branches: 81,
+        functions: 95,
+        lines: 93,
+      },
       exclude: [
         'node_modules/**',
         'dist/**',

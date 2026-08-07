@@ -127,7 +127,7 @@ export function buildOpenApiDocument(passwordPolicy: PasswordPolicy): OpenApiDoc
       '/api/auth/register': {
         post: {
           tags: ['Auth'],
-          summary: 'Create an account and receive a token',
+          summary: 'Create an account and receive access + refresh tokens',
           requestBody: {
             required: true,
             ...json({
@@ -145,11 +145,17 @@ export function buildOpenApiDocument(passwordPolicy: PasswordPolicy): OpenApiDoc
             '201': {
               description: 'Account created.',
               ...json(
-                envelope({ token: { type: 'string' }, user: ref('UserCredentials') }, [
-                  'message',
-                  'token',
-                  'user',
-                ])
+                envelope(
+                  {
+                    token: { type: 'string', description: 'Short-lived access JWT.' },
+                    refresh_token: {
+                      type: 'string',
+                      description: 'Opaque refresh token; rotated on each /refresh.',
+                    },
+                    user: ref('UserCredentials'),
+                  },
+                  ['message', 'token', 'refresh_token', 'user']
+                )
               ),
             },
             ...errors(400, 409, 429),
@@ -159,7 +165,7 @@ export function buildOpenApiDocument(passwordPolicy: PasswordPolicy): OpenApiDoc
       '/api/auth/login': {
         post: {
           tags: ['Auth'],
-          summary: 'Exchange credentials for a token',
+          summary: 'Exchange credentials for access + refresh tokens',
           description:
             'Returns the same message for an unknown email and a wrong password, ' +
             'deliberately, so the endpoint cannot be used to enumerate accounts.',
@@ -178,11 +184,51 @@ export function buildOpenApiDocument(passwordPolicy: PasswordPolicy): OpenApiDoc
             '200': {
               description: 'Authenticated.',
               ...json(
-                envelope({ token: { type: 'string' }, user: ref('UserCredentials') }, [
-                  'message',
-                  'token',
-                  'user',
-                ])
+                envelope(
+                  {
+                    token: { type: 'string', description: 'Short-lived access JWT.' },
+                    refresh_token: {
+                      type: 'string',
+                      description: 'Opaque refresh token; rotated on each /refresh.',
+                    },
+                    user: ref('UserCredentials'),
+                  },
+                  ['message', 'token', 'refresh_token', 'user']
+                )
+              ),
+            },
+            ...errors(400, 401, 429),
+          },
+        },
+      },
+      '/api/auth/refresh': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Rotate the refresh token and issue a new access token',
+          description:
+            'The presented refresh token is consumed. Presenting an already-used ' +
+            'refresh token invalidates the whole token family (reuse detection).',
+          requestBody: {
+            required: true,
+            ...json({
+              type: 'object',
+              properties: {
+                refresh_token: { type: 'string' },
+              },
+              required: ['refresh_token'],
+            }),
+          },
+          responses: {
+            '200': {
+              description: 'New token pair.',
+              ...json(
+                envelope(
+                  {
+                    token: { type: 'string' },
+                    refresh_token: { type: 'string' },
+                  },
+                  ['message', 'token', 'refresh_token']
+                )
               ),
             },
             ...errors(400, 401, 429),
@@ -210,13 +256,13 @@ export function buildOpenApiDocument(passwordPolicy: PasswordPolicy): OpenApiDoc
       '/api/auth/logout': {
         post: {
           tags: ['Auth'],
-          summary: 'Revoke the presented token',
+          summary: 'Revoke the access token and all refresh tokens for the user',
           description:
-            'Adds the token to a persisted blacklist, so it stays revoked across ' +
-            'restarts rather than only until the process recycles.',
+            'Blacklists the presented access JWT and revokes every refresh-token ' +
+            'family for the user, so both credentials die on logout.',
           security: bearer,
           responses: {
-            '200': { description: 'Token revoked.', ...json(envelope({}, ['message'])) },
+            '200': { description: 'Tokens revoked.', ...json(envelope({}, ['message'])) },
             ...errors(401),
           },
         },

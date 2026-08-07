@@ -7,19 +7,40 @@ const AuthContext = createContext(null)
 
 function readInitialUser() {
   const token = secureStorage.getToken()
-  if (!token) return null
-  try {
-    const decoded = jwtDecode(token)
-    if (decoded.exp * 1000 < Date.now()) {
+  const refreshToken = secureStorage.getRefreshToken()
+  const savedUser = sessionStorage.getItem('user')
+
+  if (token) {
+    try {
+      const decoded = jwtDecode(token)
+      if (decoded.exp * 1000 >= Date.now()) {
+        return savedUser ? JSON.parse(savedUser) : null
+      }
+      // Access JWT expired — drop it but keep refresh so the interceptor can rotate.
+      sessionStorage.removeItem('auth_token')
+      sessionStorage.removeItem('token_expiry')
+    } catch {
+      sessionStorage.removeItem('auth_token')
+      sessionStorage.removeItem('token_expiry')
+    }
+  }
+
+  // Still authenticated if a refresh token remains; the next API call will rotate.
+  if (refreshToken && savedUser) {
+    try {
+      return JSON.parse(savedUser)
+    } catch {
       secureStorage.clearToken()
       return null
     }
-    const savedUser = sessionStorage.getItem('user')
-    return savedUser ? JSON.parse(savedUser) : null
-  } catch {
-    secureStorage.clearToken()
+  }
+
+  if (!token && !refreshToken) {
     return null
   }
+
+  secureStorage.clearToken()
+  return null
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -36,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password)
-    secureStorage.setToken(data.token)
+    secureStorage.setTokenPair(data.token, data.refresh_token)
     sessionStorage.setItem('user', JSON.stringify(data.user))
     setUser(data.user)
     return data
@@ -44,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     const data = await authAPI.register(name, email, password)
-    secureStorage.setToken(data.token)
+    secureStorage.setTokenPair(data.token, data.refresh_token)
     sessionStorage.setItem('user', JSON.stringify(data.user))
     setUser(data.user)
     return data

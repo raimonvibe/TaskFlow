@@ -85,6 +85,21 @@ CREATE TABLE IF NOT EXISTS token_blacklist (
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
+-- Refresh tokens with rotation + reuse detection. Opaque tokens are stored
+-- only as an HMAC-SHA256 hash (keyed by JWT_REFRESH_SECRET). family_id ties
+-- every rotation of a login session together: presenting an already-used
+-- token invalidates the whole family, not just that row. See
+-- src/application/services/RefreshTokenService.ts.
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    family_id UUID NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
@@ -101,6 +116,11 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at DESC);
 
 -- Token blacklist indexes
 CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at);
+
+-- Refresh token indexes
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family_id ON refresh_tokens(family_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
 -- =============================================================================
 -- TRIGGERS
@@ -149,5 +169,10 @@ COMMENT ON COLUMN tasks.priority IS 'Priority level of the task';
 COMMENT ON COLUMN tasks.due_date IS 'When the task is due (optional)';
 
 COMMENT ON TABLE token_blacklist IS 'Revoked JWTs (logout), keyed by token hash, until their own expiry';
+
+COMMENT ON TABLE refresh_tokens IS 'Rotated refresh tokens; reuse of a revoked row kills the whole family';
+COMMENT ON COLUMN refresh_tokens.token_hash IS 'HMAC-SHA256 of the opaque refresh token (JWT_REFRESH_SECRET)';
+COMMENT ON COLUMN refresh_tokens.family_id IS 'Stable id for one login session across rotations';
+COMMENT ON COLUMN refresh_tokens.revoked_at IS 'Set when rotated or when the family is force-revoked';
 
 COMMENT ON FUNCTION update_updated_at_column() IS 'Automatically updates the updated_at column on row update';

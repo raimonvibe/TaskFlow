@@ -16,6 +16,7 @@ describe('Auth API', () => {
       const mockResponse = {
         data: {
           token: 'mock-token',
+          refresh_token: 'mock-refresh',
           user: { id: 1, email: 'test@example.com' },
         },
       }
@@ -47,6 +48,7 @@ describe('Auth API', () => {
       const mockResponse = {
         data: {
           token: 'mock-token',
+          refresh_token: 'mock-refresh',
           user: { id: 1, name: 'Test User', email: 'test@example.com' },
         },
       }

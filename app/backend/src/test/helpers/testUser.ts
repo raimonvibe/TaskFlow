@@ -9,6 +9,7 @@ export interface TestUser {
 
 export interface RegisteredTestUser {
   readonly token: string
+  readonly refreshToken: string
   readonly user: TestUser
   readonly email: string
   readonly password: string
@@ -52,7 +53,13 @@ export const registerAndLogin = async (
     throw new Error(`Failed to register test user: ${res.status} ${JSON.stringify(res.body)}`)
   }
 
-  return { token: res.body.token, user: res.body.user, email, password }
+  return {
+    token: res.body.token,
+    refreshToken: res.body.refresh_token,
+    user: res.body.user,
+    email,
+    password,
+  }
 }
 
 // Deletes only the users created by *this* test file. Vitest runs test files

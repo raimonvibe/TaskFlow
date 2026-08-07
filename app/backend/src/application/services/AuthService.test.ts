@@ -1,11 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { AuthService } from './AuthService.js'
+import { RefreshTokenService } from './RefreshTokenService.js'
 import { TokenService } from './TokenService.js'
 import { ConflictError } from '../../domain/errors/ConflictError.js'
 import { NotFoundError } from '../../domain/errors/NotFoundError.js'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError.js'
 import { ValidationError } from '../../domain/errors/ValidationError.js'
-import { LengthPasswordPolicy, StrongPasswordPolicy } from '../../domain/policies/PasswordPolicy.js'
+import {
+  LengthPasswordPolicy,
+  StrongPasswordPolicy,
+  type PasswordPolicy,
+} from '../../domain/policies/PasswordPolicy.js'
 import {
   AuthAttemptFailedEvent,
   UserAuthenticatedEvent,
@@ -16,6 +21,7 @@ import { Email } from '../../domain/value-objects/Email.js'
 import { FakePasswordHasher } from '../../test/fakes/FakePasswordHasher.js'
 import { FakeTokenProvider } from '../../test/fakes/FakeTokenProvider.js'
 import { FixedClock } from '../../test/fakes/FixedClock.js'
+import { InMemoryRefreshTokenRepository } from '../../test/fakes/InMemoryRefreshTokenRepository.js'
 import { InMemoryTokenBlacklistRepository } from '../../test/fakes/InMemoryTokenBlacklistRepository.js'
 import { InMemoryUserRepository } from '../../test/fakes/InMemoryUserRepository.js'
 import { RecordingEventBus } from '../../test/fakes/RecordingEventBus.js'
@@ -31,6 +37,37 @@ import { RecordingLogger } from '../../test/fakes/RecordingLogger.js'
 
 const NOW = new Date('2026-06-01T12:00:00.000Z')
 
+function buildAuthService(
+  users: InMemoryUserRepository,
+  events: RecordingEventBus,
+  policy: PasswordPolicy = new LengthPasswordPolicy()
+): AuthService {
+  const clock = new FixedClock(NOW)
+  const logger = new RecordingLogger()
+  const tokenService = new TokenService(
+    new FakeTokenProvider(),
+    new InMemoryTokenBlacklistRepository(() => NOW),
+    clock,
+    logger
+  )
+  const refreshTokens = new RefreshTokenService(
+    new InMemoryRefreshTokenRepository(),
+    'test-refresh-secret',
+    '7d',
+    clock,
+    logger
+  )
+  return new AuthService(
+    users,
+    new FakePasswordHasher(),
+    tokenService,
+    refreshTokens,
+    events,
+    clock,
+    policy
+  )
+}
+
 describe('AuthService', () => {
   let users: InMemoryUserRepository
   let events: RecordingEventBus
@@ -39,33 +76,18 @@ describe('AuthService', () => {
   beforeEach(() => {
     users = new InMemoryUserRepository()
     events = new RecordingEventBus()
-
-    const clock = new FixedClock(NOW)
-    const tokenService = new TokenService(
-      new FakeTokenProvider(),
-      new InMemoryTokenBlacklistRepository(() => NOW),
-      clock,
-      new RecordingLogger()
-    )
-
-    service = new AuthService(
-      users,
-      new FakePasswordHasher(),
-      tokenService,
-      events,
-      clock,
-      new LengthPasswordPolicy()
-    )
+    service = buildAuthService(users, events)
   })
 
   describe('register', () => {
-    it('creates the user, issues a token, and publishes UserRegisteredEvent', async () => {
+    it('creates the user, issues a token pair, and publishes UserRegisteredEvent', async () => {
       const result = await service.register('Ada', 'ada@example.com', 'ValidPass123')
 
       expect(result.user.id).toBeGreaterThan(0)
       expect(result.user.name).toBe('Ada')
       expect(result.user.email.value).toBe('ada@example.com')
       expect(result.token).toBeTruthy()
+      expect(result.refreshToken).toBeTruthy()
 
       const registered = events.ofType(UserRegisteredEvent)
       expect(registered).toHaveLength(1)
@@ -125,19 +147,7 @@ describe('AuthService', () => {
     })
 
     it('enforces whichever policy it was given', async () => {
-      const strict = new AuthService(
-        users,
-        new FakePasswordHasher(),
-        new TokenService(
-          new FakeTokenProvider(),
-          new InMemoryTokenBlacklistRepository(() => NOW),
-          new FixedClock(NOW),
-          new RecordingLogger()
-        ),
-        events,
-        new FixedClock(NOW),
-        new StrongPasswordPolicy()
-      )
+      const strict = buildAuthService(users, events, new StrongPasswordPolicy())
 
       // Accepted by the default policy, rejected by this one - swapping the
       // strategy is the only thing that changed.
@@ -171,10 +181,11 @@ describe('AuthService', () => {
       events.published.length = 0
     })
 
-    it('issues a token and publishes UserAuthenticatedEvent on valid credentials', async () => {
+    it('issues a token pair and publishes UserAuthenticatedEvent on valid credentials', async () => {
       const result = await service.login('ada@example.com', 'ValidPass123')
 
       expect(result.token).toBeTruthy()
+      expect(result.refreshToken).toBeTruthy()
       expect(result.user.email.value).toBe('ada@example.com')
       expect(events.ofType(UserAuthenticatedEvent)).toHaveLength(1)
     })
@@ -240,9 +251,30 @@ describe('AuthService', () => {
     })
   })
 
+  describe('refresh', () => {
+    it('returns a new access + refresh pair and invalidates the old refresh token', async () => {
+      const { refreshToken: first } = await service.register(
+        'Ada',
+        'ada@example.com',
+        'ValidPass123'
+      )
+
+      const refreshed = await service.refresh(first)
+
+      expect(refreshed.token).toBeTruthy()
+      expect(refreshed.refreshToken).toBeTruthy()
+      expect(refreshed.refreshToken).not.toBe(first)
+      await expect(service.refresh(first)).rejects.toThrow(UnauthorizedError)
+    })
+  })
+
   describe('logout', () => {
-    it('revokes the token and publishes UserLoggedOutEvent', async () => {
-      const { user, token } = await service.register('Ada', 'ada@example.com', 'ValidPass123')
+    it('revokes the access token, refresh tokens, and publishes UserLoggedOutEvent', async () => {
+      const { user, token, refreshToken } = await service.register(
+        'Ada',
+        'ada@example.com',
+        'ValidPass123'
+      )
       events.published.length = 0
 
       await service.logout(token, user.id)
@@ -250,6 +282,7 @@ describe('AuthService', () => {
       const loggedOut = events.ofType(UserLoggedOutEvent)
       expect(loggedOut).toHaveLength(1)
       expect(loggedOut[0]?.userId).toBe(user.id)
+      await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedError)
     })
   })
 })

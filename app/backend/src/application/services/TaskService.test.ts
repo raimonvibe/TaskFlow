@@ -87,6 +87,14 @@ describe('TaskService', () => {
         service.createTask(OWNER, { title: 'T', dueDate: 'next tuesday' })
       ).rejects.toThrow(ValidationError)
     })
+
+    it('treats an empty-string due date as null', async () => {
+      // Documents the contract the HTTP validator must honor: the frontend
+      // date input yields '' for empty, and that means "no due date".
+      const task = await service.createTask(OWNER, { title: 'No date', dueDate: '' })
+
+      expect(task.dueDate).toBeNull()
+    })
   })
 
   describe('listTasks', () => {

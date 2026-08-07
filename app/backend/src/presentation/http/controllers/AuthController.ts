@@ -30,11 +30,12 @@ export class AuthController {
         password: string
       }
 
-      const { user, token } = await this.authService.register(name, email, password)
+      const { user, token, refreshToken } = await this.authService.register(name, email, password)
 
       res.status(201).json({
         message: 'User created successfully',
         token,
+        refresh_token: refreshToken,
         user: toCredentialsResponse(user),
       })
     } catch (error) {
@@ -46,12 +47,28 @@ export class AuthController {
     try {
       const { email, password } = req.body as { email: string; password: string }
 
-      const { user, token } = await this.authService.login(email, password)
+      const { user, token, refreshToken } = await this.authService.login(email, password)
 
       res.json({
         message: 'Login successful',
         token,
+        refresh_token: refreshToken,
         user: toCredentialsResponse(user),
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { refresh_token: refreshToken } = req.body as { refresh_token: string }
+      const result = await this.authService.refresh(refreshToken)
+
+      res.json({
+        message: 'Token refreshed',
+        token: result.token,
+        refresh_token: result.refreshToken,
       })
     } catch (error) {
       next(error)

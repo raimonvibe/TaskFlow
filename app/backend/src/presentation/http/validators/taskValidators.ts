@@ -27,7 +27,10 @@ export const createTaskValidation = [
   body('description').optional().trim(),
   body('status').optional().isIn(statuses).withMessage('Invalid status'),
   body('priority').optional().isIn(priorities).withMessage('Invalid priority'),
-  body('due_date').optional().isISO8601().withMessage('Invalid date format'),
+  // falsy, not the default: the frontend date input sends '' for empty, and
+  // TaskService.parseDueDate already maps '' to null. Bare optional() only
+  // skips undefined, so '' would reach isISO8601() and 400.
+  body('due_date').optional({ values: 'falsy' }).isISO8601().withMessage('Invalid date format'),
 ]
 
 export const updateTaskValidation = [
@@ -42,7 +45,8 @@ export const updateTaskValidation = [
   body('description').optional().trim(),
   body('status').optional().isIn(statuses).withMessage('Invalid status'),
   body('priority').optional().isIn(priorities).withMessage('Invalid priority'),
-  body('due_date').optional().isISO8601().withMessage('Invalid date format'),
+  // Same reason as createTaskValidation: '' means "no due date".
+  body('due_date').optional({ values: 'falsy' }).isISO8601().withMessage('Invalid date format'),
 ]
 
 /**

@@ -12,6 +12,15 @@ export const authAPI = {
     return response.data
   },
 
+  refresh: async refreshToken => {
+    const response = await axios.post(
+      '/api/auth/refresh',
+      { refresh_token: refreshToken },
+      { skipAuthRefresh: true }
+    )
+    return response.data
+  },
+
   getCurrentUser: async () => {
     const response = await axios.get('/api/auth/me')
     return response.data

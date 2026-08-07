@@ -12,6 +12,41 @@ const instance = axios.create({
   withCredentials: true, // Include cookies for CSRF protection
 })
 
+// Single in-flight refresh so concurrent 401s share one rotation.
+let refreshPromise = null
+
+async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = secureStorage.getRefreshToken()
+      if (!refreshToken) {
+        throw new Error('No refresh token')
+      }
+      // Call through this instance with skipAuthRefresh so a failed refresh
+      // does not re-enter this interceptor (and avoid importing auth.js,
+      // which would create a circular dependency).
+      const { data } = await instance.post(
+        '/api/auth/refresh',
+        { refresh_token: refreshToken },
+        { skipAuthRefresh: true }
+      )
+      secureStorage.setTokenPair(data.token, data.refresh_token)
+      return data.token
+    })().finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
+function clearSessionAndRedirect() {
+  console.warn('Authentication failed - clearing session')
+  secureStorage.clearToken()
+  if (!window.location.pathname.includes('/login')) {
+    window.location.href = '/login'
+  }
+}
+
 // Request interceptor to add auth token and security headers
 instance.interceptors.request.use(
   config => {
@@ -48,30 +83,45 @@ instance.interceptors.response.use(
 
     return response
   },
-  error => {
-    // Handle different error scenarios
-    if (error.response) {
-      const status = error.response.status
+  async error => {
+    const original = error.config
+    const status = error.response?.status
 
+    if (
+      status === 401 &&
+      original &&
+      !original.skipAuthRefresh &&
+      !original._retry &&
+      !original.url?.includes('/api/auth/login') &&
+      !original.url?.includes('/api/auth/register') &&
+      !original.url?.includes('/api/auth/refresh')
+    ) {
+      original._retry = true
+      try {
+        const token = await refreshAccessToken()
+        original.headers = original.headers || {}
+        original.headers.Authorization = `Bearer ${token}`
+        return instance(original)
+      } catch (refreshError) {
+        clearSessionAndRedirect()
+        return Promise.reject(refreshError)
+      }
+    }
+
+    if (error.response) {
       switch (status) {
         case 401:
-          // Unauthorized - clear tokens and redirect to login
-          console.warn('Authentication failed - clearing session')
-          secureStorage.clearToken()
-
-          // Prevent redirect loop
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login'
+          // Refresh already attempted (or skipped) — give up.
+          if (!original?.skipAuthRefresh) {
+            clearSessionAndRedirect()
           }
           break
 
         case 403:
-          // Forbidden - insufficient permissions
           console.error('Access denied - insufficient permissions')
           break
 
         case 429: {
-          // Rate limited
           const retryAfter = error.response.headers['retry-after'] || 60
           console.warn(`Rate limited. Retry after ${retryAfter} seconds`)
           break
@@ -81,7 +131,6 @@ instance.interceptors.response.use(
         case 502:
         case 503:
         case 504:
-          // Server errors
           console.error('Server error occurred')
           break
 
@@ -89,10 +138,8 @@ instance.interceptors.response.use(
           console.error(`HTTP error ${status}:`, error.response.data)
       }
     } else if (error.request) {
-      // Request made but no response received
       console.error('No response received from server')
     } else {
-      // Error in request setup
       console.error('Request setup error:', error.message)
     }
 
