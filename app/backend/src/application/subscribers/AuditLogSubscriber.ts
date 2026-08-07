@@ -4,14 +4,20 @@ import {
   UserLoggedOutEvent,
   UserRegisteredEvent,
 } from '../../domain/events/AuthEvents.js'
+import {
+  TaskCreatedEvent,
+  TaskDeletedEvent,
+  TaskUpdatedEvent,
+} from '../../domain/events/TaskEvents.js'
 import type { EventBus } from '../ports/IEventBus.js'
 import type { Logger } from '../ports/ILogger.js'
 
 /**
- * Writes the auth audit trail. Log lines and their structured fields match
- * what `authController.js` emits today ("User registered", "User logged in",
- * "User logged out", each with userId and email), so existing log-based
- * dashboards and greps keep working.
+ * Writes the audit trail. Log lines and their structured fields match what
+ * `authController.js` and `taskController.js` emit today ("User
+ * registered", "User logged in", "User logged out", "Task created", "Task
+ * updated", "Task deleted", each with the same fields), so existing
+ * log-based dashboards and greps keep working.
  *
  * Failed attempts are logged at warn with the reason - new, and the reason
  * this subscriber is worth having separately from the metrics one: a
@@ -42,6 +48,18 @@ export class AuditLogSubscriber {
         reason: event.reason,
         email: event.email,
       })
+    })
+
+    events.subscribe<TaskCreatedEvent>(TaskCreatedEvent.NAME, event => {
+      this.logger.info('Task created', { taskId: event.taskId, userId: event.userId })
+    })
+
+    events.subscribe<TaskUpdatedEvent>(TaskUpdatedEvent.NAME, event => {
+      this.logger.info('Task updated', { taskId: event.taskId, userId: event.userId })
+    })
+
+    events.subscribe<TaskDeletedEvent>(TaskDeletedEvent.NAME, event => {
+      this.logger.info('Task deleted', { taskId: event.taskId, userId: event.userId })
     })
   }
 }

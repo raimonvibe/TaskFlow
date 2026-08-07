@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
-import { UnauthorizedError } from '../../../domain/errors/UnauthorizedError.js'
 import type { AuthService } from '../../../application/services/AuthService.js'
+import { requireAuth } from '../currentUser.js'
 import { toCredentialsResponse, toProfileResponse } from '../dto/userResponse.js'
 
 /**
@@ -76,20 +76,4 @@ export class AuthController {
       next(error)
     }
   }
-}
-
-/**
- * Narrows the optional `req.user`/`req.token` that `authenticate` attaches.
- *
- * These are optional on the Express request by design - the type system
- * cannot know a route was mounted behind `authenticate`. Rather than assert
- * non-null and hope, this fails as a 401 if the route was ever wired up
- * without the middleware, which is the same answer the client would have
- * gotten anyway.
- */
-function requireAuth(req: Request): { user: { id: number; email: string }; token: string } {
-  if (!req.user || !req.token) {
-    throw new UnauthorizedError('Authentication required')
-  }
-  return { user: req.user, token: req.token }
 }

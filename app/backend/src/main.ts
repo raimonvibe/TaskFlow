@@ -3,7 +3,7 @@ import type { Server } from 'http'
 import { createContainer, type Container } from './composition/container.js'
 import { createApp } from './presentation/http/app.js'
 import { PrometheusMetricsRegistry } from './infrastructure/metrics/PrometheusMetricsRegistry.js'
-import { authAttempts } from './utils/metrics.js'
+import { authAttempts, tasksByStatus } from './utils/metrics.js'
 
 const FORCED_SHUTDOWN_MS = 10000
 
@@ -17,10 +17,11 @@ const FORCED_SHUTDOWN_MS = 10000
  */
 async function main(): Promise<void> {
   const container = createContainer({
-    // Wraps the counter that already exists in utils/metrics.js rather than
-    // declaring a new one - prom-client rejects duplicate metric names, and
-    // /metrics must keep exposing exactly one auth_attempts_total.
-    metrics: new PrometheusMetricsRegistry(authAttempts),
+    // Wraps the instruments that already exist in utils/metrics.js rather
+    // than declaring new ones - prom-client rejects duplicate metric names,
+    // and /metrics must keep exposing exactly one auth_attempts_total and
+    // one tasks_by_status.
+    metrics: new PrometheusMetricsRegistry({ authAttempts, tasksByStatus }),
   })
 
   const { config, logger, db } = container

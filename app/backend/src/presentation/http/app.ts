@@ -6,11 +6,10 @@ import rateLimit from 'express-rate-limit'
 import type { Container } from '../../composition/container.js'
 
 // Not yet migrated - still plain JavaScript, imported here so the app keeps
-// serving tasks and health exactly as before while the rewrite proceeds one
-// slice at a time. Phase 4 replaces taskRoutes, Phase 5 healthRoutes and
-// requestLogger. `allowJs` in tsconfig.json exists for exactly this window.
+// serving health and metrics exactly as before while the rewrite proceeds
+// one slice at a time. Phase 5 replaces healthRoutes and requestLogger.
+// `allowJs` in tsconfig.json exists for exactly this window.
 import { requestLogger } from '../../middleware/requestLogger.js'
-import taskRoutes from '../../routes/taskRoutes.js'
 import healthRoutes from '../../routes/healthRoutes.js'
 
 /**
@@ -52,11 +51,10 @@ export function createApp(container: Container): Express {
   // /health directly; /metrics is gated on METRICS_KEY inside the route).
   app.use('/', healthRoutes)
 
-  // Migrated in Phase 3 - this is the new slice actually serving traffic.
+  // Migrated in Phase 3 and Phase 4 - both API resources are now served by
+  // the new architecture. Nothing under /api/ runs pre-rewrite code.
   app.use('/api/auth', container.authRouter)
-
-  // Still the pre-rewrite implementation.
-  app.use('/api/tasks', taskRoutes)
+  app.use('/api/tasks', container.taskRouter)
 
   app.use(container.notFound)
   app.use(container.errorHandler)

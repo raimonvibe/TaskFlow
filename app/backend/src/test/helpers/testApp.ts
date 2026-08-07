@@ -2,7 +2,7 @@ import type { Express } from 'express'
 import { createContainer } from '../../composition/container.js'
 import { createApp } from '../../presentation/http/app.js'
 import { PrometheusMetricsRegistry } from '../../infrastructure/metrics/PrometheusMetricsRegistry.js'
-import { authAttempts } from '../../utils/metrics.js'
+import { authAttempts, tasksByStatus } from '../../utils/metrics.js'
 
 /**
  * The application the integration tests exercise, built the same way
@@ -19,7 +19,9 @@ let cached: Express | undefined
 
 export function getTestApp(): Express {
   if (!cached) {
-    cached = createApp(createContainer({ metrics: new PrometheusMetricsRegistry(authAttempts) }))
+    cached = createApp(
+      createContainer({ metrics: new PrometheusMetricsRegistry({ authAttempts, tasksByStatus }) })
+    )
   }
   return cached
 }

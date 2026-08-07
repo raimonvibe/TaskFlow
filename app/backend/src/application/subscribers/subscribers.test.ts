@@ -8,15 +8,34 @@ import {
   UserRegisteredEvent,
 } from '../../domain/events/AuthEvents.js'
 import type { AuthAttemptType } from '../../domain/events/AuthEvents.js'
+import {
+  TaskCreatedEvent,
+  TaskDeletedEvent,
+  TaskUpdatedEvent,
+} from '../../domain/events/TaskEvents.js'
+import type { TaskStatusValue } from '../../domain/value-objects/TaskStatus.js'
 import type { MetricsRegistry } from '../ports/IMetricsRegistry.js'
 import { InMemoryEventBus } from '../../infrastructure/events/InMemoryEventBus.js'
 import { RecordingLogger } from '../../test/fakes/RecordingLogger.js'
 
 class RecordingMetrics implements MetricsRegistry {
   readonly recorded: Array<{ type: AuthAttemptType; status: 'success' | 'failure' }> = []
+  readonly tasks: string[] = []
 
   recordAuthAttempt(type: AuthAttemptType, status: 'success' | 'failure'): void {
     this.recorded.push({ type, status })
+  }
+
+  recordTaskCreated(status: TaskStatusValue): void {
+    this.tasks.push(`created:${status}`)
+  }
+
+  recordTaskStatusChanged(previous: TaskStatusValue, current: TaskStatusValue): void {
+    this.tasks.push(`changed:${previous}->${current}`)
+  }
+
+  recordTaskDeleted(status: TaskStatusValue): void {
+    this.tasks.push(`deleted:${status}`)
   }
 }
 
@@ -59,6 +78,22 @@ describe('MetricsSubscriber', () => {
 
     expect(metrics.recorded).toHaveLength(0)
   })
+
+  it('tracks tasks entering, moving between, and leaving status buckets', async () => {
+    await events.publish(new TaskCreatedEvent(1, 10, 'todo'))
+    await events.publish(new TaskUpdatedEvent(1, 10, 'todo', 'completed'))
+    await events.publish(new TaskDeletedEvent(1, 10, 'completed'))
+
+    expect(metrics.tasks).toEqual(['created:todo', 'changed:todo->completed', 'deleted:completed'])
+  })
+
+  it('still reports an update that left the status alone', async () => {
+    // Whether that is a no-op is the registry's call, not the subscriber's -
+    // the subscriber's job is to report what the event said.
+    await events.publish(new TaskUpdatedEvent(1, 10, 'todo', 'todo'))
+
+    expect(metrics.tasks).toEqual(['changed:todo->todo'])
+  })
 })
 
 describe('AuditLogSubscriber', () => {
@@ -76,7 +111,11 @@ describe('AuditLogSubscriber', () => {
     await events.publish(new UserAuthenticatedEvent(1, 'ada@example.com'))
     await events.publish(new UserLoggedOutEvent(1))
 
-    expect(logger.messages('info')).toEqual(['User registered', 'User logged in', 'User logged out'])
+    expect(logger.messages('info')).toEqual([
+      'User registered',
+      'User logged in',
+      'User logged out',
+    ])
   })
 
   it('includes the identifying metadata on each line', async () => {
@@ -86,10 +125,21 @@ describe('AuditLogSubscriber', () => {
   })
 
   it('logs failures at warn with the reason', async () => {
-    await events.publish(new AuthAttemptFailedEvent('login', 'Invalid credentials', 'ada@example.com'))
+    await events.publish(
+      new AuthAttemptFailedEvent('login', 'Invalid credentials', 'ada@example.com')
+    )
 
     expect(logger.messages('warn')).toEqual(['Auth attempt failed'])
     expect(logger.lines[0]?.meta?.reason).toBe('Invalid credentials')
+  })
+
+  it('logs the task lines taskController.js emits today', async () => {
+    await events.publish(new TaskCreatedEvent(7, 42, 'todo'))
+    await events.publish(new TaskUpdatedEvent(7, 42, 'todo', 'completed'))
+    await events.publish(new TaskDeletedEvent(7, 42, 'completed'))
+
+    expect(logger.messages('info')).toEqual(['Task created', 'Task updated', 'Task deleted'])
+    expect(logger.lines[0]?.meta).toEqual({ taskId: 7, userId: 42 })
   })
 })
 

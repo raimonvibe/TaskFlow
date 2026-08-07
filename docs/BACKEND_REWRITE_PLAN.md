@@ -1,15 +1,40 @@
 # Backend Rewrite Plan: TypeScript, Clean Architecture, Design Patterns
 
-Status: **Phase 3 (auth vertical slice) done — the new architecture is live for `/api/auth/*`.** Next up: Phase 4 (task vertical slice).
+Status: **Phase 4 (task vertical slice) done — nothing under `/api/` runs pre-rewrite code any more.** Next up: Phase 5 (cross-cutting cleanup: health/metrics).
 
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
 
 Phases 1 and 2 changed nothing in `src/*.js`; Phase 3 is where the new code took over the auth endpoints and the old ones were deleted. `npm run typecheck`, `npm run lint`, `npm run build`, and the full test suite are green.
 
-- *Phase 3 (auth vertical slice)*: **done and serving traffic.** `IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `TokenService`, `AuthService`, `AuthController`, auth routes/validators/DTOs, `authenticate` + `errorHandler` + `validateRequest` middleware, `MetricsSubscriber`/`AuditLogSubscriber`, and the composition root. `/api/auth/*` is served entirely by the new slice; `/api/tasks` and `/health` still run the pre-rewrite JavaScript.
+- *Phase 3 (auth vertical slice)*: **done and serving traffic.** `IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `TokenService`, `AuthService`, `AuthController`, auth routes/validators/DTOs, `authenticate` + `errorHandler` + `validateRequest` middleware, `MetricsSubscriber`/`AuditLogSubscriber`, and the composition root.
 
   Retired: `app.js`, `server.js`, `routes/authRoutes.js`, `controllers/authController.js` (+ test), `middleware/errorHandler.js` (+ test), `models/User.js` (+ test — replaced by `PostgresUserRepository.test.ts`; its unused `update`/`delete`/`findAll` were dead code and are simply gone).
+
+- *Phase 4 (task vertical slice)*: **done and serving traffic.** `TaskStatus`/`TaskPriority` value objects, the `Task` entity, `ITaskRepository`/`PostgresTaskRepository`, `TaskEvents`, `TaskService`, `TaskController`, task routes/validators, `taskResponse` DTO, and the `buildAssignments` update helper. `MetricsSubscriber` and `AuditLogSubscriber` gained task subscriptions; `MetricsRegistry` gained the three task methods and `PrometheusMetricsRegistry` now wraps the `tasks_by_status` gauge as well as the `auth_attempts_total` counter. 197 tests across 24 files pass.
+
+  Retired: `models/Task.js` (+ test — replaced by `PostgresTaskRepository.test.ts`), `controllers/taskController.js` (+ test — replaced by `TaskService.test.ts`), `routes/taskRoutes.js`, and, now that nothing imported them any more, `middleware/auth.js` (+ test), `middleware/validate.js`, and `models/TokenBlacklist.js`. The `LEGACY_PG_ERRORS` block in `errorHandler.ts` is gone too: every query in the app now runs inside a repository, so there is no Postgres error code left for the HTTP layer to recognize.
+
+  What remains under `src/` as JavaScript: `config/`, `database/`, `middleware/requestLogger.js`, `routes/healthRoutes.js`, `utils/`, and the test helpers — all Phase 5/6 work.
+
+### Behavior changes in Phase 4, and why each one is not a regression
+
+The rule was still "keep every endpoint's request/response JSON shape identical," and the success shapes are byte-for-byte what they were (verified by hand, see below). Four status codes changed, all of them cases that used to be a 500:
+
+| Case | Before | After | Why |
+|---|---|---|---|
+| `PUT /api/tasks/:id` with a body containing no updatable field | 500 — `models/Task.js` threw a bare `Error('No valid fields to update')` | 400 `No fields to update` | The caller sent a request that cannot do anything. That is the caller's mistake, and a bare `Error` reaching the error middleware was never intentional. |
+| `GET /api/tasks?status=<not a real status>` | 500 — the value was passed through to Postgres, which rejected the `task_status` enum cast | 400 `Invalid status` | Query filters are now validated at the boundary like every other input. The injection suite already tolerated either shape; it asserts only that no other user's rows come back. |
+| A title longer than `VARCHAR(255)` | 500 — pg's `22001` reached the error middleware untranslated | 400, naming the field | Caught by a new `isLength({ max: 255 })` on the route, with `PostgresTaskRepository` translating `22001` as a backstop. |
+| A foreign-key violation on a task write | 400 `Invalid reference` | 500 | This can only happen if the authenticated user's row vanished mid-request. That is a broken invariant, not something the client got wrong — the old 400 pointed the blame in the wrong direction. |
+
+**Pre-existing bug found while migrating, deliberately left alone:** `TaskModal.jsx` sends `due_date: ''` when the date field is empty, and `body('due_date').optional()` in express-validator only skips `undefined`, so `''` reaches `isISO8601()` and fails. Creating a task without a due date from the UI therefore returns 400 `Invalid date format` — and did before this phase too. Fixing it means either changing the frontend (out of scope, §8) or loosening the validator to `optional({ values: 'falsy' })` (a wire-format change not called for by this plan), so the validator was carried over exactly as it was. `TaskService` already treats `''` as "no due date", so only the validator stands in the way. Worth raising as its own change.
+
+### Verification performed at the Phase 4 cutover
+
+Beyond lint/typecheck/build/tests: the server was run against the real database and driven by hand through register → create (full) → create (defaults) → create with a `user_id` in the body → list → filtered list → bogus filter → get → non-integer id → missing id → update with a status change → update clearing a description → empty update → invalid enum → over-long title → stats → unauthenticated request → the same read/update/delete as a second user → delete → delete again. Response bodies matched the pre-rewrite shapes field for field, including `user_id`/`due_date` snake_case and ISO timestamps.
+
+The `tasks_by_status` gauge was checked on `/metrics` afterwards and had returned to the arithmetically correct values, which is the assertion that matters for the Observer refactor: the inc/dec pairing survived being moved out of the controller and into `PrometheusMetricsRegistry`.
 
 ### The ordering problem this phase surfaced
 
@@ -23,7 +48,7 @@ It was therefore done as part of Phase 3: `main.ts` + `presentation/http/app.ts`
 
 The plan flagged that the error-envelope change should be "confirmed against the actual frontend call sites before cutover, not assuming." Confirmed: every error path in the frontend (`Login.jsx`, `Register.jsx`, `Tasks.jsx` ×3, `api/axios.js`) reads `err.response?.data?.message`, which both the old and new shapes provide. No frontend change is needed.
 
-### Verification performed at cutover
+### Verification performed at the Phase 3 cutover
 
 Beyond lint/typecheck/tests: the production image was built and run against the real database, and register → me → duplicate-register (409) → bad login (401) → tasks → logout → revoked-token (401) → validation-error shape were each checked by hand. That last sequence also confirms cross-slice compatibility — the still-JavaScript `/api/tasks` middleware accepts tokens minted by the new `JwtTokenProvider`, which is the thing that would have broken silently if the issuer/audience/algorithm claims had drifted.
 
@@ -245,7 +270,7 @@ Recommended approach: **vertical slices, not a big-bang rewrite** — even thoug
 1. **Toolchain & skeleton** — tsconfig, npm scripts, empty layer folders, CI gets a type-check step, Dockerfile gets a build stage. Nothing behavioral changes; this phase is "does it still boot and pass," full stop.
 2. **Domain foundations** (shared by both resources) — `AppError` hierarchy, `Email` value object, `IClock`, `IEventBus` + `InMemoryEventBus`, `Config` class, `WinstonLogger` behind `ILogger`, `PostgresConnection` adapter.
 3. **Auth vertical slice** — `IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `AuthService`, `TokenService`, `AuthController`, auth routes/middleware/DTOs, `MetricsSubscriber`/`AuditLogSubscriber` wired to auth events. Old `authController.js`/`authRoutes.js`/`models/User.js` retired once integration tests are green against the new slice.
-4. **Task vertical slice** — same pattern, second time is faster. `ITaskRepository`, `TaskService`, `TaskController`, task events. Old `taskController.js`/`taskRoutes.js`/`models/Task.js` retired.
+4. **Task vertical slice** — same pattern, second time is faster. `ITaskRepository`, `TaskService`, `TaskController`, task events. Old `taskController.js`/`taskRoutes.js`/`models/Task.js` retired. *(Done — it was indeed faster, and it also took `middleware/auth.js`, `middleware/validate.js`, and `models/TokenBlacklist.js` with it, since the task routes were their last remaining importer.)*
 5. **Cross-cutting cleanup** — health/metrics endpoints rebuilt as thin controllers on the new `Config`/`ILogger`; delete every old file the new layers replaced; confirm nothing in `src/` still references the pre-rewrite layout.
 6. **Docs & infra catch-up** — update `docs/ARCHITECTURE.md` (currently describes the old Controllers→Models→Database layering) to reflect the new layered design, update Dockerfile/render.yaml/CI as in §4, sanity-check the DevOps Tour content in the frontend for any command examples that assumed old file paths.
 7. **Optional stretch, not required for "done"** — pluggable password-policy strategies, refresh-token rotation as its own service, request-scoped correlation IDs in logs, OpenAPI generation from the DTOs.

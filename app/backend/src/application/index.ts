@@ -5,9 +5,8 @@
 // Depends only on domain/ interfaces (repositories, ports) — never on a
 // concrete infrastructure/ implementation directly, and never on Express.
 //
-// Phase 2 populated ports/ only (IClock, IEventBus, ILogger) - the
-// interfaces the future services will need from infrastructure. services/
-// and subscribers/ arrive in Phase 3 (Auth vertical slice) and Phase 4
-// (Task vertical slice). Layer marker, not a barrel - import from ports/
-// directly.
+// Phase 2 populated ports/ (IClock, IEventBus, ILogger); Phase 3 and Phase
+// 4 added services/ and subscribers/ for the auth and task slices. Layer
+// marker, not a barrel - import from ports/ or services/ directly rather
+// than pulling in the whole layer to use one class.
 export {}

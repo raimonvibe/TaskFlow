@@ -2,16 +2,6 @@ import type { ErrorRequestHandler, Request, RequestHandler, Response } from 'exp
 import { AppError } from '../../../domain/errors/AppError.js'
 import type { Logger } from '../../../application/ports/ILogger.js'
 
-/** Postgres error codes still reaching this middleware from the parts of
- * the app that have not been migrated yet (models/Task.js and the task
- * controller, which still talk to `config/database.js` directly). Delete
- * this block in Phase 4, once `PostgresTaskRepository` translates these the
- * way `PostgresUserRepository` already does. */
-const LEGACY_PG_ERRORS: Record<string, { statusCode: number; message: string }> = {
-  '23505': { statusCode: 409, message: 'Resource already exists' },
-  '23503': { statusCode: 400, message: 'Invalid reference' },
-}
-
 export interface ErrorHandlerOptions {
   /** Include stack traces in the response body. Development only - the
    * current middleware keys this off NODE_ENV directly; injecting it keeps
@@ -33,9 +23,11 @@ export interface ErrorHandlerOptions {
  * `.message` (AuthContext.jsx, Login.jsx), which every one of those shapes
  * - old and new - provides.
  *
- * The classification itself is now one `instanceof AppError` check instead
- * of sniffing driver internals, because errors arrive here already
- * translated by the layer that understood them.
+ * The classification itself is now one `instanceof AppError` check. As of
+ * Phase 4 there is no Postgres-error-code branch left at all: every query
+ * in the app runs inside a repository, and a repository that lets a driver
+ * error escape has failed to do its job - so the honest response is a 500,
+ * not a guess at what the client did wrong.
  */
 export function createErrorHandler(
   logger: Logger,
@@ -74,11 +66,6 @@ function classify(
     return { statusCode: error.statusCode, message: error.message, details: error.details }
   }
 
-  const code = (error as { code?: unknown }).code
-  if (typeof code === 'string' && LEGACY_PG_ERRORS[code]) {
-    return LEGACY_PG_ERRORS[code]
-  }
-
   const statusCode = (error as { statusCode?: unknown }).statusCode
   if (typeof statusCode === 'number' && statusCode !== 500) {
     return { statusCode, message: error.message }
@@ -89,7 +76,9 @@ function classify(
   // The full detail (stack included) is already logged above.
   return {
     statusCode: 500,
-    message: hideInternalErrors ? 'Internal Server Error' : error.message || 'Internal Server Error',
+    message: hideInternalErrors
+      ? 'Internal Server Error'
+      : error.message || 'Internal Server Error',
   }
 }
 

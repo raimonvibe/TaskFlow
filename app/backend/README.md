@@ -104,13 +104,13 @@ src/
 ├── domain/                    # Entities, value objects, errors, events,
 │   │                          #   repository interfaces. Imports nothing
 │   │                          #   from the layers below.
-│   ├── entities/User.ts
-│   ├── value-objects/Email.ts
+│   ├── entities/              # User, Task
+│   ├── value-objects/         # Email, TaskStatus, TaskPriority
 │   ├── errors/                # AppError hierarchy
-│   ├── events/                # DomainEvent, AuthEvents
+│   ├── events/                # DomainEvent, AuthEvents, TaskEvents
 │   └── repositories/          # Interfaces only
 ├── application/               # Use cases; depends only on domain/
-│   ├── services/              # AuthService, TokenService
+│   ├── services/              # AuthService, TaskService, TokenService
 │   ├── ports/                 # Interfaces infrastructure must satisfy
 │   └── subscribers/           # Metrics, audit log
 ├── infrastructure/            # Concrete implementations of the interfaces
@@ -124,12 +124,10 @@ src/
 ├── composition/container.ts   # The only file that does `new`
 ├── main.ts                    # Entry point (npm start -> dist/main.js)
 │
-│   # Not yet migrated - replaced in phases 4 and 5:
+│   # Not yet migrated - replaced in phase 5:
 ├── config/                    # index.js, database.js
-├── controllers/taskController.js
-├── middleware/                # auth.js, requestLogger.js, validate.js
-├── models/                    # Task.js, TokenBlacklist.js
-├── routes/                    # taskRoutes.js, healthRoutes.js
+├── middleware/requestLogger.js
+├── routes/healthRoutes.js
 └── utils/                     # logger.js, metrics.js
 ```
 

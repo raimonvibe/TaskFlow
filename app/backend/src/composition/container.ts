@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express'
 import type { ErrorRequestHandler, Router } from 'express'
 import { AuthService } from '../application/services/AuthService.js'
+import { TaskService } from '../application/services/TaskService.js'
 import { TokenService } from '../application/services/TokenService.js'
 import { AuditLogSubscriber } from '../application/subscribers/AuditLogSubscriber.js'
 import { MetricsSubscriber } from '../application/subscribers/MetricsSubscriber.js'
@@ -12,14 +13,17 @@ import { Config } from '../infrastructure/config/Config.js'
 import { InMemoryEventBus } from '../infrastructure/events/InMemoryEventBus.js'
 import { WinstonLogger } from '../infrastructure/logging/WinstonLogger.js'
 import { PostgresConnection } from '../infrastructure/persistence/postgres/PostgresConnection.js'
+import { PostgresTaskRepository } from '../infrastructure/persistence/postgres/PostgresTaskRepository.js'
 import { PostgresTokenBlacklistRepository } from '../infrastructure/persistence/postgres/PostgresTokenBlacklistRepository.js'
 import { PostgresUserRepository } from '../infrastructure/persistence/postgres/PostgresUserRepository.js'
 import { BcryptPasswordHasher } from '../infrastructure/security/BcryptPasswordHasher.js'
 import { JwtTokenProvider } from '../infrastructure/security/JwtTokenProvider.js'
 import { AuthController } from '../presentation/http/controllers/AuthController.js'
+import { TaskController } from '../presentation/http/controllers/TaskController.js'
 import { createAuthenticate } from '../presentation/http/middleware/authenticate.js'
 import { createErrorHandler, notFound } from '../presentation/http/middleware/errorHandler.js'
 import { createAuthRouter } from '../presentation/http/routes/authRoutes.js'
+import { createTaskRouter } from '../presentation/http/routes/taskRoutes.js'
 
 export interface ContainerOverrides {
   readonly config?: Config
@@ -34,6 +38,7 @@ export interface Container {
   readonly logger: Logger
   readonly db: PostgresConnection
   readonly authRouter: Router
+  readonly taskRouter: Router
   readonly authenticate: RequestHandler
   readonly errorHandler: ErrorRequestHandler
   readonly notFound: RequestHandler
@@ -62,6 +67,7 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
 
   // Infrastructure
   const users = new PostgresUserRepository(db)
+  const tasks = new PostgresTaskRepository(db)
   const tokenBlacklist = new PostgresTokenBlacklistRepository(db)
   const passwordHasher = new BcryptPasswordHasher()
   const tokenProvider = new JwtTokenProvider({
@@ -73,6 +79,7 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
   // Application
   const tokenService = new TokenService(tokenProvider, tokenBlacklist, clock, logger)
   const authService = new AuthService(users, passwordHasher, tokenService, events, clock)
+  const taskService = new TaskService(tasks, events, clock)
 
   // Subscribers: side effects attach themselves to events here, rather than
   // services calling them. Nothing above needs to know they exist.
@@ -88,13 +95,17 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
     authenticate,
     rateLimit: { windowMs: config.rateLimit.authWindowMs, max: config.rateLimit.authMax },
   })
+  const taskRouter = createTaskRouter({
+    controller: new TaskController(taskService),
+    authenticate,
+  })
 
   const errorHandler = createErrorHandler(logger, {
     includeStack: config.env === 'development',
     hideInternalErrors: config.env === 'production',
   })
 
-  return { config, logger, db, authRouter, authenticate, errorHandler, notFound }
+  return { config, logger, db, authRouter, taskRouter, authenticate, errorHandler, notFound }
 }
 
 /**

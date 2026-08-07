@@ -6,7 +6,7 @@
 // map the result or thrown AppError to an HTTP response. No business logic
 // lives here.
 //
-// Populated in Phase 3 (Auth vertical slice) and Phase 4 (Task vertical
-// slice); this is also where the app currently served by src/server.js
-// eventually moves to, once a phase's slice is verified equivalent.
+// Populated in Phase 3 (auth vertical slice) and Phase 4 (task vertical
+// slice), which together took over everything under /api/. http/app.ts is
+// now the application's only Express entry point, replacing src/app.js.
 export {}
