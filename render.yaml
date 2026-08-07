@@ -34,7 +34,11 @@ services:
     plan: free
     region: oregon
     rootDir: app/backend
-    buildCommand: npm ci
+    # The backend is TypeScript as of the Phase 3 cutover, so the build has
+    # to compile it - `npm start` runs dist/main.js, and `db:init` runs
+    # dist/database/init-schema.js. `npm ci` (not --omit=dev) is required:
+    # typescript is a devDependency and the build needs it.
+    buildCommand: npm ci && npm run build
     startCommand: npm run db:init && npm start
     healthCheckPath: /health
     autoDeployTrigger: commit

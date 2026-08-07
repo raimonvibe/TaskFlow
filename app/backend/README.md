@@ -49,8 +49,8 @@ cp .env.example .env
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=taskflow
-DB_USER=postgres
-DB_PASSWORD=your_password
+DB_USER=taskflow_user
+DB_PASSWORD=taskflow_password
 JWT_SECRET=your_random_secret_string
 ```
 
@@ -79,7 +79,9 @@ The API will be available at `http://localhost:3000`
 ### Available Scripts
 
 - `npm start` - Start production server
-- `npm run dev` - Start development server with nodemon
+- `npm run dev` - Start development server (tsx watch, TypeScript entry point)
+- `npm run build` - Compile TypeScript to `dist/`
+- `npm run typecheck` - Type-check without emitting
 - `npm test` - Run tests with coverage (using Vitest)
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:ui` - Run tests with Vitest UI
@@ -92,31 +94,53 @@ The API will be available at `http://localhost:3000`
 
 ## Project Structure
 
+Mid-migration: the auth endpoints run a layered TypeScript architecture,
+everything else still runs the original JavaScript. See
+[docs/BACKEND_REWRITE_PLAN.md](../../docs/BACKEND_REWRITE_PLAN.md) for what
+moves when, and why.
+
 ```
 src/
-├── config/           # Configuration files
-│   ├── index.js      # Main config
-│   └── database.js   # Database connection
-├── controllers/      # Route controllers
-│   ├── authController.js
-│   └── taskController.js
-├── middleware/       # Express middleware
-│   ├── auth.js       # JWT authentication
-│   ├── errorHandler.js
-│   ├── requestLogger.js
-│   └── validate.js
-├── models/           # Data models
-│   ├── User.js
-│   └── Task.js
-├── routes/           # API routes
-│   ├── authRoutes.js
-│   ├── taskRoutes.js
-│   └── healthRoutes.js
-├── utils/            # Utility functions
-│   ├── logger.js     # Winston logger
-│   └── metrics.js    # Prometheus metrics
-├── app.js            # Express app setup
-└── server.js         # Server entry point
+├── domain/                    # Entities, value objects, errors, events,
+│   │                          #   repository interfaces. Imports nothing
+│   │                          #   from the layers below.
+│   ├── entities/User.ts
+│   ├── value-objects/Email.ts
+│   ├── errors/                # AppError hierarchy
+│   ├── events/                # DomainEvent, AuthEvents
+│   └── repositories/          # Interfaces only
+├── application/               # Use cases; depends only on domain/
+│   ├── services/              # AuthService, TokenService
+│   ├── ports/                 # Interfaces infrastructure must satisfy
+│   └── subscribers/           # Metrics, audit log
+├── infrastructure/            # Concrete implementations of the interfaces
+│   ├── persistence/postgres/  # Repositories, connection pool
+│   ├── security/              # Bcrypt hashing, JWT provider
+│   ├── config/Config.ts
+│   ├── logging/, metrics/, events/, clock/
+├── presentation/http/         # Express boundary
+│   ├── app.ts                 # Middleware stack + route mounting
+│   ├── controllers/, routes/, middleware/, dto/, validators/
+├── composition/container.ts   # The only file that does `new`
+├── main.ts                    # Entry point (npm start -> dist/main.js)
+│
+│   # Not yet migrated - replaced in phases 4 and 5:
+├── config/                    # index.js, database.js
+├── controllers/taskController.js
+├── middleware/                # auth.js, requestLogger.js, validate.js
+├── models/                    # Task.js, TokenBlacklist.js
+├── routes/                    # taskRoutes.js, healthRoutes.js
+└── utils/                     # logger.js, metrics.js
+```
+
+### Local development note
+
+The backend container keeps `node_modules` in an anonymous Docker volume,
+which is reused across image rebuilds. If the container fails to start with
+`sh: tsx: not found` after pulling changes, renew that volume:
+
+```bash
+docker compose up -d --force-recreate -V backend
 ```
 
 ## API Endpoints
@@ -192,8 +216,12 @@ Interactive UI mode:
 npm run test:ui
 ```
 
-**Note:** Integration tests (User.test.js, Task.test.js) require a PostgreSQL database connection.
-Unit tests (controller tests) use mocks and run without database dependencies.
+**Note:** Unit tests (`domain/`, `application/`, and the fakes in
+`src/test/fakes/`) need no database and run in about a second - they exercise
+services against in-memory implementations of the repository interfaces, with
+no mocking framework involved. Integration tests (`src/test/security/*`,
+`PostgresUserRepository.test.ts`, `models/Task.test.js`) do require a
+PostgreSQL connection.
 
 ## Docker
 

@@ -1,15 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { Task } from './Task.js'
-import { User } from './User.js'
 import { query } from '../config/database.js'
 
 describe('Task Model', () => {
   let testUserId
 
   beforeAll(async () => {
-    // Create a test user
-    const user = await User.create('Task Test User', 'tasktest@example.com', 'password123')
-    testUserId = user.id
+    // Create the owning user with a direct INSERT rather than through the
+    // application: models/User.js was retired in Phase 3 (replaced by
+    // PostgresUserRepository), and this test only needs a row to hang tasks
+    // off - not a real registration. Phase 4 rewrites this file against
+    // PostgresTaskRepository anyway.
+    const user = await query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id',
+      ['Task Test User', 'tasktest@example.com', 'not-a-real-hash']
+    )
+    testUserId = user.rows[0].id
   })
 
   afterAll(async () => {

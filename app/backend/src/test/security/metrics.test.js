@@ -14,7 +14,7 @@ describe('Security: /metrics endpoint gating (METRICS_KEY configured)', () => {
 
   beforeAll(async () => {
     process.env.METRICS_KEY = 'test-metrics-secret'
-    app = (await import('../../app.js')).default
+    app = (await import('../helpers/testApp.js')).default
   })
 
   it('returns 404 (not 401/403) with no key', async () => {

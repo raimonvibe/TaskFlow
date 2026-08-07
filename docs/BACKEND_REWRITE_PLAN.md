@@ -1,24 +1,37 @@
 # Backend Rewrite Plan: TypeScript, Clean Architecture, Design Patterns
 
-Status: **Phase 2 (domain foundations) done.**
+Status: **Phase 3 (auth vertical slice) done — the new architecture is live for `/api/auth/*`.** Next up: Phase 4 (task vertical slice).
 
 - *Phase 1 (toolchain & skeleton)*: TypeScript, tsx, and the `@types/*` packages are installed; `tsconfig.json`/`tsconfig.build.json` are in place (strict, NodeNext); ESLint understands `.ts` files; the five layer folders (`domain/`, `application/`, `infrastructure/`, `presentation/`, `composition/`) exist with marker files explaining what belongs in each; CI (`main.yml`, `pr-check.yml`) runs `npm run typecheck` for the backend.
 - *Phase 2 (domain foundations)*: the `AppError` hierarchy (`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `RateLimitedError`), the `Email` value object, `DomainEvent`, the `IClock`/`IEventBus`/`ILogger` ports with their `SystemClock`/`InMemoryEventBus`/`WinstonLogger` implementations, the validated `Config` class, and the `PostgresConnection` adapter — each with unit tests, and a `FixedClock` fake under `src/test/fakes/`.
 
-Nothing in `src/*.js` changed in either phase — **none of the new code is wired into the running app yet.** `src/server.js` still uses the pre-rewrite modules (`config/index.js`, `config/database.js`, `utils/logger.js`), and the new classes sit alongside them unused until Phase 3 cuts the auth slice over. The app boots and behaves exactly as before; `npm run typecheck`, `npm run lint`, `npm run build`, and the test suite are all green.
+Phases 1 and 2 changed nothing in `src/*.js`; Phase 3 is where the new code took over the auth endpoints and the old ones were deleted. `npm run typecheck`, `npm run lint`, `npm run build`, and the full test suite are green.
 
-**Phase 3 (auth vertical slice) is code-complete but not yet serving traffic** — the full slice exists and is unit-tested (`IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `TokenService`, `AuthService`, `AuthController`, auth routes/validators/DTOs, `authenticate` + `errorHandler` middleware, `MetricsSubscriber`/`AuditLogSubscriber`, and a working composition root), but nothing routes to it yet.
+- *Phase 3 (auth vertical slice)*: **done and serving traffic.** `IUserRepository`/`PostgresUserRepository`, `ITokenBlacklistRepository`/Postgres impl, `BcryptPasswordHasher`, `JwtTokenProvider`, `TokenService`, `AuthService`, `AuthController`, auth routes/validators/DTOs, `authenticate` + `errorHandler` + `validateRequest` middleware, `MetricsSubscriber`/`AuditLogSubscriber`, and the composition root. `/api/auth/*` is served entirely by the new slice; `/api/tasks` and `/health` still run the pre-rewrite JavaScript.
+
+  Retired: `app.js`, `server.js`, `routes/authRoutes.js`, `controllers/authController.js` (+ test), `middleware/errorHandler.js` (+ test), `models/User.js` (+ test — replaced by `PostgresUserRepository.test.ts`; its unused `update`/`delete`/`findAll` were dead code and are simply gone).
 
 ### The ordering problem this phase surfaced
 
-§7 sequences the entrypoint and deployment work into Phase 6, and phases 3–5 into "vertical slices [that keep] the app deployable." Those two can't both hold. `src/app.js` and `src/server.js` are JavaScript, `npm start` is plain `node src/server.js`, and **Node cannot import a `.ts` file at runtime**. So no amount of new TypeScript can serve a request until the entrypoint itself becomes TypeScript — which means `app.ts`, `main.ts`, the `dev`/`start`/`db:init` scripts, the Dockerfile build stage, and `render.yaml`'s `buildCommand` all have to move *together*, as one cutover, before any slice goes live.
+§7 sequenced the entrypoint and deployment work into Phase 6, and phases 3–5 as "vertical slices [that keep] the app deployable." Those two could not both hold. `app.js`/`server.js` were JavaScript, `npm start` was plain `node src/server.js`, and **Node cannot import a `.ts` file at runtime** — so no amount of new TypeScript could serve a request until the entrypoint itself became TypeScript. The entrypoint move was a *prerequisite* of Phase 3, not the Phase 6 catch-up task the plan assumed.
 
-That work is listed under Phase 6 but is a prerequisite for Phase 3, not a follow-up to it. The plan was written assuming slices could go live incrementally; they can't. Two ways forward:
+It was therefore done as part of Phase 3: `main.ts` + `presentation/http/app.ts`, `allowJs` so the TS entrypoint can keep importing the not-yet-migrated task/health routes, `dev`/`start`/`db:init` pointed at `tsx`/`dist/`, a Dockerfile build stage, a Dockerfile `dev` stage (compose bind-mounts the source, so it needs the dev dependencies for `tsx watch` — this is new hot reload the old `node src/server.js` container never had), and `render.yaml`'s `buildCommand`.
 
-1. **Cut over now** — do Phase 6's entrypoint/infra work as part of Phase 3, so the auth slice actually serves traffic and the integration suite proves it. Requires `allowJs` so `app.ts` can keep importing the not-yet-migrated task/health routes, and it touches the deploy path (Dockerfile, render.yaml), so a bad cutover breaks production rather than just CI.
-2. **Build phases 3–5 in full first, cut over once at the end** — the new code sits complete and unit-tested but dormant until a single cutover switches every route at once. Lower deploy risk (one cutover instead of one per slice, with nothing half-migrated in production), at the cost of the new code being unexercised end-to-end until then.
+**Correction to §7 for the remaining phases:** the "docs & infra catch-up" phase no longer includes the entrypoint or the Dockerfile/render build wiring — that is done. What remains for Phase 6 is `docs/ARCHITECTURE.md`, the DevOps Tour content, and removing `allowJs`/`checkJs` once no `.js` remains under `src/`.
 
-Either way, §7's phase list needs correcting: the entrypoint/infra move is a phase boundary of its own, not a documentation catch-up task.
+### §6's open question, now answered
+
+The plan flagged that the error-envelope change should be "confirmed against the actual frontend call sites before cutover, not assuming." Confirmed: every error path in the frontend (`Login.jsx`, `Register.jsx`, `Tasks.jsx` ×3, `api/axios.js`) reads `err.response?.data?.message`, which both the old and new shapes provide. No frontend change is needed.
+
+### Verification performed at cutover
+
+Beyond lint/typecheck/tests: the production image was built and run against the real database, and register → me → duplicate-register (409) → bad login (401) → tasks → logout → revoked-token (401) → validation-error shape were each checked by hand. That last sequence also confirms cross-slice compatibility — the still-JavaScript `/api/tasks` middleware accepts tokens minted by the new `JwtTokenProvider`, which is the thing that would have broken silently if the issuer/audience/algorithm claims had drifted.
+
+**One-time local gotcha:** the compose backend keeps `node_modules` in an anonymous volume, which Docker reuses across image rebuilds. After pulling this change, the container will fail with `sh: tsx: not found` until the volume is renewed:
+
+```bash
+docker compose up -d --force-recreate -V backend
+```
 
 Decisions already made (see rationale inline below):
 - **Scope**: backend only. Frontend (React) is untouched by this plan.

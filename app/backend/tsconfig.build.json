@@ -1,9 +1,7 @@
 {
-  // Used by `npm run build` (tsc -p tsconfig.build.json) to actually emit
-  // compiled JS into dist/. Not wired into the Dockerfile or render.yaml
-  // yet - there's no real TypeScript entrypoint to run until the rewrite's
-  // later phases land a src/main.ts. Until then the app keeps running the
-  // existing src/server.js exactly as before (see docs/BACKEND_REWRITE_PLAN.md).
+  // Used by `npm run build` (tsc -p tsconfig.build.json) to emit dist/,
+  // which is what production actually runs (`node dist/main.js`) - see the
+  // Dockerfile's build stage and render.yaml's buildCommand.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
@@ -11,5 +9,12 @@
     "rootDir": "src",
     "declaration": false
   },
-  "exclude": ["node_modules", "dist", "coverage", "src/**/*.test.ts"]
+  // src/database/*.js is listed explicitly because nothing imports it -
+  // init-schema.js is its own entrypoint (`npm run db:init`), so tsc would
+  // not otherwise pull it into the program and dist/ would be missing the
+  // script the container runs before start. seed.js rides along for the
+  // same reason.
+  "include": ["src/**/*.ts", "src/database/**/*.js"],
+  // Test files and the fakes they use are not part of the shipped image.
+  "exclude": ["node_modules", "dist", "coverage", "src/**/*.test.ts", "src/test/**"]
 }

@@ -57,6 +57,10 @@ services:
     build:
       context: ./app/backend
       dockerfile: Dockerfile
+      # The dev stage keeps the dev dependencies so `tsx watch` can run the
+      # TypeScript entrypoint directly against the bind-mounted source. The
+      # production image (default target) ships only compiled dist/.
+      target: dev
     container_name: taskflow-backend
     environment:
       NODE_ENV: development

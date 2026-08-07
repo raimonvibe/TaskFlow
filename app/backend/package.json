@@ -2,11 +2,11 @@
   "name": "taskflow-backend",
   "version": "1.0.0",
   "description": "TaskFlow - DevOps Learning Project Backend API",
-  "main": "src/server.js",
+  "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
     "test": "NODE_ENV=test vitest run --coverage",
     "test:watch": "NODE_ENV=test vitest",
     "test:ui": "NODE_ENV=test vitest --ui",
@@ -17,8 +17,8 @@
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "migrate:create": "node-pg-migrate create",
-    "seed": "node src/database/seed.js",
-    "db:init": "node src/database/init-schema.js"
+    "seed": "node dist/database/seed.js",
+    "db:init": "node dist/database/init-schema.js"
   },
   "keywords": [
     "devops",

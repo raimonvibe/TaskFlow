@@ -1,5 +1,5 @@
 import request from 'supertest'
-import app from '../../app.js'
+import app from './testApp.js'
 import { query } from '../../config/database.js'
 
 let counter = 0

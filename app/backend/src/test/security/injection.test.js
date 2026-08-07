@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import request from 'supertest'
-import app from '../../app.js'
+import app from '../helpers/testApp.js'
 import { registerAndLogin, uniqueEmail, cleanupAllTestUsers } from '../helpers/testUser.js'
 import { query } from '../../config/database.js'
 

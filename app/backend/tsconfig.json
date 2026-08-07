@@ -17,6 +17,14 @@
     // User.ts exists on disk right now. This is a real NodeNext+TS
     // requirement, not a mistake - see docs/BACKEND_REWRITE_PLAN.md §4.
     "verbatimModuleSyntax": false,
+    // The TypeScript entrypoint (main.ts -> presentation/http/app.ts) has to
+    // import the routes that have not been migrated yet (taskRoutes.js,
+    // healthRoutes.js, requestLogger.js), and they have to end up in dist/
+    // for `node dist/main.js` to run. `checkJs` stays off: those files are
+    // pre-rewrite JavaScript and type-checking them is not this phase's job.
+    // Both settings go away once Phase 5 leaves no .js in src/.
+    "allowJs": true,
+    "checkJs": false,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,

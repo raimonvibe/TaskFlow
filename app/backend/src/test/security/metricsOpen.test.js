@@ -9,7 +9,7 @@ describe('Security: /metrics endpoint gating (METRICS_KEY not configured)', () =
 
   beforeAll(async () => {
     delete process.env.METRICS_KEY
-    app = (await import('../../app.js')).default
+    app = (await import('../helpers/testApp.js')).default
   })
 
   it('stays open (200, no key required) - the local/dev default', async () => {
