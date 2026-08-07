@@ -44,6 +44,32 @@ cd app/backend && npm ci && npm test
 Expect **252 tests across 31 files**. If you get that, everything below is
 safe to attempt.
 
+### Then verify the commit that came before this document
+
+`14cca81` made `app/database/schema.sql` idempotent and switched it from
+"apply once, when `users` is missing" to "apply in full, on every boot". That
+is the load-bearing claim of the whole change, and **it was verified by review
+only — it has never been executed.** If it is wrong, every deploy fails at
+`npm run db:init` and the app does not start.
+
+The check is two runs against a scratch database. Both must be silent:
+
+```bash
+createdb schema_idempotency_check
+psql -d schema_idempotency_check -f "app/database/schema.sql"
+psql -d schema_idempotency_check -f "app/database/schema.sql"
+dropdb schema_idempotency_check
+```
+
+The second run is the whole point. It exercises the two `DO` blocks wrapping
+`CREATE TYPE` that swallow `duplicate_object` — the only statements in the
+file that were not already re-appliable. A failure there means the guards are
+wrong, and the fix belongs in `schema.sql`, not in the callers.
+
+Note for PowerShell: this is a `bash` block. Windows PowerShell 5.1 has no
+`&&`, which is why the commands are on separate lines here — run them one at
+a time, or chain with `;`.
+
 ### Other environment traps, all real
 
 - **Node 22 is pinned** (`engines: >=22.12.0`, `.nvmrc: 22`). The machine this
