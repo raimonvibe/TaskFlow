@@ -1,6 +1,11 @@
+import type { ReactElement } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
-const ThemeToggle = ({ className = '' }) => {
+interface ThemeToggleProps {
+  className?: string
+}
+
+const ThemeToggle = ({ className = '' }: ThemeToggleProps): ReactElement => {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 

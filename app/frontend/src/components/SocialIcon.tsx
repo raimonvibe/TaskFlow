@@ -1,3 +1,6 @@
+import type { CSSProperties, ReactElement, ReactNode } from 'react'
+import type { SocialId, SocialLink } from '../data/socialLinks'
+
 /**
  * Brand glyph paths, all on a 24x24 viewBox.
  * Vendored from Simple Icons (https://simpleicons.org, CC0-1.0), plus two
@@ -5,7 +8,7 @@
  * Simple Icons. Ported from raimonvibe/digital-marketing's SocialIcon.tsx
  * so TaskFlow's footer uses the exact same set of marks and brand colours.
  */
-const BRAND_PATHS = {
+const BRAND_PATHS: Partial<Record<SocialId, string>> = {
   x: 'M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z',
   youtube:
     'M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z',
@@ -23,7 +26,7 @@ const BRAND_PATHS = {
 
 /* LinkedIn asked to be removed from Simple Icons, and a globe is not a brand
    mark at all, so these two are drawn by hand rather than vendored. */
-const LOCAL_MARKS = {
+const LOCAL_MARKS: Partial<Record<SocialId, ReactNode>> = {
   linkedin: (
     <>
       <circle cx="2.6" cy="2.6" r="2.6" />
@@ -40,6 +43,11 @@ const LOCAL_MARKS = {
   ),
 }
 
+interface SocialIconProps {
+  link: SocialLink
+  size?: number
+}
+
 /**
  * One social mark. Always rendered in its full brand colour - solid fill,
  * Instagram's gradient, or TikTok's offset cyan/magenta stack - on both the
@@ -47,10 +55,11 @@ const LOCAL_MARKS = {
  * surface either way. Hover/focus only adds a lift and a brass ring, it
  * doesn't gate the colour.
  */
-const SocialIcon = ({ link, size = 20 }) => {
+const SocialIcon = ({ link, size = 20 }: SocialIconProps): ReactElement => {
   const gradientId = `ig-gradient-${link.id}`
   const local = LOCAL_MARKS[link.id]
   const path = BRAND_PATHS[link.id]
+  const brandStyle = { '--brand': link.colour } as CSSProperties
 
   return (
     <a
@@ -60,7 +69,7 @@ const SocialIcon = ({ link, size = 20 }) => {
       title={link.label}
       aria-label={link.label}
       className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-[var(--brand)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300"
-      style={{ '--brand': link.colour }}
+      style={brandStyle}
     >
       {link.fill === 'chromatic' && path ? (
         <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
@@ -85,9 +94,7 @@ const SocialIcon = ({ link, size = 20 }) => {
               </linearGradient>
             </defs>
           )}
-          <g
-            fill={link.fill === 'gradient' ? `url(#${gradientId})` : 'currentColor'}
-          >
+          <g fill={link.fill === 'gradient' ? `url(#${gradientId})` : 'currentColor'}>
             {local ?? <path d={path} />}
           </g>
         </svg>

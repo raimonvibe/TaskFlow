@@ -22,8 +22,9 @@ describe('StatCard', () => {
 
     // Color is applied to the icon container, not the value
     const iconContainer = container.querySelector('.rounded-md')
-    expect(iconContainer.className).toContain('bg-accent-50')
-    expect(iconContainer.className).toContain('text-accent-600')
+    expect(iconContainer).not.toBeNull()
+    expect(iconContainer!.className).toContain('bg-accent-50')
+    expect(iconContainer!.className).toContain('text-accent-600')
   })
 
   it('should render zero value', () => {

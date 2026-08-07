@@ -4,6 +4,7 @@ import { ClipboardText, HourglassHigh, ArrowsClockwise, SealCheck } from '@phosp
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
 import { tasksAPI } from '../api/tasks'
+import type { TaskStatsResponse } from '../api/types'
 import { useTheme } from '../contexts/ThemeContext'
 import {
   BarChart,
@@ -27,11 +28,12 @@ const STATUS_COLORS = {
   'To Do': 'var(--color-chart-1)',
   'In Progress': 'var(--color-chart-2)',
   Completed: 'var(--color-chart-3)',
-}
+} as const
+type StatusName = keyof typeof STATUS_COLORS
 const GRID_STROKE = 'var(--color-primary-300)'
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null)
+  const [stats, setStats] = useState<TaskStatsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
@@ -164,12 +166,17 @@ const Dashboard = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) =>
+                      `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
+                    }
                     outerRadius={80}
                     dataKey="value"
                   >
                     {statusData.map(entry => (
-                      <Cell key={entry.name} fill={STATUS_COLORS[entry.name]} />
+                      <Cell
+                        key={entry.name}
+                        fill={STATUS_COLORS[entry.name as StatusName]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />

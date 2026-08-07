@@ -1,26 +1,44 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { isAxiosError } from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 
-const Login = () => {
+const Register = () => {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { register } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
     setLoading(true)
 
     try {
-      await login(email, password)
+      await register(name, email, password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login. Please try again.')
+      const message =
+        isAxiosError(err) && typeof err.response?.data?.message === 'string'
+          ? err.response.data.message
+          : 'Failed to create account. Please try again.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -39,12 +57,12 @@ const Login = () => {
             </p>
             <h1 className="font-serif text-5xl font-bold text-white tracking-tight">TaskFlow</h1>
             <p className="mt-3 text-primary-100 text-base">
-              Sign in to manage your coursework and DevOps lab tasks.
+              Create your account to join the DevOps learning lab.
             </p>
           </div>
 
           <div className="bg-campus border border-accent-400/40 rounded-md p-8 shadow-none">
-            <h2 className="font-serif text-2xl font-semibold text-ink mb-6">Sign in</h2>
+            <h2 className="font-serif text-2xl font-semibold text-ink mb-6">Create account</h2>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {error && (
@@ -53,6 +71,21 @@ const Login = () => {
                 </div>
               )}
 
+              <div>
+                <label htmlFor="name" className="label">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="input"
+                  placeholder="Jane Doe"
+                />
+              </div>
               <div>
                 <label htmlFor="email" className="label">
                   Email address
@@ -77,7 +110,7 @@ const Login = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -85,18 +118,34 @@ const Login = () => {
                   placeholder="••••••••"
                 />
               </div>
+              <div>
+                <label htmlFor="confirmPassword" className="label">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="input"
+                  placeholder="••••••••"
+                />
+              </div>
 
               <button type="submit" disabled={loading} className="w-full btn btn-primary">
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Creating account...' : 'Register'}
               </button>
 
               <p className="text-center text-sm text-primary-500 dark:text-primary-300">
-                Don&apos;t have an account?{' '}
+                Already have an account?{' '}
                 <Link
-                  to="/register"
+                  to="/login"
                   className="font-semibold text-primary-600 hover:text-accent-600 dark:text-accent-300 dark:hover:text-accent-200"
                 >
-                  Register
+                  Sign in
                 </Link>
               </p>
             </form>
@@ -107,4 +156,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default Register

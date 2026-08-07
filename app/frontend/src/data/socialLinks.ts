@@ -1,3 +1,24 @@
+export type SocialFill = 'solid' | 'gradient' | 'chromatic'
+
+export type SocialId =
+  | 'website'
+  | 'x'
+  | 'youtube'
+  | 'tiktok'
+  | 'instagram'
+  | 'medium'
+  | 'github'
+  | 'linkedin'
+  | 'facebook'
+
+export interface SocialLink {
+  id: SocialId
+  label: string
+  url: string
+  colour: string
+  fill?: SocialFill
+}
+
 /**
  * Same marks, same brand colours as raimonvibe/digital-marketing's footer -
  * with one deliberate difference: TaskFlow's footer is *always* on a dark
@@ -7,7 +28,7 @@
  * brand colour. That's the same swap the source makes for dark mode, and
  * for the same reason: solid black on navy is invisible.
  */
-export const SOCIAL_LINKS = [
+export const SOCIAL_LINKS: SocialLink[] = [
   { id: 'website', label: 'raimonvibe.eu', url: 'https://www.raimonvibe.eu/', colour: '#bcb5a4' },
   { id: 'x', label: 'X', url: 'https://x.com/raimonvibe/', colour: '#efeade' },
   {

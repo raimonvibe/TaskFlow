@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import { CaretDown, List, X } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,23 +6,27 @@ import Footer from './Footer'
 import ThemeToggle from './ThemeToggle'
 import { TOUR_PAGES } from '../data/tourContent'
 
-const navLinkClasses = (active, extra = '') =>
+const navLinkClasses = (active: boolean, extra = '') =>
   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${extra} ${
     active
       ? 'bg-white/15 text-white border-b-2 border-accent-400'
       : 'text-primary-100 hover:bg-white/10 hover:text-white'
   }`
 
-const Layout = ({ children }) => {
+interface LayoutProps {
+  children: ReactNode
+}
+
+const Layout = ({ children }: LayoutProps) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   const [tourOpen, setTourOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const tourRef = useRef(null)
+  const tourRef = useRef<HTMLDivElement>(null)
 
-  const isActive = path => location.pathname === path
+  const isActive = (path: string) => location.pathname === path
   const isTourActive = location.pathname.startsWith('/tour')
 
   const closeMenus = () => {
@@ -34,12 +38,12 @@ const Layout = ({ children }) => {
   useEffect(() => {
     if (!tourOpen) return
 
-    const handleClick = event => {
-      if (tourRef.current && !tourRef.current.contains(event.target)) {
+    const handleClick = (event: MouseEvent) => {
+      if (tourRef.current && !tourRef.current.contains(event.target as Node)) {
         setTourOpen(false)
       }
     }
-    const handleKey = event => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setTourOpen(false)
     }
 

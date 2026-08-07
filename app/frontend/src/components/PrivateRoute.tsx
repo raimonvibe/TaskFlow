@@ -1,7 +1,8 @@
+import type { PropsWithChildren, ReactElement } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children }: PropsWithChildren): ReactElement => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
@@ -12,7 +13,7 @@ const PrivateRoute = ({ children }) => {
     )
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 export default PrivateRoute
