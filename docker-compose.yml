@@ -171,8 +171,8 @@ networks:
     # default can change across Docker Desktop/Engine updates, and when it
     # does, compose refuses to silently mutate an already-created network
     # to match ("needs to be recreated" error) instead of just working.
-    # Pinning both means this can't drift out from under an existing network.
-    enable_ipv4: true
+    # (enable_ipv4 is a newer Compose field not recognized by older
+    # docker-compose 1.x installs - omitted so the file stays compatible.)
     enable_ipv6: false
 
 volumes:
