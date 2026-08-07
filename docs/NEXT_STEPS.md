@@ -21,8 +21,8 @@ touch it so it stops claiming otherwise.
 | 3A. Refresh-token rotation | **Done** | Schema + backend + frontend together; access JWT default `15m`; closes §10 items 3–4 |
 | 3B. Frontend Phase 1–7 treatment | **Done** | Full `src/` is TypeScript; coverage floors in `vite.config.js` |
 
-Baseline after this pass: backend **268 tests / 35 files**, frontend **33 / 6**
-(auth client, interceptor, Tasks slice, StatCard).
+Baseline after this pass: backend **268 tests / 35 files**, frontend **41 / 7**
+(auth client, interceptor, Tasks slice, StatCard, useTasks).
 
 Windows note: `npm test` in `app/backend` uses `NODE_ENV=test …` (Unix). On
 PowerShell run `$env:NODE_ENV='test'; npx vitest run --coverage` instead.
@@ -41,12 +41,20 @@ Symmetric with the backend rewrite. Phases landed as:
 3. **Tasks slice** — `api/tasks`, `TaskCard`, `TaskModal`, `pages/Tasks`,
    `hooks/useTasks`.
 4. **Rest of UI + Tour** — entire `src/` is TypeScript; `allowJs` removed.
-5. **Coverage floor** — `vite.config.js` thresholds statements 76 /
-   branches 60 / functions 88 / lines 76 (a point or two under the
-   measured baseline). Raise when coverage grows.
+5. **Coverage floor** — `vite.config.js` thresholds statements 78 /
+   branches 59 / functions 91 / lines 79 (ratcheted after `useTasks`
+   tests). Raise when coverage grows.
 
 ## What is next
 
 Option A and Option B from this handoff are closed. Prefer real bugs, docs
 drift, or product features over reopening closed rewrite items. Raise
 frontend coverage floors as new tests land (same ratchet as the backend).
+
+### Follow-up done after Option B
+
+- Docs drift: `app/frontend/README.md` and `docs/ARCHITECTURE.md` frontend
+  trees updated for TypeScript; empty-`due_date` note in
+  `BACKEND_REWRITE_PLAN.md` marked closed.
+- `hooks/useTasks` tests (8) landed; coverage floors raised to statements
+  78 / branches 59 / functions 91 / lines 79. Frontend baseline **41 / 7**.

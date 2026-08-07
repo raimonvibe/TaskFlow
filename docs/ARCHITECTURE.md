@@ -13,10 +13,10 @@ TaskFlow is a full-stack task management application designed to demonstrate mod
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Frontend (React)                          │
-│  - React 18 + Vite                                          │
+│                    Frontend (React / TypeScript)             │
+│  - React 19 + Vite + TypeScript                             │
 │  - Tailwind CSS                                             │
-│  - JWT Authentication                                        │
+│  - JWT + refresh-token rotation                             │
 │  - Recharts for visualizations                             │
 └────────────────────────┬────────────────────────────────────┘
                          │ HTTP/REST
@@ -53,46 +53,50 @@ TaskFlow is a full-stack task management application designed to demonstrate mod
 ### Frontend Layer
 
 **Technology Stack**:
-- React 18 (UI framework)
+- React 19 + TypeScript (`strict`)
 - Vite (Build tool)
 - Tailwind CSS (Styling)
 - React Router (Routing)
-- Axios (HTTP client)
+- Axios (HTTP client, 401 → refresh → retry)
 - Recharts (Data visualization)
 
 **Key Features**:
 - Single Page Application (SPA)
-- JWT-based authentication
+- JWT access tokens with refresh-token rotation
 - Responsive design
-- Real-time data updates
 - Client-side routing
 - Optimized bundle splitting
+- DevOps Tour (static tool guides)
 
 **Directory Structure**:
 ```
 frontend/src/
-├── api/              # API client layers
-│   ├── axios.js      # Configured axios instance
-│   ├── auth.js       # Auth API calls
-│   └── tasks.js      # Task API calls
+├── api/              # API client + wire types
+│   ├── axios.ts      # Configured axios + refresh interceptor
+│   ├── auth.ts       # Auth API calls
+│   ├── tasks.ts      # Task API calls
+│   └── types.ts      # Shared DTO shapes
 ├── components/       # Reusable components
-│   ├── Layout.jsx
-│   ├── TaskCard.jsx
+│   ├── Layout.tsx
+│   ├── TaskCard.tsx
 │   └── ...
 ├── contexts/         # React contexts
-│   └── AuthContext.jsx
+│   ├── AuthContext.tsx
+│   └── ThemeContext.tsx
+├── hooks/            # Shared hooks (useTasks)
 ├── pages/            # Page components
-│   ├── Login.jsx
-│   ├── Dashboard.jsx
-│   └── Tasks.jsx
-├── config.js         # App configuration
-└── App.jsx           # Root component
+│   ├── Login.tsx
+│   ├── Dashboard.tsx
+│   ├── Tasks.tsx
+│   └── Tour*.tsx
+├── config.ts         # App configuration
+└── App.tsx           # Root component
 ```
 
 **Data Flow**:
 1. User interacts with UI
-2. Component calls API client
-3. Axios interceptor adds JWT token
+2. Page/hook calls API client
+3. Axios interceptor adds JWT access token (and refreshes on 401)
 4. Request sent to backend
 5. Response updates component state
 6. UI re-renders with new data
