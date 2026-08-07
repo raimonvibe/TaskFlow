@@ -44,6 +44,10 @@ export const TOUR_PAGES = [
             code: 'docker-compose up -d',
           },
           {
+            label: 'List every local interface (frontend, backend, Grafana, Prometheus, Adminer) with live status - reads your actual .env port overrides, re-runnable any time',
+            code: './scripts/urls.sh',
+          },
+          {
             label: 'Check what’s running',
             code: 'docker-compose ps',
           },
@@ -339,9 +343,10 @@ export const TOUR_PAGES = [
     tagline: 'Where TaskFlow’s metrics come from and how to look at them.',
     guidePath: 'docs/TOOL-GUIDES/prometheus-grafana-guide.md',
     quickAccess: [
-      { label: 'Prometheus', value: 'http://localhost:9090 (local Docker Compose only)' },
-      { label: 'Grafana', value: 'http://localhost:3001 - default admin/admin, change it' },
+      { label: 'Prometheus', value: 'http://localhost:9090 (default port - local Docker Compose only)' },
+      { label: 'Grafana', value: 'http://localhost:3001 (default port) - admin/admin, change it' },
       { label: 'Backend metrics endpoint', value: '/metrics on the backend' },
+      { label: 'Not sure these are still right?', value: 'Run ./scripts/urls.sh - shows your actual configured ports' },
     ],
     sections: [
       {
