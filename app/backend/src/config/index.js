@@ -46,6 +46,10 @@ const config = {
       return secret || 'default_secret_change_in_production'
     })(),
     expiresIn: process.env.JWT_EXPIRE || '7d',
+    // Distinct from jwt.secret so a leaked access-token secret can't also be
+    // used to forge refresh tokens (and vice versa). Falls back to jwt.secret
+    // only for local/dev convenience when JWT_REFRESH_SECRET isn't set.
+    refreshSecret: process.env.JWT_REFRESH_SECRET || undefined,
   },
 
   // CORS

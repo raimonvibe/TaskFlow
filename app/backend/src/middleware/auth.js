@@ -2,11 +2,9 @@ import jwt from 'jsonwebtoken'
 import config from '../config/index.js'
 import logger from '../utils/logger.js'
 import crypto from 'crypto'
+import { TokenBlacklist } from '../models/TokenBlacklist.js'
 
-// Token blacklist (in production, use Redis)
-const tokenBlacklist = new Set()
-
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization
@@ -16,9 +14,10 @@ export const authenticate = (req, res, next) => {
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
-    // Check if token is blacklisted
+    // Check if token is blacklisted. Persisted in Postgres (not an in-memory
+    // Set) so a revoked token stays revoked across Render free-tier restarts.
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-    if (tokenBlacklist.has(tokenHash)) {
+    if (await TokenBlacklist.isBlacklisted(tokenHash)) {
       logger.warn('Blacklisted token used', { ip: req.ip })
       return res.status(401).json({ message: 'Token has been revoked' })
     }
@@ -96,20 +95,24 @@ export const verifyToken = token => {
   }
 }
 
-// Blacklist token (logout functionality)
-export const blacklistToken = token => {
+// Blacklist token (logout functionality). Persisted in Postgres, expiring
+// at the token's own `exp` claim - no need to track it past the point where
+// jwt.verify() would reject it as expired anyway.
+export const blacklistToken = async token => {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-  tokenBlacklist.add(tokenHash)
+
+  const decoded = jwt.decode(token)
+  const expiresAt = decoded?.exp
+    ? new Date(decoded.exp * 1000)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+
+  await TokenBlacklist.add(tokenHash, expiresAt)
   logger.info('Token blacklisted', { tokenHash: tokenHash.substring(0, 10) })
 
-  // In production, set TTL to token expiration time
-  // Clean up after token would have expired anyway
-  setTimeout(
-    () => {
-      tokenBlacklist.delete(tokenHash)
-    },
-    7 * 24 * 60 * 60 * 1000
-  ) // 7 days
+  // Opportunistic cleanup of old rows - cheap, fire-and-forget.
+  TokenBlacklist.deleteExpired().catch(err =>
+    logger.warn('Token blacklist cleanup failed', { error: err.message })
+  )
 }
 
 // Optional authentication (don't fail if no token)

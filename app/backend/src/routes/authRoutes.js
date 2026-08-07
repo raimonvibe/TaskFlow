@@ -1,7 +1,7 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import { body } from 'express-validator'
-import { register, login, getCurrentUser } from '../controllers/authController.js'
+import { register, login, getCurrentUser, logout } from '../controllers/authController.js'
 import { authenticate } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import config from '../config/index.js'
@@ -24,7 +24,9 @@ const authLimiter = rateLimit({
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8, max: 128 })
+    .withMessage('Password must be between 8 and 128 characters'),
 ]
 
 const loginValidation = [
@@ -36,5 +38,6 @@ const loginValidation = [
 router.post('/register', authLimiter, registerValidation, validate, register)
 router.post('/login', authLimiter, loginValidation, validate, login)
 router.get('/me', authenticate, getCurrentUser)
+router.post('/logout', authenticate, logout)
 
 export default router

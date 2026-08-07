@@ -17,7 +17,18 @@ export const authAPI = {
     return response.data
   },
 
-  logout: () => {
-    secureStorage.clearToken()
+  logout: async () => {
+    // Revoke the token server-side (blacklist it) before clearing it locally -
+    // previously logout only cleared local storage, so a copied/leaked token
+    // stayed valid on the backend for its full life even after "logging out".
+    // Always clear local storage regardless of whether the request succeeds,
+    // so the user is logged out client-side even if the backend is down.
+    try {
+      await axios.post('/api/auth/logout')
+    } catch (error) {
+      console.error('Server-side logout failed:', error)
+    } finally {
+      secureStorage.clearToken()
+    }
   },
 }

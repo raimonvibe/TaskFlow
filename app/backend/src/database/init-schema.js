@@ -31,9 +31,27 @@ const run = async () => {
     await client.query(sql)
     logger.info('Database schema applied successfully')
   } finally {
+    await ensureTokenBlacklistTable(client)
     client.release()
     await pool.end()
   }
+}
+
+// Guarded block (see file header): the JWT blacklist previously lived only in
+// an in-memory Set in middleware/auth.js, which meant every restart (Render's
+// free tier restarts often) silently un-revoked every "logged out" token.
+// Runs on every boot regardless of whether schema.sql already ran.
+async function ensureTokenBlacklistTable(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS token_blacklist (
+      token_hash VARCHAR(64) PRIMARY KEY,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+    )
+  `)
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at)
+  `)
+  logger.info('token_blacklist table ready')
 }
 
 run().catch(error => {

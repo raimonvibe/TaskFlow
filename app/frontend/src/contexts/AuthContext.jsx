@@ -51,7 +51,10 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    secureStorage.clearToken()
+    // Fire-and-forget: don't block navigation on the network round trip.
+    // authAPI.logout() clears local storage in its own finally block even
+    // if the server call fails.
+    authAPI.logout()
     setUser(null)
   }
 

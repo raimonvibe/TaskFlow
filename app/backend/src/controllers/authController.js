@@ -1,5 +1,5 @@
 import { User } from '../models/User.js'
-import { generateToken } from '../middleware/auth.js'
+import { generateToken, blacklistToken } from '../middleware/auth.js'
 import { authAttempts } from '../utils/metrics.js'
 import logger from '../utils/logger.js'
 
@@ -85,6 +85,20 @@ export const getCurrentUser = async (req, res, next) => {
     }
 
     res.json({ user })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Previously there was no logout route at all - the frontend only cleared
+// its local token, so a leaked/stolen token stayed valid on the server for
+// its full 7-day life even after the user "logged out". This actually
+// revokes it.
+export const logout = async (req, res, next) => {
+  try {
+    await blacklistToken(req.token)
+    logger.info('User logged out', { userId: req.user.id })
+    res.json({ message: 'Logged out successfully' })
   } catch (error) {
     next(error)
   }
