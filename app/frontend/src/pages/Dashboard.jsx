@@ -17,7 +17,7 @@ import {
   Cell,
 } from 'recharts'
 
-const COLORS = ['#9CA3AF', '#3B82F6', '#10B981']
+const COLORS = ['#7F96B8', '#0B1F3A', '#C4A35A']
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null)
@@ -93,7 +93,7 @@ const Dashboard = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="page-title">Dashboard</h1>
           <button onClick={() => navigate('/tasks')} className="btn btn-primary">
             View All Tasks
           </button>
@@ -102,18 +102,18 @@ const Dashboard = () => {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Tasks" value={stats?.total || 0} icon="📋" color="primary" />
-          <StatCard title="To Do" value={stats?.byStatus.todo || 0} icon="⏳" color="yellow" />
+          <StatCard title="To Do" value={stats?.byStatus.todo || 0} icon="⏳" color="slate" />
           <StatCard
             title="In Progress"
             value={stats?.byStatus.in_progress || 0}
             icon="🔄"
-            color="blue"
+            color="navy"
           />
           <StatCard
             title="Completed"
             value={stats?.byStatus.completed || 0}
             icon="✅"
-            color="green"
+            color="gold"
           />
         </div>
 
@@ -121,7 +121,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Status Distribution */}
           <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Task Status Distribution</h2>
+            <h2 className="section-title mb-4">Task Status Distribution</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -131,7 +131,7 @@ const Dashboard = () => {
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#0B1F3A"
                   dataKey="value"
                 >
                   {statusData.map((entry, index) => (
@@ -145,17 +145,17 @@ const Dashboard = () => {
 
           {/* Priority Distribution */}
           <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Task Priority Distribution</h2>
+            <h2 className="section-title mb-4">Task Priority Distribution</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={priorityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <CartesianGrid strokeDasharray="3 3" stroke="#D9E2EC" />
+                <XAxis dataKey="name" stroke="#2A4A73" />
+                <YAxis stroke="#2A4A73" />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="low" fill="#10B981" name="Low" />
-                <Bar dataKey="medium" fill="#F59E0B" name="Medium" />
-                <Bar dataKey="high" fill="#EF4444" name="High" />
+                <Bar dataKey="low" fill="#7F96B8" name="Low" />
+                <Bar dataKey="medium" fill="#C4A35A" name="Medium" />
+                <Bar dataKey="high" fill="#0B1F3A" name="High" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -163,7 +163,7 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <h2 className="section-title mb-4">Quick Actions</h2>
           <div className="flex flex-wrap gap-3">
             <button onClick={() => navigate('/tasks')} className="btn btn-primary">
               Create New Task

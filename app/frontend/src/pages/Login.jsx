@@ -26,73 +26,75 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="text-center text-4xl font-bold text-primary-600">TaskFlow</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">DevOps Learning Project</p>
-          <h3 className="mt-6 text-center text-2xl font-semibold text-gray-900">
-            Sign in to your account
-          </h3>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="label">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="label">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <div>
-            <button type="submit" disabled={loading} className="w-full btn btn-primary">
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-                Sign up
-              </Link>
+    <div className="auth-shell relative">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-300 mb-3">
+              Student portal
+            </p>
+            <h1 className="font-display text-5xl font-bold text-white tracking-tight">TaskFlow</h1>
+            <p className="mt-3 text-primary-100 text-base">
+              Sign in to manage your coursework and DevOps lab tasks.
             </p>
           </div>
-        </form>
+
+          <div className="bg-campus border border-accent-400/40 rounded-md p-8 shadow-none">
+            <h2 className="font-display text-2xl font-semibold text-ink mb-6">Sign in</h2>
+
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="label">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="input"
+                  placeholder="you@university.edu"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="label">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full btn btn-primary">
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+
+              <p className="text-center text-sm text-primary-500">
+                Don&apos;t have an account?{' '}
+                <Link to="/register" className="font-semibold text-primary-600 hover:text-accent-600">
+                  Register
+                </Link>
+              </p>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -71,8 +71,8 @@ describe('TaskCard', () => {
     render(<TaskCard task={mockTask} {...mockHandlers} />)
 
     const priorityBadge = screen.getByText('high')
-    expect(priorityBadge.className).toContain('bg-red-100')
-    expect(priorityBadge.className).toContain('text-red-800')
+    expect(priorityBadge.className).toContain('bg-primary-600')
+    expect(priorityBadge.className).toContain('text-white')
   })
 
   it('should format due date correctly', () => {

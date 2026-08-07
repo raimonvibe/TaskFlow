@@ -16,30 +16,36 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-primary-600 text-white border-b-4 border-accent-400">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-primary-600">TaskFlow</h1>
-              <nav className="hidden md:flex space-x-4">
+              <div className="flex items-baseline gap-2">
+                <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+                  TaskFlow
+                </h1>
+                <span className="hidden sm:inline text-xs uppercase tracking-widest text-accent-300">
+                  Campus
+                </span>
+              </div>
+              <nav className="hidden md:flex space-x-1">
                 <Link
                   to="/dashboard"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/dashboard')
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-white/15 text-white border-b-2 border-accent-400'
+                      : 'text-primary-100 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/tasks"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/tasks')
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-white/15 text-white border-b-2 border-accent-400'
+                      : 'text-primary-100 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   Tasks
@@ -47,10 +53,13 @@ const Layout = ({ children }) => {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                Welcome, <span className="font-medium">{user?.name}</span>
+              <span className="text-sm text-primary-100">
+                Welcome, <span className="font-medium text-white">{user?.name}</span>
               </span>
-              <button onClick={handleLogout} className="btn btn-secondary text-sm">
+              <button
+                onClick={handleLogout}
+                className="btn text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20"
+              >
                 Logout
               </button>
             </div>
@@ -58,14 +67,12 @@ const Layout = ({ children }) => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t mt-auto">
+      <footer className="bg-primary-700 text-primary-100 border-t border-primary-800 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm text-gray-500">
-            TaskFlow - DevOps Learning Project | Built with React, Node.js, PostgreSQL
+          <p className="text-center text-sm">
+            TaskFlow · DevOps Learning Project · Built with React, Node.js, PostgreSQL
           </p>
         </div>
       </footer>

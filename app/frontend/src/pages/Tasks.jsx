@@ -109,7 +109,7 @@ const Tasks = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
+          <h1 className="page-title">My Tasks</h1>
           <button onClick={handleCreateTask} className="btn btn-primary">
             + Create Task
           </button>
