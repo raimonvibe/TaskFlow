@@ -15,7 +15,8 @@
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "migrate:create": "node-pg-migrate create",
-    "seed": "node src/database/seed.js"
+    "seed": "node src/database/seed.js",
+    "db:init": "node src/database/init-schema.js"
   },
   "keywords": [
     "devops",

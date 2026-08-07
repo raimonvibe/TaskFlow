@@ -186,6 +186,12 @@ TaskFlow is designed for progressive learning:
 - **Database**: Supabase (500MB PostgreSQL) or MongoDB Atlas (512MB)
 - **Best for**: Simple deployment with managed services
 
+### Option 4: Render (One-Click Blueprint)
+- **Cost**: $0 (free Postgres expires after 30 days — see docs)
+- **Setup**: `render.yaml` at the repo root deploys backend + frontend + database in one step
+- **Keep-alive**: Free GitHub Actions ping every 10 min (Render's own Cron Jobs aren't free)
+- **Guide**: [docs/RENDER_DEPLOY.md](docs/RENDER_DEPLOY.md)
+
 ## 🔧 Local Development
 
 ### Frontend Development
