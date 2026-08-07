@@ -131,7 +131,7 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Optional, more advanced path than Docker Compose - manifests live under kubernetes/ for a local Minikube cluster or a small K3s cluster (e.g. on Oracle Cloud’s free tier). Not used by the Render deployment.',
+        body: 'Optional, more advanced path than Docker Compose - manifests live under kubernetes/ for a local Minikube cluster, a small K3s cluster (e.g. on Oracle Cloud’s free tier), or a hybrid setup. Not used by the Render deployment. The kubectl apply -f kubernetes/... commands below reference that folder directly, so run them from the repository root (same rule as the Docker page) - or swap in the full path if you’re elsewhere.',
       },
       {
         heading: 'Deploy locally with Minikube',
@@ -189,7 +189,15 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Used for the more advanced "real infrastructure" learning paths under infrastructure/ (Oracle Cloud free tier, local VMs, or a hybrid setup) - an alternative to just clicking through a cloud console. Not part of the Render deployment, which needs no infrastructure provisioning at all.',
+        body: 'Used for the more advanced "real infrastructure" learning paths - three independent variants live under infrastructure/: oracle-cloud (free tier), local-vms, and hybrid. Not part of the Render deployment, which needs no infrastructure provisioning at all. Every command below is shown for oracle-cloud - swap the directory name for whichever variant you’re actually using, and note each block cds there itself rather than assuming an earlier one already did.',
+      },
+      {
+        heading: 'First-time setup',
+        commands: [
+          {
+            code: 'cd infrastructure/oracle-cloud\ncp terraform.tfvars.example terraform.tfvars\n# edit terraform.tfvars with your own credentials - never commit this file\nterraform init\nterraform plan',
+          },
+        ],
       },
       {
         heading: 'Standard workflow',
@@ -200,18 +208,10 @@ export const TOUR_PAGES = [
         ],
       },
       {
-        heading: 'First-time setup',
-        commands: [
-          {
-            code: 'cp terraform.tfvars.example terraform.tfvars\n# edit terraform.tfvars with your own credentials - never commit this file\nterraform init\nterraform plan',
-          },
-        ],
-      },
-      {
         heading: 'Inspecting and managing state',
         commands: [
           {
-            code: 'terraform show\nterraform state list\nterraform state show <resource>\nterraform output',
+            code: 'cd infrastructure/oracle-cloud\nterraform show\nterraform state list\nterraform state show <resource>\nterraform output',
           },
         ],
       },
@@ -219,7 +219,7 @@ export const TOUR_PAGES = [
         heading: 'Tearing it down',
         commands: [
           {
-            code: 'terraform destroy',
+            code: 'cd infrastructure/oracle-cloud\nterraform destroy',
           },
         ],
       },
@@ -239,13 +239,13 @@ export const TOUR_PAGES = [
     sections: [
       {
         heading: 'Where this fits in TaskFlow',
-        body: 'Pairs with the Terraform path: Terraform provisions the server, Ansible playbooks (under configuration/) then install and configure everything on it - Docker, the app, monitoring. Optional and not used by the Render deployment.',
+        body: 'Pairs with the Terraform path: Terraform provisions the server, Ansible playbooks (under configuration/) then install and configure everything on it - Docker, the app, monitoring. Optional and not used by the Render deployment. Every command below is relative to that folder (configuration/inventory/, configuration/playbooks/), so cd there first - it’s in every command block for that reason, not by habit.',
       },
       {
         heading: 'Before running anything',
         commands: [
           {
-            code: 'ansible-inventory -i inventory --list\nansible all -i inventory -m ping',
+            code: 'cd configuration\nansible-inventory -i inventory --list\nansible all -i inventory -m ping',
           },
         ],
       },
@@ -253,7 +253,7 @@ export const TOUR_PAGES = [
         heading: 'Run a playbook',
         commands: [
           {
-            code: 'ansible-playbook -i inventory playbooks/site.yml\n\n# see what would change without touching anything\nansible-playbook -i inventory playbooks/site.yml --check',
+            code: 'cd configuration\nansible-playbook -i inventory playbooks/site.yml\n\n# see what would change without touching anything\nansible-playbook -i inventory playbooks/site.yml --check',
           },
         ],
       },
@@ -261,7 +261,7 @@ export const TOUR_PAGES = [
         heading: 'Common playbooks in this repo',
         commands: [
           {
-            code: 'ansible-playbook -i inventory playbooks/deploy-app.yml   # app only\nansible-playbook -i inventory playbooks/update-system.yml\nansible-playbook -i inventory playbooks/backup.yml',
+            code: 'cd configuration\nansible-playbook -i inventory playbooks/deploy-app.yml   # app only\nansible-playbook -i inventory playbooks/update-system.yml\nansible-playbook -i inventory playbooks/backup.yml',
           },
         ],
       },
@@ -290,9 +290,10 @@ export const TOUR_PAGES = [
       },
       {
         heading: 'Start it locally',
+        body: 'Same rule as the Docker page: docker-compose up has to run from the repository root, not from monitoring/ or anywhere inside app/.',
         commands: [
           {
-            code: 'docker-compose up -d\n# Prometheus: http://localhost:9090\n# Grafana:    http://localhost:3001 (admin/admin on first login)',
+            code: './scripts/setup.sh   # or: docker-compose up -d\n# Prometheus: http://localhost:9090\n# Grafana:    http://localhost:3001 (admin/admin on first login)',
           },
         ],
       },
