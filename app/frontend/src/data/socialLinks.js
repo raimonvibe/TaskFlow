@@ -1,11 +1,15 @@
 /**
- * Same marks, same brand colours as raimonvibe/digital-marketing's footer.
- * TaskFlow is a single-theme (light) app, so the dark-mode colour variants
- * from the source component aren't needed here.
+ * Same marks, same brand colours as raimonvibe/digital-marketing's footer -
+ * with one deliberate difference: TaskFlow's footer is *always* on a dark
+ * navy surface (it doesn't flip with the light/dark toggle), so the near-
+ * black marks (X, TikTok, Medium, GitHub, the website globe) use the source
+ * component's own "colourDark" values instead of their true near-black
+ * brand colour. That's the same swap the source makes for dark mode, and
+ * for the same reason: solid black on navy is invisible.
  */
 export const SOCIAL_LINKS = [
-  { id: 'website', label: 'raimonvibe.eu', url: 'https://www.raimonvibe.eu/', colour: '#4b483f' },
-  { id: 'x', label: 'X', url: 'https://x.com/raimonvibe/', colour: '#000000' },
+  { id: 'website', label: 'raimonvibe.eu', url: 'https://www.raimonvibe.eu/', colour: '#bcb5a4' },
+  { id: 'x', label: 'X', url: 'https://x.com/raimonvibe/', colour: '#efeade' },
   {
     id: 'youtube',
     label: 'YouTube',
@@ -16,7 +20,7 @@ export const SOCIAL_LINKS = [
     id: 'tiktok',
     label: 'TikTok',
     url: 'https://www.tiktok.com/@raimonvibe/',
-    colour: '#000000',
+    colour: '#efeade',
     fill: 'chromatic',
   },
   {
@@ -26,8 +30,8 @@ export const SOCIAL_LINKS = [
     colour: '#e1306c',
     fill: 'gradient',
   },
-  { id: 'medium', label: 'Medium', url: 'https://medium.com/@raimonvibe/', colour: '#000000' },
-  { id: 'github', label: 'GitHub', url: 'https://github.com/raimonvibe/', colour: '#181717' },
+  { id: 'medium', label: 'Medium', url: 'https://medium.com/@raimonvibe/', colour: '#efeade' },
+  { id: 'github', label: 'GitHub', url: 'https://github.com/raimonvibe/', colour: '#efeade' },
   {
     id: 'linkedin',
     label: 'LinkedIn',

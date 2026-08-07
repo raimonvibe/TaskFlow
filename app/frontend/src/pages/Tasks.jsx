@@ -168,7 +168,7 @@ const Tasks = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-950 dark:border-red-800 dark:text-red-300">
             {error}
           </div>
         )}
@@ -183,7 +183,7 @@ const Tasks = () => {
             {/* Tasks Grid */}
             {tasks.length === 0 ? (
               <div className="card text-center py-12">
-                <p className="text-gray-500 text-lg mb-4">No tasks found</p>
+                <p className="text-gray-500 dark:text-primary-300 text-lg mb-4">No tasks found</p>
                 <button onClick={handleCreateTask} className="btn btn-primary">
                   Create Your First Task
                 </button>

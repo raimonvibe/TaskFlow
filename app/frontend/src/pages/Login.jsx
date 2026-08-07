@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -27,6 +28,9 @@ const Login = () => {
 
   return (
     <div className="auth-shell relative">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
           <div className="mb-10 text-center">
@@ -44,7 +48,7 @@ const Login = () => {
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-md text-sm">
+                <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-md text-sm dark:bg-red-950 dark:border-red-800 dark:text-red-300">
                   {error}
                 </div>
               )}

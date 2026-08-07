@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import Footer from './Footer'
+import ThemeToggle from './ThemeToggle'
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth()
@@ -54,9 +55,10 @@ const Layout = ({ children }) => {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-primary-100">
+              <span className="hidden text-sm text-primary-100 sm:inline">
                 Welcome, <span className="font-medium text-white">{user?.name}</span>
               </span>
+              <ThemeToggle />
               <button
                 onClick={handleLogout}
                 className="btn text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20"

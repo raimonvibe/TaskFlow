@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Manual (class-based) dark mode: toggled by adding/removing `.dark` on
+   <html> (see src/contexts/ThemeContext.jsx), rather than following the OS
+   `prefers-color-scheme`. This lets visitors override the system setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
@@ -16,7 +21,7 @@
   --color-primary-800: #071224;
   --color-primary-900: #040b16;
 
-  /* Brass / gold accent */
+  /* Brass / gold accent - the one constant across both themes */
   --color-accent-50: #faf6eb;
   --color-accent-100: #f3e8c8;
   --color-accent-200: #e6d195;
@@ -28,6 +33,22 @@
 
   --color-campus: #f7f5f1;
   --color-ink: #1a1a1a;
+
+  /* Chart accents - kept separate from primary-* so a dark card can retune
+     the "high priority" navy bar/slice for contrast without touching every
+     other use of primary-600 (header, buttons, badges). */
+  --color-chart-1: #7f96b8;
+  --color-chart-2: #0b1f3a;
+  --color-chart-3: #c4a35a;
+}
+
+/* Dark campus theme: same navy + brass identity, luminance inverted. Warm
+   parchment ink-on-navy leans into a "dark academia" reading rather than a
+   generic dark UI, so the university feel carries over instead of vanishing. */
+.dark {
+  --color-campus: #0f1826;
+  --color-ink: #f2ece0;
+  --color-chart-2: #7f96b8;
 }
 
 :root {
@@ -42,6 +63,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dark:root {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -51,6 +76,14 @@ body {
     radial-gradient(ellipse 90% 60% at 100% 0%, rgba(196, 163, 90, 0.08), transparent 50%),
     linear-gradient(180deg, #f7f5f1 0%, #efece6 100%);
   background-attachment: fixed;
+  transition: background-color 0.2s ease;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(196, 163, 90, 0.07), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(127, 150, 184, 0.08), transparent 50%),
+    linear-gradient(180deg, #0f1826 0%, #070d17 100%);
 }
 
 @layer components {
@@ -63,7 +96,7 @@ body {
   }
 
   .btn-secondary {
-    @apply bg-white text-primary-600 border border-primary-200 hover:bg-primary-50 active:bg-primary-100;
+    @apply bg-white text-primary-600 border border-primary-200 hover:bg-primary-50 active:bg-primary-100 dark:bg-primary-800 dark:text-accent-300 dark:border-primary-600 dark:hover:bg-primary-700 dark:active:bg-primary-600;
   }
 
   .btn-danger {
@@ -75,15 +108,15 @@ body {
   }
 
   .card {
-    @apply bg-white border border-primary-100 rounded-md p-6 shadow-none;
+    @apply bg-white border border-primary-100 rounded-md p-6 shadow-none dark:bg-primary-800 dark:border-primary-600;
   }
 
   .input {
-    @apply w-full px-4 py-2 border border-primary-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-primary-600;
+    @apply w-full px-4 py-2 border border-primary-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-primary-600 dark:bg-primary-900 dark:border-primary-600 dark:focus:border-accent-400 dark:placeholder-primary-400;
   }
 
   .label {
-    @apply block text-sm font-medium text-primary-700 mb-2;
+    @apply block text-sm font-medium text-primary-700 mb-2 dark:text-primary-200;
   }
 
   .page-title {

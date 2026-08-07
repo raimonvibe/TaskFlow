@@ -36,14 +36,14 @@ const TaskModalInner = ({ onClose, onSave, task }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white border border-primary-100 rounded-md w-full max-w-md mx-4">
-        <div className="flex justify-between items-center p-6 border-b border-primary-100">
+      <div className="bg-white border border-primary-100 rounded-md w-full max-w-md mx-4 dark:bg-primary-800 dark:border-primary-600">
+        <div className="flex justify-between items-center p-6 border-b border-primary-100 dark:border-primary-600">
           <h2 className="font-serif text-xl font-semibold text-ink">
             {task ? 'Edit Task' : 'Create New Task'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none dark:text-primary-300 dark:hover:text-primary-100"
           >
             &times;
           </button>

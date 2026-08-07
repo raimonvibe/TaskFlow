@@ -41,9 +41,11 @@ const LOCAL_MARKS = {
 }
 
 /**
- * One social mark. Renders muted on the navy footer until hovered/focused,
- * when it switches on to its full brand colour - solid fill, Instagram's
- * gradient, or TikTok's offset cyan/magenta stack, matching the source.
+ * One social mark. Always rendered in its full brand colour - solid fill,
+ * Instagram's gradient, or TikTok's offset cyan/magenta stack - on both the
+ * light and dark themes, since the footer itself stays on a dark navy
+ * surface either way. Hover/focus only adds a lift and a brass ring, it
+ * doesn't gate the colour.
  */
 const SocialIcon = ({ link, size = 20 }) => {
   const gradientId = `ig-gradient-${link.id}`
@@ -57,15 +59,13 @@ const SocialIcon = ({ link, size = 20 }) => {
       rel="noopener noreferrer me"
       title={link.label}
       aria-label={link.label}
-      className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-primary-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-transparent hover:text-[var(--brand)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300"
+      className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-[var(--brand)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300"
       style={{ '--brand': link.colour }}
     >
       {link.fill === 'chromatic' && path ? (
         <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
-          <g className="opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            <path d={path} fill="#25f4ee" transform="translate(-1.1 -0.9)" />
-            <path d={path} fill="#fe2c55" transform="translate(1.1 0.9)" />
-          </g>
+          <path d={path} fill="#25f4ee" transform="translate(-1.1 -0.9)" />
+          <path d={path} fill="#fe2c55" transform="translate(1.1 0.9)" />
           <path d={path} fill="currentColor" />
         </svg>
       ) : (
@@ -86,17 +86,10 @@ const SocialIcon = ({ link, size = 20 }) => {
             </defs>
           )}
           <g
-            fill={link.fill === 'gradient' ? undefined : 'currentColor'}
-            className={link.fill === 'gradient' ? 'opacity-0 transition-opacity duration-200 group-hover:opacity-100' : undefined}
-            style={link.fill === 'gradient' ? { fill: `url(#${gradientId})` } : undefined}
+            fill={link.fill === 'gradient' ? `url(#${gradientId})` : 'currentColor'}
           >
             {local ?? <path d={path} />}
           </g>
-          {link.fill === 'gradient' && (
-            <g fill="currentColor" className="transition-opacity duration-200 group-hover:opacity-0">
-              {local ?? <path d={path} />}
-            </g>
-          )}
         </svg>
       )}
     </a>
