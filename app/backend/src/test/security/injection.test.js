@@ -11,18 +11,31 @@ describe('Security: Injection & input handling', () => {
 
   describe('SQL injection resilience (parameterized queries throughout)', () => {
     it('a SQL-injection payload in login credentials is treated as literal data, not executed', async () => {
-      const before = await query('SELECT COUNT(*) FROM users')
+      const injectedEmail = "' OR '1'='1"
 
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: "' OR '1'='1", password: "'; DROP TABLE users; --" })
+        .send({ email: injectedEmail, password: "'; DROP TABLE users; --" })
 
       // express-validator's isEmail() rejects this before it reaches a
-      // query in most cases, but either way the table must still exist and
-      // be untouched.
+      // query in most cases, but either way the table must still exist,
+      // still be queryable, and no row should exist matching the literal
+      // injected string (which would mean statement-stacking got through).
+      //
+      // Deliberately NOT comparing a global `SELECT COUNT(*) FROM users`
+      // before/after: this suite runs against a real, shared Postgres test
+      // database alongside other test files that register/clean up users
+      // concurrently (Vitest runs files in parallel by default), so a raw
+      // total-row-count assertion is flaky by construction - it was
+      // observed failing in CI for exactly that reason, with no actual
+      // injection involved.
       expect([400, 401]).toContain(res.status)
-      const after = await query('SELECT COUNT(*) FROM users')
-      expect(after.rows[0].count).toBe(before.rows[0].count)
+
+      const tableStillExists = await query("SELECT to_regclass('public.users') AS users_table")
+      expect(tableStillExists.rows[0].users_table).not.toBeNull()
+
+      const injectedRow = await query('SELECT id FROM users WHERE email = $1', [injectedEmail])
+      expect(injectedRow.rows).toHaveLength(0)
     })
 
     it('a SQL-injection payload in a task title is stored verbatim as data, not executed', async () => {
