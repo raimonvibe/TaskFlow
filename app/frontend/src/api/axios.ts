@@ -1,8 +1,31 @@
-import axios from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosInstance,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import config from '../config'
 import { secureStorage } from '../utils/security'
+import type { RefreshResponse } from './types'
 
-const instance = axios.create({
+/** Custom fields the interceptors read/write on a request config. */
+export interface AppAxiosRequestConfig extends InternalAxiosRequestConfig {
+  skipAuthRefresh?: boolean
+  _retry?: boolean
+  retry?: boolean
+  __retryCount?: number
+}
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipAuthRefresh?: boolean
+    _retry?: boolean
+    retry?: boolean
+    __retryCount?: number
+  }
+}
+
+const instance: AxiosInstance = axios.create({
   baseURL: config.apiUrl,
   timeout: 30000, // 30 seconds
   headers: {
@@ -13,9 +36,9 @@ const instance = axios.create({
 })
 
 // Single in-flight refresh so concurrent 401s share one rotation.
-let refreshPromise = null
+let refreshPromise: Promise<string> | null = null
 
-async function refreshAccessToken() {
+async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshToken = secureStorage.getRefreshToken()
@@ -23,9 +46,9 @@ async function refreshAccessToken() {
         throw new Error('No refresh token')
       }
       // Call through this instance with skipAuthRefresh so a failed refresh
-      // does not re-enter this interceptor (and avoid importing auth.js,
+      // does not re-enter this interceptor (and avoid importing auth.ts,
       // which would create a circular dependency).
-      const { data } = await instance.post(
+      const { data } = await instance.post<RefreshResponse>(
         '/api/auth/refresh',
         { refresh_token: refreshToken },
         { skipAuthRefresh: true }
@@ -39,7 +62,7 @@ async function refreshAccessToken() {
   return refreshPromise
 }
 
-function clearSessionAndRedirect() {
+function clearSessionAndRedirect(): void {
   console.warn('Authentication failed - clearing session')
   secureStorage.clearToken()
   if (!window.location.pathname.includes('/login')) {
@@ -49,25 +72,23 @@ function clearSessionAndRedirect() {
 
 // Request interceptor to add auth token and security headers
 instance.interceptors.request.use(
-  config => {
-    // Get token from secure storage instead of localStorage
+  (requestConfig: InternalAxiosRequestConfig) => {
     const token = secureStorage.getToken()
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      requestConfig.headers.Authorization = `Bearer ${token}`
     }
 
-    // Add request timestamp for replay attack prevention
-    config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substring(7)}`
+    requestConfig.headers['X-Request-ID'] =
+      `${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-    // Add CSRF token if available
     const csrfToken = sessionStorage.getItem('csrf_token')
     if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken
+      requestConfig.headers['X-CSRF-Token'] = csrfToken
     }
 
-    return config
+    return requestConfig
   },
-  error => {
+  (error: unknown) => {
     console.error('Request interceptor error:', error)
     return Promise.reject(error)
   }
@@ -75,16 +96,15 @@ instance.interceptors.request.use(
 
 // Response interceptor for security and error handling
 instance.interceptors.response.use(
-  response => {
-    // Check for suspicious response headers
+  (response: AxiosResponse) => {
     if (response.headers['x-powered-by']) {
       console.warn('Server leaking technology information')
     }
 
     return response
   },
-  async error => {
-    const original = error.config
+  async (error: AxiosError) => {
+    const original = error.config as AppAxiosRequestConfig | undefined
     const status = error.response?.status
 
     if (
@@ -151,17 +171,15 @@ instance.interceptors.response.use(
 const MAX_RETRIES = 3
 const RETRY_DELAY = 1000 // 1 second
 
-instance.interceptors.response.use(undefined, async error => {
-  const config = error.config
+instance.interceptors.response.use(undefined, async (error: AxiosError) => {
+  const requestConfig = error.config as AppAxiosRequestConfig | undefined
 
   // Don't retry if no config or already retried max times
-  if (!config || !config.retry || config.__retryCount >= MAX_RETRIES) {
+  if (!requestConfig || !requestConfig.retry || (requestConfig.__retryCount ?? 0) >= MAX_RETRIES) {
     return Promise.reject(error)
   }
 
-  // Increment retry count
-  config.__retryCount = config.__retryCount || 0
-  config.__retryCount++
+  requestConfig.__retryCount = (requestConfig.__retryCount || 0) + 1
 
   // Only retry on network errors or 5xx errors
   const shouldRetry =
@@ -171,11 +189,10 @@ instance.interceptors.response.use(undefined, async error => {
     return Promise.reject(error)
   }
 
-  // Wait before retrying
-  await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * config.__retryCount))
+  await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * requestConfig.__retryCount!))
 
-  console.log(`Retrying request (attempt ${config.__retryCount}/${MAX_RETRIES})`)
-  return instance(config)
+  console.log(`Retrying request (attempt ${requestConfig.__retryCount}/${MAX_RETRIES})`)
+  return instance(requestConfig)
 })
 
 // Enable retries by default

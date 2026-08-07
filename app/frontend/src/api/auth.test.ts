@@ -15,13 +15,14 @@ describe('Auth API', () => {
       const password = 'password123'
       const mockResponse = {
         data: {
+          message: 'Login successful',
           token: 'mock-token',
           refresh_token: 'mock-refresh',
-          user: { id: 1, email: 'test@example.com' },
+          user: { id: 1, name: 'Test', email: 'test@example.com' },
         },
       }
 
-      axios.post.mockResolvedValue(mockResponse)
+      vi.mocked(axios.post).mockResolvedValue(mockResponse)
 
       const result = await authAPI.login(email, password)
 
@@ -34,7 +35,7 @@ describe('Auth API', () => {
       const password = 'wrong'
       const error = new Error('Invalid credentials')
 
-      axios.post.mockRejectedValue(error)
+      vi.mocked(axios.post).mockRejectedValue(error)
 
       await expect(authAPI.login(email, password)).rejects.toThrow('Invalid credentials')
     })
@@ -47,13 +48,14 @@ describe('Auth API', () => {
       const password = 'password123'
       const mockResponse = {
         data: {
+          message: 'User created successfully',
           token: 'mock-token',
           refresh_token: 'mock-refresh',
           user: { id: 1, name: 'Test User', email: 'test@example.com' },
         },
       }
 
-      axios.post.mockResolvedValue(mockResponse)
+      vi.mocked(axios.post).mockResolvedValue(mockResponse)
 
       const result = await authAPI.register(name, email, password)
 
@@ -67,9 +69,31 @@ describe('Auth API', () => {
       const password = 'password123'
       const error = new Error('User already exists')
 
-      axios.post.mockRejectedValue(error)
+      vi.mocked(axios.post).mockRejectedValue(error)
 
       await expect(authAPI.register(name, email, password)).rejects.toThrow('User already exists')
+    })
+  })
+
+  describe('refresh', () => {
+    it('posts the refresh token with skipAuthRefresh', async () => {
+      const mockResponse = {
+        data: {
+          message: 'Token refreshed',
+          token: 'new-access',
+          refresh_token: 'new-refresh',
+        },
+      }
+      vi.mocked(axios.post).mockResolvedValue(mockResponse)
+
+      const result = await authAPI.refresh('old-refresh')
+
+      expect(axios.post).toHaveBeenCalledWith(
+        '/api/auth/refresh',
+        { refresh_token: 'old-refresh' },
+        { skipAuthRefresh: true }
+      )
+      expect(result).toEqual(mockResponse.data)
     })
   })
 
@@ -81,7 +105,7 @@ describe('Auth API', () => {
         },
       }
 
-      axios.get.mockResolvedValue(mockResponse)
+      vi.mocked(axios.get).mockResolvedValue(mockResponse)
 
       const result = await authAPI.getCurrentUser()
 
@@ -92,7 +116,7 @@ describe('Auth API', () => {
     it('should handle errors when fetching user', async () => {
       const error = new Error('Unauthorized')
 
-      axios.get.mockRejectedValue(error)
+      vi.mocked(axios.get).mockRejectedValue(error)
 
       await expect(authAPI.getCurrentUser()).rejects.toThrow('Unauthorized')
     })

@@ -65,6 +65,8 @@ const Tasks = () => {
     setIsModalOpen(true)
   }
 
+  const apiErrorMessage = (err, fallback) => err.response?.data?.message || err.message || fallback
+
   const handleSaveTask = async taskData => {
     try {
       if (editingTask) {
@@ -72,11 +74,13 @@ const Tasks = () => {
       } else {
         await tasksAPI.createTask(taskData)
       }
+      setError('')
       setIsModalOpen(false)
       setEditingTask(null)
       refreshTasks()
     } catch (err) {
-      alert('Failed to save task: ' + (err.response?.data?.message || err.message))
+      setError('Failed to save task: ' + apiErrorMessage(err, 'Unknown error'))
+      console.error(err)
     }
   }
 
@@ -85,18 +89,22 @@ const Tasks = () => {
 
     try {
       await tasksAPI.deleteTask(id)
+      setError('')
       refreshTasks()
     } catch (err) {
-      alert('Failed to delete task: ' + (err.response?.data?.message || err.message))
+      setError('Failed to delete task: ' + apiErrorMessage(err, 'Unknown error'))
+      console.error(err)
     }
   }
 
   const handleStatusChange = async (id, newStatus) => {
     try {
       await tasksAPI.updateTask(id, { status: newStatus })
+      setError('')
       refreshTasks()
     } catch (err) {
-      alert('Failed to update task status: ' + (err.response?.data?.message || err.message))
+      setError('Failed to update task status: ' + apiErrorMessage(err, 'Unknown error'))
+      console.error(err)
     }
   }
 

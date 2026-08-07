@@ -40,7 +40,7 @@ export default defineConfig({
       exclude: [
         'node_modules/',
         'src/test/',
-        '**/*.test.{js,jsx}',
+        '**/*.test.{js,jsx,ts,tsx}',
         '**/*.config.js',
         'dist/',
       ],

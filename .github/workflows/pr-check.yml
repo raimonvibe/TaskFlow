@@ -48,6 +48,12 @@ jobs:
         working-directory: app/frontend
         run: npm run format -- --check
 
+      # Frontend TypeScript adoption (docs/NEXT_STEPS.md Option B). allowJs is
+      # still on; typecheck covers .ts/.tsx as they land.
+      - name: Type check
+        working-directory: app/frontend
+        run: npm run typecheck
+
   # Lint Backend
   lint-backend:
     name: Lint Backend

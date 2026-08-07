@@ -1,20 +1,40 @@
-import { createContext, useState, useContext } from 'react'
+import {
+  createContext,
+  useState,
+  useContext,
+  type PropsWithChildren,
+  type ReactElement,
+} from 'react'
 import { jwtDecode } from 'jwt-decode'
 import { authAPI } from '../api/auth'
+import type { AuthCredentialsResponse, AuthUser } from '../api/types'
 import { secureStorage } from '../utils/security'
 
-const AuthContext = createContext(null)
+interface AccessTokenPayload {
+  exp?: number
+}
 
-function readInitialUser() {
+interface AuthContextValue {
+  user: AuthUser | null
+  login: (email: string, password: string) => Promise<AuthCredentialsResponse>
+  register: (name: string, email: string, password: string) => Promise<AuthCredentialsResponse>
+  logout: () => void
+  isAuthenticated: boolean
+  loading: boolean
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+function readInitialUser(): AuthUser | null {
   const token = secureStorage.getToken()
   const refreshToken = secureStorage.getRefreshToken()
   const savedUser = sessionStorage.getItem('user')
 
   if (token) {
     try {
-      const decoded = jwtDecode(token)
-      if (decoded.exp * 1000 >= Date.now()) {
-        return savedUser ? JSON.parse(savedUser) : null
+      const decoded = jwtDecode<AccessTokenPayload>(token)
+      if (decoded.exp !== undefined && decoded.exp * 1000 >= Date.now()) {
+        return savedUser ? (JSON.parse(savedUser) as AuthUser) : null
       }
       // Access JWT expired — drop it but keep refresh so the interceptor can rotate.
       sessionStorage.removeItem('auth_token')
@@ -28,7 +48,7 @@ function readInitialUser() {
   // Still authenticated if a refresh token remains; the next API call will rotate.
   if (refreshToken && savedUser) {
     try {
-      return JSON.parse(savedUser)
+      return JSON.parse(savedUser) as AuthUser
     } catch {
       secureStorage.clearToken()
       return null
@@ -44,7 +64,7 @@ function readInitialUser() {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
+export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider')
@@ -52,10 +72,10 @@ export const useAuth = () => {
   return context
 }
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => readInitialUser())
+export const AuthProvider = ({ children }: PropsWithChildren): ReactElement => {
+  const [user, setUser] = useState<AuthUser | null>(() => readInitialUser())
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string): Promise<AuthCredentialsResponse> => {
     const data = await authAPI.login(email, password)
     secureStorage.setTokenPair(data.token, data.refresh_token)
     sessionStorage.setItem('user', JSON.stringify(data.user))
@@ -63,7 +83,11 @@ export const AuthProvider = ({ children }) => {
     return data
   }
 
-  const register = async (name, email, password) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string
+  ): Promise<AuthCredentialsResponse> => {
     const data = await authAPI.register(name, email, password)
     secureStorage.setTokenPair(data.token, data.refresh_token)
     sessionStorage.setItem('user', JSON.stringify(data.user))
@@ -71,15 +95,15 @@ export const AuthProvider = ({ children }) => {
     return data
   }
 
-  const logout = () => {
+  const logout = (): void => {
     // Fire-and-forget: don't block navigation on the network round trip.
     // authAPI.logout() clears local storage in its own finally block even
     // if the server call fails.
-    authAPI.logout()
+    void authAPI.logout()
     setUser(null)
   }
 
-  const value = {
+  const value: AuthContextValue = {
     user,
     login,
     register,

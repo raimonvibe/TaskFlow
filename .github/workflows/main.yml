@@ -58,12 +58,10 @@ jobs:
         working-directory: app/${{ matrix.component }}
         run: npm run format -- --check
 
-      # TypeScript is being introduced incrementally (see
-      # docs/BACKEND_REWRITE_PLAN.md) - frontend isn't TS, so this only
-      # runs for backend.
+      # Backend is fully TypeScript; frontend is adopting it incrementally
+      # (docs/NEXT_STEPS.md Option B) with allowJs still on.
       - name: Type check
-        if: matrix.component == 'backend'
-        working-directory: app/backend
+        working-directory: app/${{ matrix.component }}
         run: npm run typecheck
 
   # Job 2: Run Tests

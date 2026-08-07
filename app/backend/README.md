@@ -174,8 +174,10 @@ docker compose up -d --force-recreate -V backend
 | `DB_NAME` | Database name | `taskflow` |
 | `DB_USER` | Database user | `postgres` |
 | `DB_PASSWORD` | Database password | `postgres` |
-| `JWT_SECRET` | JWT secret key | (required) |
-| `JWT_EXPIRE` | JWT expiration | `7d` |
+| `JWT_SECRET` | Access-token signing secret | (required in production) |
+| `JWT_EXPIRE` | Access-token lifetime | `15m` |
+| `JWT_REFRESH_SECRET` | HMAC key for opaque refresh tokens (must differ from `JWT_SECRET`) | (required in production) |
+| `JWT_REFRESH_EXPIRE` | Refresh-token lifetime | `7d` |
 | `CORS_ORIGIN` | Allowed origins | `http://localhost:5173` |
 
 ## Database Schema
