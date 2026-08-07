@@ -12,6 +12,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# This script uses paths relative to the repo root (.env.example,
+# app/frontend/.env.example, docker-compose.yml, etc.), so it has to run
+# from there regardless of where it was invoked from - e.g. `./setup.sh`
+# from inside scripts/, or `scripts/setup.sh` from two directories up. Both
+# are common mistakes (see docs/TOOL-GUIDES/docker-guide.md) and previously
+# just failed with a confusing "no such file" error instead of doing the
+# right thing.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$REPO_ROOT"
+
 # Functions
 print_header() {
     echo -e "${BLUE}========================================${NC}"
@@ -105,6 +116,24 @@ if [ "$PREREQUISITES_MET" = false ]; then
 fi
 
 print_success "All required prerequisites are installed!"
+
+# Docker being installed doesn't mean the daemon is running - this is the
+# single most common failure at this step (a wall of Python traceback from
+# docker-compose about a missing unix socket, which just means dockerd isn't
+# up). Check for it explicitly and fail with an actual instruction instead.
+print_header "Checking Docker Daemon"
+
+if ! docker info &> /dev/null; then
+    print_error "Docker is installed but the daemon isn't running."
+    echo ""
+    print_info "Start it, then re-run this script:"
+    echo "  Linux (systemd):  sudo systemctl start docker"
+    echo "  Docker Desktop:   open the Docker Desktop app and wait for it to say \"running\""
+    echo ""
+    exit 1
+fi
+
+print_success "Docker daemon is running"
 
 # Create .env files if they don't exist
 print_header "Setting Up Environment Files"

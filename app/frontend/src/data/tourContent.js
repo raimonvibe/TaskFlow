@@ -24,9 +24,14 @@ export const TOUR_PAGES = [
       },
       {
         heading: 'Get everything running',
+        body: 'docker-compose.yml builds the backend and frontend images from ./app/backend and ./app/frontend, so every docker-compose command below has to run from the repository root - the folder that directly contains docker-compose.yml - not from app/, app/backend, or scripts/. Running it from the wrong folder or with Docker Desktop not yet started are the two most common first-run failures, and they can look identical (the same connection error either way). scripts/setup.sh now checks for both before doing anything.',
         commands: [
           {
-            label: 'Start all services in the background',
+            label: 'Recommended: guided setup (checks Docker is running, creates .env files, seeds demo data)',
+            code: './scripts/setup.sh',
+          },
+          {
+            label: 'Manual equivalent - run from the repository root',
             code: 'docker-compose up -d',
           },
           {
