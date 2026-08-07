@@ -68,7 +68,9 @@ services:
     runtime: static
     rootDir: app/frontend
     buildCommand: npm ci && npm run build
-    staticPublishPath: app/frontend/dist
+    # Relative to rootDir (app/frontend), NOT the repo root - "app/frontend/dist"
+    # made Render look for app/frontend/app/frontend/dist, which never exists.
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
         value: "22.22.0"

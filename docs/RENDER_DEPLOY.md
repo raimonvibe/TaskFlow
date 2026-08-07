@@ -24,7 +24,7 @@ A GitHub Actions workflow (`.github/workflows/keepalive.yml`) pings the backend'
 
 Everything else — the database connection string, JWT secret, and CORS origin — is wired up automatically inside `render.yaml` via `fromDatabase` and `fromService` references, so there's nothing to fill in manually during setup.
 
-Both services set `NODE_VERSION=22.22.0` (required by Vite 8 and React Router 8). The frontend's `staticPublishPath` is `app/frontend/dist` because Render resolves that path from the **repo root**, even when `rootDir` is set.
+Both services set `NODE_VERSION=22.22.0` (required by Vite 8 and React Router 8). The frontend's `staticPublishPath` is `dist` — relative to `rootDir` (`app/frontend`), not the repo root. An earlier attempt set it to `app/frontend/dist`, which made Render look for `app/frontend/app/frontend/dist` and fail with "Publish directory does not exist".
 
 ## 2. Set up the keep-alive ping
 
