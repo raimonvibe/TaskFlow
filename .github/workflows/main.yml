@@ -13,7 +13,10 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 env:
-  NODE_VERSION: '20'
+  # Matches app/*/.node-version, both Dockerfiles (node:22-alpine), and
+  # render.yaml's NODE_VERSION. CI used to run 20, which meant it never
+  # actually tested the runtime production uses.
+  NODE_VERSION: '22.22.0'
   DOCKER_REGISTRY: docker.io
   IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME != '' && format('{0}/taskflow', secrets.DOCKER_USERNAME) || 'local/taskflow' }}
 
@@ -54,6 +57,14 @@ jobs:
       - name: Check code formatting
         working-directory: app/${{ matrix.component }}
         run: npm run format -- --check
+
+      # TypeScript is being introduced incrementally (see
+      # docs/BACKEND_REWRITE_PLAN.md) - frontend isn't TS, so this only
+      # runs for backend.
+      - name: Type check
+        if: matrix.component == 'backend'
+        working-directory: app/backend
+        run: npm run typecheck
 
   # Job 2: Run Tests
   test:

@@ -24,7 +24,7 @@ This project follows a Code of Conduct to ensure a welcoming environment for all
 ### Prerequisites
 
 - Git
-- Node.js 18+
+- Node.js 22+
 - Docker & Docker Compose
 - PostgreSQL 13+ (for local development)
 - Basic understanding of DevOps concepts

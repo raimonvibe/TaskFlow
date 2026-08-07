@@ -26,7 +26,7 @@ TaskFlow is a full-stack application built specifically for learning DevOps prac
 ### Prerequisites
 
 - Docker & Docker Compose
-- Node.js 18+ (for local development)
+- Node.js 22+ (for local development; `nvm use` picks it up from `.nvmrc`)
 - PostgreSQL 13+ (for local development)
 - Git
 

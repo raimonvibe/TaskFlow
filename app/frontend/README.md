@@ -25,7 +25,7 @@ React-based frontend for the TaskFlow DevOps learning project.
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 22+ and npm (`nvm use` picks it up from `.nvmrc`)
 
 ### Local Development
 

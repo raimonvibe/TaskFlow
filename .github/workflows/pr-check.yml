@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 
@@ -61,7 +61,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'npm'
           cache-dependency-path: app/backend/package-lock.json
 
@@ -77,6 +77,12 @@ jobs:
         working-directory: app/backend
         run: npm run format -- --check
 
+      # TypeScript is being introduced incrementally (see
+      # docs/BACKEND_REWRITE_PLAN.md).
+      - name: Type check
+        working-directory: app/backend
+        run: npm run typecheck
+
   # Test Frontend
   test-frontend:
     name: Test Frontend
@@ -91,7 +97,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 
@@ -139,7 +145,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22.22.0'
           cache: 'npm'
           cache-dependency-path: app/backend/package-lock.json
 

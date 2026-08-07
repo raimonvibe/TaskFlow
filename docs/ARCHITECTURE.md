@@ -100,7 +100,7 @@ frontend/src/
 ### Backend Layer
 
 **Technology Stack**:
-- Node.js 18+
+- Node.js 22+
 - Express.js (Web framework)
 - PostgreSQL (Database)
 - JWT (Authentication)

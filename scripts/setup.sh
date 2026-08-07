@@ -87,9 +87,18 @@ else
 fi
 
 # Check Node.js (optional, for local development)
+# 22 is what the Dockerfiles, render.yaml, CI, and .nvmrc all use. An older
+# Node installs fine but fails later in confusing ways - Vitest 4 crashes on
+# Node 18 with "node:util does not provide an export named 'styleText'"
+# rather than anything that mentions the version.
 if check_command node; then
     NODE_VERSION=$(node --version)
-    print_info "$NODE_VERSION"
+    NODE_MAJOR=$(printf '%s' "$NODE_VERSION" | sed 's/^v\([0-9]*\).*/\1/')
+    if [ -n "$NODE_MAJOR" ] && [ "$NODE_MAJOR" -lt 22 ] 2>/dev/null; then
+        print_warning "$NODE_VERSION found, but this project needs Node.js 22+ for local development (tests will not run). With nvm: nvm install && nvm use"
+    else
+        print_info "$NODE_VERSION"
+    fi
 else
     print_warning "Node.js not found (optional for local development)"
 fi

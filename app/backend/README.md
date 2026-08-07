@@ -16,7 +16,7 @@ Node.js/Express REST API for the TaskFlow DevOps learning project.
 
 ## Technology Stack
 
-- **Runtime**: Node.js 18+
+- **Runtime**: Node.js 22+
 - **Framework**: Express.js
 - **Database**: PostgreSQL with node-postgres (pg)
 - **Authentication**: JWT (jsonwebtoken)
@@ -29,7 +29,7 @@ Node.js/Express REST API for the TaskFlow DevOps learning project.
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 22+ and npm (`nvm use` picks it up from `.nvmrc`)
 - PostgreSQL 13+
 
 ### Local Development
