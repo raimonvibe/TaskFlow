@@ -40,10 +40,10 @@ export default defineConfig({
       // Floors sit a point or two under the measured baseline. Raise when
       // coverage grows; do not set above current reality.
       thresholds: {
-        statements: 78,
-        branches: 59,
-        functions: 91,
-        lines: 79,
+        statements: 84,
+        branches: 65,
+        functions: 94,
+        lines: 84,
       },
       exclude: [
         'node_modules/',

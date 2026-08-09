@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { tasksAPI } from '../api/tasks'
+import { useConfirm } from '../contexts/ConfirmContext'
+import { useToast } from '../contexts/ToastContext'
 import type { Task, TaskFilters, TaskInput, TaskStatus } from '../api/types'
 
 function apiErrorMessage(err: unknown, fallback: string): string {
@@ -18,12 +20,18 @@ const emptyFilters: TaskFilters = { status: '', priority: '' }
 /**
  * Task list data + mutations for the Tasks page. Keeps fetching, filters,
  * and error reporting out of the JSX so the page is mostly composition.
+ *
+ * `error` covers only the page-level case of the list failing to load, which
+ * leaves nothing to render. Mutation outcomes go to toasts instead: the list
+ * is still on screen, so a transient message beats a banner that shifts it.
  */
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filters, setFilters] = useState<TaskFilters>(emptyFilters)
+  const { showToast } = useToast()
+  const { confirm } = useConfirm()
 
   const refreshTasks = async (): Promise<void> => {
     setLoading(true)
@@ -72,28 +80,35 @@ export function useTasks() {
     try {
       if (editingId !== null) {
         await tasksAPI.updateTask(editingId, taskData)
+        showToast('Task updated.', 'success')
       } else {
         await tasksAPI.createTask(taskData)
+        showToast('Task created.', 'success')
       }
-      setError('')
       await refreshTasks()
       return true
     } catch (err) {
-      setError('Failed to save task: ' + apiErrorMessage(err, 'Unknown error'))
+      showToast('Failed to save task: ' + apiErrorMessage(err, 'Unknown error'), 'error')
       console.error(err)
       return false
     }
   }
 
   const deleteTask = async (id: number): Promise<void> => {
-    if (!confirm('Are you sure you want to delete this task?')) return
+    const confirmed = await confirm({
+      title: 'Delete this task?',
+      message: 'The task will be permanently removed. This cannot be undone.',
+      confirmLabel: 'Delete task',
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       await tasksAPI.deleteTask(id)
-      setError('')
+      showToast('Task deleted.', 'success')
       await refreshTasks()
     } catch (err) {
-      setError('Failed to delete task: ' + apiErrorMessage(err, 'Unknown error'))
+      showToast('Failed to delete task: ' + apiErrorMessage(err, 'Unknown error'), 'error')
       console.error(err)
     }
   }
@@ -101,10 +116,10 @@ export function useTasks() {
   const changeStatus = async (id: number, status: TaskStatus): Promise<void> => {
     try {
       await tasksAPI.updateTask(id, { status })
-      setError('')
+      showToast('Task status updated.', 'success')
       await refreshTasks()
     } catch (err) {
-      setError('Failed to update task status: ' + apiErrorMessage(err, 'Unknown error'))
+      showToast('Failed to update task status: ' + apiErrorMessage(err, 'Unknown error'), 'error')
       console.error(err)
     }
   }
