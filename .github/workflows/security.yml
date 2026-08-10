@@ -76,11 +76,15 @@ jobs:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       # On push: scan the pushed commits. On schedule/workflow_dispatch: base==HEAD, so scan last 100 commits.
+      # This scans commit diffs, not the working tree, so `trufflehog:ignore`
+      # markers only take effect for commits that already carry them; anything
+      # older has to be excluded by path. See .trufflehogignore.
       - uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event_name == 'push' && github.event.before || 'HEAD~100' }}
           head: ${{ github.event_name == 'push' && github.event.after || 'HEAD' }}
+          extra_args: --exclude-paths=.trufflehogignore
 
   # CodeQL: if you see "advanced configurations cannot be processed when the default setup is enabled",
   # turn off Default setup in repo Settings → Code security and analysis → Code scanning.
