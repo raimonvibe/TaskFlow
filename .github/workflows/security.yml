@@ -1,6 +1,15 @@
 name: Security Scan
 
 on:
+  # The TruffleHog step below already branches on `github.event_name == 'push'`
+  # to scan just the pushed range, but without a push trigger that branch had
+  # never run once. Wiring it up means a secret reaches main and gets caught in
+  # minutes rather than sitting until the next Monday, and it re-runs CodeQL on
+  # every push so its alerts close when the fix lands instead of a week later.
+  # No paths-ignore on purpose: a leaked credential in a .md file still counts.
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
