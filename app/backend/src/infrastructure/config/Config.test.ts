@@ -70,14 +70,14 @@ describe('Config', () => {
     })
 
     it('enables SSL (with rejectUnauthorized: false) when DATABASE_URL is set', () => {
-      const config = new Config({ DATABASE_URL: 'postgres://user:pass@host/db' })
+      const config = new Config({ DATABASE_URL: 'postgres://user:pass@host/db' }) // trufflehog:ignore
       expect(config.database.ssl).toEqual({ rejectUnauthorized: false })
-      expect(config.database.connectionString).toBe('postgres://user:pass@host/db')
+      expect(config.database.connectionString).toBe('postgres://user:pass@host/db') // trufflehog:ignore
     })
 
     it('DB_SSL=false disables SSL even with a DATABASE_URL present', () => {
       const config = new Config({
-        DATABASE_URL: 'postgres://user:pass@host/db',
+        DATABASE_URL: 'postgres://user:pass@host/db', // trufflehog:ignore
         DB_SSL: 'false',
       })
       expect(config.database.ssl).toBe(false)

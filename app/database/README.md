@@ -177,14 +177,17 @@ psql -d taskflow -f schema.sql
 
 ## Connection Strings
 
+These are non-secret local defaults, not credentials for any deployed database.
+
 ### Local Development
-```
-postgresql://postgres:postgres@localhost:5432/taskflow
+```bash
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/taskflow"  # trufflehog:ignore
 ```
 
 ### Docker Compose
-```
-postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow
+Matches the development credentials hardcoded in `docker-compose.yml`:
+```bash
+export DATABASE_URL="postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow"  # trufflehog:ignore
 ```
 
 ### Production
