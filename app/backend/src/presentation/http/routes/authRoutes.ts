@@ -16,6 +16,7 @@ export interface AuthRoutesDependencies {
   readonly rateLimit: {
     readonly windowMs: number
     readonly max: number
+    readonly sessionMax: number
   }
 }
 
@@ -41,6 +42,22 @@ export function createAuthRouter(deps: AuthRoutesDependencies): Router {
     skipSuccessfulRequests: true,
   })
 
+  // /me and /logout sit behind `authenticate`, so they are not a
+  // credential-stuffing surface and deliberately do not share `authLimiter`:
+  // because that limiter counts only failures, a client polling /me with an
+  // expired token would spend the login allowance on 401s and then be locked
+  // out of logging back in. This budget matches the generic /api/ limiter in
+  // app.ts that already covers these routes, so the effective limit is
+  // unchanged - stating it on the route keeps the protection visible to
+  // readers and to static analysis (CodeQL js/missing-rate-limiting).
+  const sessionLimiter = rateLimit({
+    windowMs: deps.rateLimit.windowMs,
+    max: deps.rateLimit.sessionMax,
+    message: { message: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+
   router.post(
     '/register',
     authLimiter,
@@ -50,8 +67,8 @@ export function createAuthRouter(deps: AuthRoutesDependencies): Router {
   )
   router.post('/login', authLimiter, loginValidation, validateRequest, deps.controller.login)
   router.post('/refresh', authLimiter, refreshValidation, validateRequest, deps.controller.refresh)
-  router.get('/me', deps.authenticate, deps.controller.getCurrentUser)
-  router.post('/logout', deps.authenticate, deps.controller.logout)
+  router.get('/me', sessionLimiter, deps.authenticate, deps.controller.getCurrentUser)
+  router.post('/logout', sessionLimiter, deps.authenticate, deps.controller.logout)
 
   return router
 }

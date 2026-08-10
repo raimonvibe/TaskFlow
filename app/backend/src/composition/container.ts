@@ -148,7 +148,11 @@ export function createContainer(overrides: ContainerOverrides = {}): Container {
     controller: new AuthController(authService),
     authenticate,
     passwordPolicy,
-    rateLimit: { windowMs: config.rateLimit.authWindowMs, max: config.rateLimit.authMax },
+    rateLimit: {
+      windowMs: config.rateLimit.authWindowMs,
+      max: config.rateLimit.authMax,
+      sessionMax: config.rateLimit.max,
+    },
   })
   const taskRouter = createTaskRouter({
     controller: new TaskController(taskService),

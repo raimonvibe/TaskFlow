@@ -35,6 +35,33 @@ describe('Email value object', () => {
     expect(() => Email.create('')).toThrow(ValidationError)
   })
 
+  it('accepts a multi-label domain', () => {
+    expect(Email.create('stefan@mail.example.co.uk').value).toBe('stefan@mail.example.co.uk')
+  })
+
+  it('rejects an empty domain label', () => {
+    expect(() => Email.create('stefan@example..com')).toThrow(ValidationError)
+  })
+
+  it('rejects an address longer than the RFC 5321 limit of 254 characters', () => {
+    const tooLong = `${'a'.repeat(250)}@example.com`
+    expect(tooLong.length).toBeGreaterThan(254)
+    expect(() => Email.create(tooLong)).toThrow(ValidationError)
+  })
+
+  // The ReDoS input for the old `[^\s@]+\.[^\s@]+` domain part - many dots to
+  // backtrack over, then a space so the final segment always fails - is only
+  // slow at tens of kilobytes, and MAX_EMAIL_LENGTH now rejects that before
+  // the regex ever runs. So this asserts the length guard short-circuits
+  // rather than asserting a duration: a timing budget here would pass no
+  // matter how ambiguous the pattern became, which is a worse guard than none.
+  it('rejects a long backtracking-bait address on length, before matching', () => {
+    const attack = `a@${'b.'.repeat(40_000)}c d`
+    const started = performance.now()
+    expect(() => Email.create(attack)).toThrow(ValidationError)
+    expect(performance.now() - started).toBeLessThan(50)
+  })
+
   it('the thrown error carries field-level details for the API layer to surface', () => {
     try {
       Email.create('nope')
