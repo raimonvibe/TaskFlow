@@ -68,7 +68,7 @@ const TourOverview = (): ReactElement => {
           </div>
           <p className="text-sm leading-relaxed text-primary-600 dark:text-primary-300">
             Every machine is different, so no static page covers every error. Fill in the brackets
-            below and paste it into any AI assistant (Claude, ChatGPT, whatever you have) - it
+            below and paste it into any AI assistant (Claude, whatever you have) - it
             gives useful context instead of just the raw error.
           </p>
           <CodeBlock code={DEBUG_PROMPT_TEMPLATE} />
