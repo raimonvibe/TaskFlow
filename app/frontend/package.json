@@ -37,7 +37,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.16",
     "cross-spawn": "^7.0.6",
     "eslint": "^10.5.0",
@@ -68,6 +68,7 @@
     "qs": "^6.15.2",
     "jsdiff": "^5.2.0",
     "diff": "^5.2.0",
-    "undici": "^7.29.0"
+    "undici": "^7.29.0",
+    "nanoid": "^3.3.18"
   }
 }
