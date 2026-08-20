@@ -1,9 +1,11 @@
 name: Keep Render backend awake
 
 # Render's free web service plan spins the backend down after ~15 min of
-# inactivity (cold start takes ~30-60s on the next request). Render's own
-# Cron Jobs aren't free (min $1/mo), so this free GitHub Actions schedule
-# pings the health endpoint often enough to keep the free instance warm.
+# inactivity (cold start takes ~30-60s on the next request). Neon also
+# suspends compute after a few minutes idle, so a delayed ping has to wait
+# out BOTH wakes. Render's own Cron Jobs aren't free (min $1/mo), so this
+# free GitHub Actions schedule pings the health endpoint often enough to
+# keep the free instance warm.
 #
 # Setup (one-time, after the first Render deploy):
 #   Repo Settings -> Secrets and variables -> Actions -> Variables tab
@@ -34,50 +36,63 @@ jobs:
             exit 1
           fi
 
-          # --max-time has to exceed a cold start, not merely a warm response.
-          # Whenever a scheduled run slips past the ~15 min sleep window, this
-          # ping IS the request that wakes the instance, so it has to sit
-          # through the boot it just triggered - 90s against a 30-60s start.
+          # Render's edge often answers an instant 503 with
+          # x-render-routing: hibernate-wake-error while it tries to spin
+          # the free instance up. curl --retry treats that as a finished
+          # request and gives up after ~20s, which is shorter than a Render
+          # cold start, let alone Render + a suspended Neon compute.
           #
-          # --connect-timeout stays short because Render's edge accepts the
-          # connection immediately even while the instance is down; a slow
-          # connect means a wrong URL or a deleted service, which should fail
-          # fast rather than burn the whole window.
+          # Loop for up to 120s, 10s apart, so the ping that triggers the
+          # wake also waits for /health to become 200.
           #
-          # The retries are for the other half of a cold start: Render answers
-          # 502/503 for a few seconds once the container is up but the app has
-          # not bound its port yet. curl retries those automatically.
-          #
-          # `|| rc=$?` is load-bearing: GitHub runs this with `bash -e`, which
-          # aborts the step on a failing command substitution unless it sits in
-          # a tested context - and aborting here would skip the diagnostics
-          # below in favour of the bare "exit code 28" this replaced.
+          # `|| rc=$?` is load-bearing: GitHub runs this with `bash -e`.
           body=$(mktemp)
+          hdr=$(mktemp)
+          deadline=$((SECONDS + 120))
+          code=""
+          seconds=""
+          routing=""
           rc=0
-          result=$(curl -sS -o "$body" -w '%{http_code} %{time_total}' \
-            --connect-timeout 15 \
-            --max-time 90 \
-            --retry 2 --retry-delay 10 --retry-all-errors \
-            "$BACKEND_URL/health") || rc=$?
-          read -r code seconds <<< "$result"
+
+          while true; do
+            rc=0
+            result=$(curl -sS -D "$hdr" -o "$body" -w '%{http_code} %{time_total}' \
+              --connect-timeout 15 \
+              --max-time 90 \
+              "$BACKEND_URL/health") || rc=$?
+            read -r code seconds <<< "$result"
+            routing=$(grep -i '^x-render-routing:' "$hdr" | tr -d '\r' | awk '{print $2}')
+
+            if [ "$rc" -eq 0 ] && [ "$code" = "200" ]; then
+              echo "Backend is awake - HTTP 200 in ${seconds}s."
+              cat "$body"; echo
+              exit 0
+            fi
+
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              break
+            fi
+
+            echo "Waiting for wake (HTTP ${code:-err} curl=$rc routing=${routing:-none})..."
+            sleep 10
+          done
 
           if [ "$rc" -ne 0 ]; then
             case "$rc" in
-              28) echo "::error::Timed out after ${seconds}s waiting for $BACKEND_URL/health. A free-tier cold start answers within 30-60s, so exceeding 90s points at an unhealthy deploy rather than a sleeping one - check the Render logs." ;;
+              28) echo "::error::Timed out after ${seconds}s waiting for $BACKEND_URL/health. A free-tier cold start (Render + Neon) answers within ~60-90s, so exceeding 120s points at a failed boot - check the Render logs." ;;
               6|7) echo "::error::Could not reach $BACKEND_URL (curl exit $rc). Check that the RENDER_BACKEND_URL variable matches the service's current URL." ;;
               *) echo "::error::curl failed with exit code $rc after ${seconds}s." ;;
             esac
             exit 1
           fi
 
-          # No --fail: a 503 is a real answer from an awake instance whose
-          # database is down, and that deserves a different message than a
-          # service that never responded at all.
-          if [ "$code" != "200" ]; then
-            echo "::error::$BACKEND_URL/health answered HTTP $code in ${seconds}s - the instance is awake but unhealthy."
+          if [ "$routing" = "hibernate-wake-error" ] || [ -z "$(cat "$body")" ]; then
+            echo "::error::$BACKEND_URL/health answered HTTP $code (${seconds}s, x-render-routing=${routing:-none}) - Render failed to wake the instance, it is not running an unhealthy Node process. Check Render logs for db:init / Neon connect timeouts, and that DATABASE_URL is the Neon *direct* host (not -pooler)."
+            cat "$hdr"; echo
             cat "$body"; echo
             exit 1
           fi
 
-          echo "Backend is awake - HTTP 200 in ${seconds}s."
+          echo "::error::$BACKEND_URL/health answered HTTP $code in ${seconds}s - the instance is awake but unhealthy."
           cat "$body"; echo
+          exit 1

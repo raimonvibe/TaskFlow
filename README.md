@@ -192,8 +192,8 @@ TaskFlow is designed for progressive learning:
 - **Best for**: Simple deployment with managed services
 
 ### Option 4: Render (One-Click Blueprint)
-- **Cost**: $0 (free Postgres expires after 30 days — see docs)
-- **Setup**: `render.yaml` at the repo root deploys backend + frontend + database in one step
+- **Cost**: $0 (Postgres is Neon, not Render — Render's free Postgres expires after 30 days)
+- **Setup**: `render.yaml` deploys backend + frontend; set `DATABASE_URL` to the Neon **direct** host in the Render Dashboard
 - **Keep-alive**: Free GitHub Actions ping every 10 min (Render's own Cron Jobs aren't free)
 - **Guide**: [docs/RENDER_DEPLOY.md](docs/RENDER_DEPLOY.md)
 

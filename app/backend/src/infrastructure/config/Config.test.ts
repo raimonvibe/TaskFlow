@@ -75,6 +75,24 @@ describe('Config', () => {
       expect(config.database.connectionString).toBe('postgres://user:pass@host/db') // trufflehog:ignore
     })
 
+    it('keeps a 2s connect timeout against local discrete DB_* vars', () => {
+      const config = new Config({})
+      expect(config.database.connectionTimeoutMillis).toBe(2000)
+    })
+
+    it('raises the connect timeout to 30s when DATABASE_URL is set (Neon cold start)', () => {
+      const config = new Config({ DATABASE_URL: 'postgres://user:pass@host/db' }) // trufflehog:ignore
+      expect(config.database.connectionTimeoutMillis).toBe(30000)
+    })
+
+    it('DB_CONNECTION_TIMEOUT_MS overrides the DATABASE_URL default', () => {
+      const config = new Config({
+        DATABASE_URL: 'postgres://user:pass@host/db', // trufflehog:ignore
+        DB_CONNECTION_TIMEOUT_MS: '8000',
+      })
+      expect(config.database.connectionTimeoutMillis).toBe(8000)
+    })
+
     it('DB_SSL=false disables SSL even with a DATABASE_URL present', () => {
       const config = new Config({
         DATABASE_URL: 'postgres://user:pass@host/db', // trufflehog:ignore

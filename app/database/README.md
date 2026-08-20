@@ -21,7 +21,7 @@ needs a schema just applies the whole file, and re-applying it is a no-op:
 
 | Where | How |
 |---|---|
-| Render (production) | `npm run db:init` in the `startCommand`, on every deploy |
+| Render (production) | `npm run db:init` in the `startCommand`, on every deploy (Neon `DATABASE_URL`) |
 | Docker Compose | mounted into `docker-entrypoint-initdb.d`, on first init |
 | CI | `psql -f schema.sql` before the test job |
 | Tests | `src/test/globalSetup.ts`, once per run |

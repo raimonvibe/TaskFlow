@@ -90,7 +90,15 @@ export class Config {
       ssl: env.DATABASE_URL && env.DB_SSL !== 'false' ? { rejectUnauthorized: false } : false,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      // Local Postgres answers immediately. Hosted Neon (and similar
+      // serverless Postgres) suspends the compute after a few minutes idle
+      // and the first connection after that can take 5-15s - 2s is too
+      // short, and a timeout here aborts `db:init && npm start` so Render
+      // never binds the port (hibernate-wake-error).
+      connectionTimeoutMillis: parseInt(
+        env.DB_CONNECTION_TIMEOUT_MS || (env.DATABASE_URL ? '30000' : '2000'),
+        10
+      ),
     }
 
     this.jwt = {

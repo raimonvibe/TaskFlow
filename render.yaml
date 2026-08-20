@@ -1,9 +1,14 @@
 # Render Blueprint for TaskFlow
 #
-# Deploys three resources on Render's free tier:
-#   - taskflow-db:       Render Postgres (free plan)
+# Deploys two resources on Render's free tier. Postgres lives on Neon, not
+# on Render - Render's free Postgres expires 30 days after creation.
 #   - taskflow-backend:  Node/Express API (free web service)
 #   - taskflow-frontend: Vite/React static site (free, always-on, no sleep)
+#
+# Set DATABASE_URL on the backend in the Render Dashboard to the Neon
+# connection string (direct host, not the -pooler host - db:init applies
+# schema.sql as one multi-statement query, which transaction-mode PgBouncer
+# rejects). sync: false keeps later blueprint applies from overwriting it.
 #
 # Free web services sleep after ~15 min of inactivity. Since Render Cron Jobs
 # are NOT free (min $1/mo), the keep-alive ping for taskflow-backend is
@@ -13,18 +18,8 @@
 # Free web services do not support preDeployCommand, so db:init runs in
 # startCommand before npm start (initSchema.ts is idempotent).
 #
-# NOTE: Render's free Postgres plan is deleted 30 days after creation. For a
-# real "production" deployment, upgrade taskflow-db's plan (see docs/RENDER_DEPLOY.md).
-#
 # Deploy: https://dashboard.render.com/blueprints -> New Blueprint Instance
 # Docs:   https://render.com/docs/blueprint-spec
-
-databases:
-  - name: taskflow-db
-    databaseName: taskflow
-    user: taskflow_user
-    plan: free
-    region: oregon
 
 services:
   # --- Backend API ---------------------------------------------------------
@@ -45,10 +40,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22.22.0"
+      # Neon connection string, set once in the Render Dashboard. Direct
+      # host (ep-….neon.tech), not the pooled host (ep-…-pooler.neon.tech).
       - key: DATABASE_URL
-        fromDatabase:
-          name: taskflow-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
