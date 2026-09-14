@@ -56,6 +56,11 @@ export interface RateLimitConfig {
   readonly authMax: number
 }
 
+/** Express `trust proxy` setting: hop count, or `false` to ignore
+ * `X-Forwarded-*`. `true` is not represented here - unbounded trust lets
+ * clients pick their own rate-limit bucket. */
+export type TrustProxySetting = false | number
+
 /** Which `PasswordPolicy` strategy is in force. Named here rather than in
  * the domain so the domain does not have to know it is selectable by
  * environment variable; the composition root maps this to an instance. */
@@ -69,6 +74,7 @@ export class Config {
   readonly jwt: JwtConfig
   readonly cors: CorsConfig
   readonly rateLimit: RateLimitConfig
+  readonly trustProxy: TrustProxySetting
   readonly log: { readonly level: string }
   readonly metrics: { readonly key: string | null }
   readonly password: { readonly policy: PasswordPolicyName }
@@ -123,6 +129,8 @@ export class Config {
       authMax: parseInt(env.AUTH_RATE_LIMIT_MAX_REQUESTS || '10', 10),
     }
 
+    this.trustProxy = this.resolveTrustProxy(env)
+
     this.log = { level: env.LOG_LEVEL || 'info' }
 
     this.metrics = { key: env.METRICS_KEY || null }
@@ -152,6 +160,43 @@ export class Config {
     }
 
     return secret || 'default_secret_change_in_production'
+  }
+
+  /**
+   * How many reverse-proxy hops Express should trust when reading
+   * `X-Forwarded-For`. Render (and typical ingress) sit one hop in front of
+   * the Node process and always set that header; without this,
+   * express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and then
+   * keys every client as the proxy's IP.
+   *
+   * Unset: 1 in production (the hop Render / k8s ingress actually is),
+   * false otherwise so a local client cannot spoof its IP. `TRUST_PROXY`
+   * overrides: `false`/`0`, a hop count, or `true` (treated as 1 - unbounded
+   * trust would let anyone pick their rate-limit bucket).
+   */
+  private resolveTrustProxy(env: NodeJS.ProcessEnv): TrustProxySetting {
+    const raw = env.TRUST_PROXY
+    if (raw === undefined || raw.trim() === '') {
+      return env.NODE_ENV === 'production' ? 1 : false
+    }
+
+    const trimmed = raw.trim()
+    const lower = trimmed.toLowerCase()
+    if (lower === 'false' || trimmed === '0') {
+      return false
+    }
+    if (lower === 'true') {
+      return 1
+    }
+
+    const hops = Number.parseInt(trimmed, 10)
+    if (Number.isInteger(hops) && hops > 0 && String(hops) === trimmed) {
+      return hops
+    }
+
+    throw new Error(
+      `FATAL: TRUST_PROXY must be false, true, or a positive hop count, got ${JSON.stringify(raw)}`
+    )
   }
 
   /** Same fail-fast rule as `JWT_SECRET`: in production the refresh HMAC

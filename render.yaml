@@ -61,6 +61,11 @@ services:
         value: "900000"
       - key: RATE_LIMIT_MAX_REQUESTS
         value: "100"
+      # Render's edge always sets X-Forwarded-For. One hop is also the
+      # production default in Config, stated here so the blueprint matches
+      # the running service.
+      - key: TRUST_PROXY
+        value: "1"
       - key: LOG_LEVEL
         value: info
       # Locks /metrics behind an X-Metrics-Key header (see healthRoutes.js).
