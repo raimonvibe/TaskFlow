@@ -26,6 +26,7 @@ describe('Config', () => {
       expect(config.rateLimit.authMax).toBe(10)
       expect(config.log.level).toBe('info')
       expect(config.metrics.key).toBeNull()
+      expect(config.trustProxy).toBe(false)
       // Outside production, a missing JWT_SECRET falls back to the known
       // placeholder rather than throwing - same as `config/index.js` did.
       expect(config.jwt.secret).toBe('default_secret_change_in_production')
@@ -67,6 +68,16 @@ describe('Config', () => {
       expect(config.rateLimit.authMax).toBe(5)
       expect(config.log.level).toBe('debug')
       expect(config.metrics.key).toBe('shh')
+    })
+
+    it('TRUST_PROXY overrides the production default hop count', () => {
+      const config = new Config({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'a-real-strong-secret',
+        JWT_REFRESH_SECRET: 'a-different-refresh-secret',
+        TRUST_PROXY: '2',
+      })
+      expect(config.trustProxy).toBe(2)
     })
 
     it('enables SSL (with rejectUnauthorized: false) when DATABASE_URL is set', () => {
@@ -125,6 +136,9 @@ describe('Config', () => {
       })
       expect(config.jwt.secret).toBe('a-real-strong-secret')
       expect(config.jwt.refreshSecret).toBe('a-different-refresh-secret')
+      // Render / ingress always set X-Forwarded-For; one hop is the
+      // production default so express-rate-limit can key by client IP.
+      expect(config.trustProxy).toBe(1)
     })
 
     it('throws in production when JWT_REFRESH_SECRET is missing', () => {
@@ -151,6 +165,35 @@ describe('Config', () => {
     it('does not throw outside production even without JWT_SECRET', () => {
       expect(() => new Config({ NODE_ENV: 'test' })).not.toThrow()
       expect(() => new Config({ NODE_ENV: 'development' })).not.toThrow()
+    })
+  })
+
+  describe('trust proxy', () => {
+    it('defaults to false outside production so a local client cannot spoof X-Forwarded-For', () => {
+      expect(new Config({ NODE_ENV: 'test' }).trustProxy).toBe(false)
+      expect(new Config({ NODE_ENV: 'development' }).trustProxy).toBe(false)
+    })
+
+    it('treats TRUST_PROXY=true as one hop rather than unbounded trust', () => {
+      expect(new Config({ TRUST_PROXY: 'true' }).trustProxy).toBe(1)
+      expect(new Config({ TRUST_PROXY: 'TRUE' }).trustProxy).toBe(1)
+    })
+
+    it('accepts false and 0 as "do not trust any proxy"', () => {
+      expect(
+        new Config({
+          NODE_ENV: 'production',
+          JWT_SECRET: 'a-real-strong-secret',
+          JWT_REFRESH_SECRET: 'a-different-refresh-secret',
+          TRUST_PROXY: 'false',
+        }).trustProxy
+      ).toBe(false)
+      expect(new Config({ TRUST_PROXY: '0' }).trustProxy).toBe(false)
+    })
+
+    it('throws on a value that is not a hop count or boolean', () => {
+      expect(() => new Config({ TRUST_PROXY: 'all' })).toThrow(/FATAL: TRUST_PROXY/)
+      expect(() => new Config({ TRUST_PROXY: '1.5' })).toThrow(/FATAL: TRUST_PROXY/)
     })
   })
 

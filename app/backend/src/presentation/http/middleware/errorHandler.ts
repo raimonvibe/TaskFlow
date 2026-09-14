@@ -35,15 +35,22 @@ export function createErrorHandler(
 ): ErrorRequestHandler {
   return (err: unknown, req: Request, res: Response, _next): void => {
     const error = err instanceof Error ? err : new Error(String(err))
+    const { statusCode, message, details } = classify(error, options.hideInternalErrors)
 
-    logger.error('Error occurred', {
+    // Expected client failures (wrong password, missing token, validation)
+    // are not application errors. Logging them at error level is what made
+    // a 401 "Invalid credentials" look like a production incident.
+    const meta = {
       error: error.message,
-      stack: error.stack,
+      statusCode,
       method: req.method,
       url: req.originalUrl,
-    })
-
-    const { statusCode, message, details } = classify(error, options.hideInternalErrors)
+    }
+    if (statusCode < 500) {
+      logger.warn('Request rejected', meta)
+    } else {
+      logger.error('Error occurred', { ...meta, stack: error.stack })
+    }
 
     res.status(statusCode).json({
       status: 'error',

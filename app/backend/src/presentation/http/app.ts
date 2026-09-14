@@ -25,6 +25,12 @@ export function createApp(container: Container): Express {
   const app = express()
   const { config } = container
 
+  // Before any middleware that reads `req.ip`. Production sits behind
+  // Render / ingress, which always set X-Forwarded-For; express-rate-limit
+  // refuses to guess the client IP unless Express is told how many hops
+  // to trust (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR).
+  app.set('trust proxy', config.trustProxy)
+
   // Ahead of the rate limiter deliberately: a request rejected with a 429
   // is exactly the kind someone will ask about later, and it should have an
   // ID to quote.
