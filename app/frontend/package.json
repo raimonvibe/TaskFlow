@@ -27,7 +27,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^8.0.1",
+    "@babel/eslint-parser": "^8.0.5",
     "@babel/preset-react": "^8.0.1",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.3",
