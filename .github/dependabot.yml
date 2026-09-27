@@ -1,3 +1,4 @@
+# Manual scan trigger: 2026-09-27T01:31:21Z (fresh Dependabot version-update check)
 # Dependabot configuration for dependency updates and security alerts.
 # See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
@@ -31,4 +32,3 @@ updates:
     schedule:
       interval: "weekly"
     labels: ["dependencies", "ci"]
-
