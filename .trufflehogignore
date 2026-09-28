@@ -3,13 +3,18 @@
 # The scheduled scan walks HEAD~100..HEAD of git *history*, not the working
 # tree, so an inline `trufflehog:ignore` marker only suppresses a finding in
 # commits made after the marker was added. It cannot reach back into an older
-# commit's diff. Config.test.ts is listed here because commit 9d2d65a added
-# the fixture `postgres://user:pass@host/db` without a marker, and that diff
-# keeps matching until it falls out of the window on its own.
+# commit's diff. These paths are listed because older commits in that window
+# still introduce placeholder Postgres URLs without a marker:
+#   Config.test.ts  - 9d2d65a (unit-test fixture)
+#   .env.example    - 1bab926 (documented DATABASE_URL placeholder)
+#   database README - 3d7a3e9 (local/dev examples, pre-ignore line in the diff)
+# They drop out of the ignore list once those commits fall out of the window.
 #
-# Scoped to this one file on purpose. The alternative, --results=verified,
+# Scoped to these files on purpose. The alternative, --results=verified,
 # would have been worse: TruffleHog verifies a Postgres hit by connecting to
 # it, and a real leaked production URL is unreachable from a CI runner, so it
 # would also be reported as unverified. Suppressing unverified results
 # globally would therefore hide the exact case this scan exists to catch.
 ^app/backend/src/infrastructure/config/Config\.test\.ts$
+^app/backend/\.env\.example$
+^app/database/README\.md$
