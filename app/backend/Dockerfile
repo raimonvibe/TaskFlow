@@ -51,8 +51,9 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Upgrade all installed OS packages (narrow apk lists miss security fixes Trivy flags)
-RUN apk update && apk upgrade --no-cache && apk add --no-cache dumb-init
+# Upgrade all installed OS packages (narrow apk lists miss security fixes Trivy flags).
+# Retried with backoff so transient Alpine mirror/TLS errors don't fail the build.
+RUN for i in 1 2 3 4 5; do       apk update && apk upgrade --no-cache && apk add --no-cache dumb-init && exit 0;       echo "apk attempt $i failed, retrying in $((i * 5))s" >&2; sleep $((i * 5));     done; exit 1
 
 # Remove npm and bundled global modules from runtime (not needed; reduces Trivy findings)
 RUN rm -rf /usr/local/lib/node_modules/npm \
