@@ -24,9 +24,13 @@ RUN npm run build
 # Stage 2: Production (Alpine 3.23+ for OpenSSL CVE-2025-15467 fix)
 FROM nginx:alpine3.23
 
-# Update base image packages to fix security vulnerabilities (OpenSSL, libpng, libexpat, c-ares, BusyBox)
-RUN apk update && apk upgrade --no-cache && \
-    apk add --no-cache openssl libpng libxml2 curl expat tiff c-ares busybox
+# Update base image packages to fix security vulnerabilities (OpenSSL, libpng, libexpat, c-ares, BusyBox).
+# Retried with backoff so transient Alpine mirror/TLS errors don't fail the build.
+RUN for i in 1 2 3 4 5; do \
+      apk update && apk upgrade --no-cache && \
+      apk add --no-cache openssl libpng libxml2 curl expat tiff c-ares busybox && exit 0; \
+      echo "apk attempt $i failed, retrying in $((i * 5))s" >&2; sleep $((i * 5)); \
+    done; exit 1
 
 # Copy custom nginx configs
 COPY nginx-main.conf /etc/nginx/nginx.conf
