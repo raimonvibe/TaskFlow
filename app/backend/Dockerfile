@@ -2,7 +2,7 @@
 # Optimized for size and security
 
 # Stage 1: Production dependencies (node:22-alpine tracks patched Node + Alpine releases)
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # Stage 2: Build - compiles TypeScript to dist/
 # Needs the full dependency set (typescript, @types/*), none of which ships.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ RUN npm run build
 # bind-mounted over /app, which is what makes `tsx watch` actually reload on
 # change. Never used for a published image; the default build target is the
 # runner stage below.
-FROM node:22-alpine AS dev
+FROM node:25-alpine AS dev
 
 WORKDIR /app
 
@@ -47,7 +47,7 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 # Stage 4: Production
-FROM node:22-alpine AS runner
+FROM node:25-alpine AS runner
 
 WORKDIR /app
 
