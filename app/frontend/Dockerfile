@@ -2,7 +2,7 @@
 # Optimized for size and security
 
 # Stage 1: Build (node:22-alpine tracks patched Node + Alpine releases)
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
