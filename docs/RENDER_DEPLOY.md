@@ -30,7 +30,7 @@ If the backend was created from an older blueprint that still referenced `taskfl
 
 JWT secrets and CORS origin are still wired automatically inside `render.yaml` via `generateValue` and `fromService`.
 
-Both services set `NODE_VERSION=22.22.0` (required by Vite 8 and React Router 8). The frontend's `staticPublishPath` is `dist` — relative to `rootDir` (`app/frontend`), not the repo root. An earlier attempt set it to `app/frontend/dist`, which made Render look for `app/frontend/app/frontend/dist` and fail with "Publish directory does not exist".
+Both services set `NODE_VERSION=22` (Vite 8 and React Router 8 need 22.12+; "22" gets the latest patched 22.x). The frontend's `staticPublishPath` is `dist` — relative to `rootDir` (`app/frontend`), not the repo root. An earlier attempt set it to `app/frontend/dist`, which made Render look for `app/frontend/app/frontend/dist` and fail with "Publish directory does not exist".
 
 ## 2. Set up the keep-alive ping
 
