@@ -8,6 +8,7 @@ updates:
     directory: "/app/backend"
     schedule:
       interval: "weekly"
+      day: "saturday"
     open-pull-requests-limit: 5
     labels: ["dependencies", "backend"]
 
@@ -15,6 +16,7 @@ updates:
     directory: "/app/frontend"
     schedule:
       interval: "weekly"
+      day: "saturday"
     open-pull-requests-limit: 5
     labels: ["dependencies", "frontend"]
     groups:
@@ -27,8 +29,24 @@ updates:
           - "@types/react"
           - "@types/react-dom"
 
+  - package-ecosystem: "npm"
+    directory: "/load-testing"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "load-testing"]
+
+  - package-ecosystem: "docker"
+    directories: ["/app/backend", "/app/frontend"]
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    labels: ["dependencies", "docker"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "saturday"
     labels: ["dependencies", "ci"]
