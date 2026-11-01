@@ -385,7 +385,7 @@ Also removed: the three `migrate:*` scripts and the `node-pg-migrate` devDepende
 
 ### Picking this up on another machine
 
-The toolchain is pinned and needs **Node 22** — `engines` says `>=22.12.0` and `.nvmrc` says `22`. Neither is missing; the trap is a shell whose default `node` is older, which does not auto-switch. Vitest then dies at startup on a `styleText` import from rolldown, which looks like a broken test suite rather than a wrong Node version.
+The toolchain is pinned and needs **Node 22.12+** — `engines` says `>=22.12.0` and `.nvmrc` says `24`. Neither is missing; the trap is a shell whose default `node` is older, which does not auto-switch. Vitest then dies at startup on a `styleText` import from rolldown, which looks like a broken test suite rather than a wrong Node version.
 
 ```
 nvm use              # from the repo root, reads .nvmrc

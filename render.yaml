@@ -39,7 +39,7 @@ services:
     autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "24"
       # Neon connection string, set once in the Render Dashboard. Direct
       # host (ep-….neon.tech), not the pooled host (ep-…-pooler.neon.tech).
       - key: DATABASE_URL
@@ -87,7 +87,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "24"
       - key: VITE_API_URL
         fromService:
           type: web

@@ -42,6 +42,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    # Node majors move by hand with .nvmrc, CI and render.yaml, and only to
+    # even (LTS) releases. Dependabot would otherwise offer odd ones like 23.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
     labels: ["dependencies", "docker"]
 
   - package-ecosystem: "github-actions"
