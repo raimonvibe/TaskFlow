@@ -13,10 +13,10 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 env:
-  # Matches app/*/.node-version, both Dockerfiles (node:22-alpine), and
+  # Matches app/*/.node-version, both Dockerfiles (node:24-alpine), and
   # render.yaml's NODE_VERSION. CI used to run 20, which meant it never
   # actually tested the runtime production uses.
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   DOCKER_REGISTRY: docker.io
   IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME != '' && format('{0}/taskflow', secrets.DOCKER_USERNAME) || 'local/taskflow' }}
 
