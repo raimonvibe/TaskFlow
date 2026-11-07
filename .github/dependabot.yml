@@ -11,6 +11,19 @@ updates:
       day: "saturday"
     open-pull-requests-limit: 5
     labels: ["dependencies", "backend"]
+    groups:
+      # vitest and its plugins need the same version, so bump them together
+      # (majors included, so a split PR can't fail on peer dependencies).
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      backend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: "npm"
     directory: "/app/frontend"
@@ -28,6 +41,18 @@ updates:
           - "react-dom"
           - "@types/react"
           - "@types/react-dom"
+      # vitest and its plugins need the same version, so bump them together
+      # (majors included, so a split PR can't fail on peer dependencies).
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      frontend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: "npm"
     directory: "/load-testing"
@@ -55,3 +80,10 @@ updates:
       interval: "weekly"
       day: "saturday"
     labels: ["dependencies", "ci"]
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
